@@ -1,5 +1,9 @@
 package shared
 
+type LLM interface {
+	IsValid() bool
+}
+
 type AnthropicModel string
 
 const (
@@ -9,9 +13,27 @@ const (
 	Claude4Opus    AnthropicModel = "claude-4-opus"
 )
 
-func (m AnthropicModel) IsValid() bool {
-	switch m {
+func (am AnthropicModel) IsValid() bool {
+	switch am {
 	case Claude35Sonnet, Claude37Sonnet, Claude4Sonnet, Claude4Opus:
+		return true
+	}
+	return false
+}
+
+type OpenAIModel string
+
+const (
+	O4mini OpenAIModel = "o4-mini"
+	O3mini OpenAIModel = "o3-mini"
+	O3     OpenAIModel = "o3"
+	GPT4o  OpenAIModel = "gpt-4o"
+	GPT41  OpenAIModel = "gpt-4.1"
+)
+
+func (om OpenAIModel) IsValid() bool {
+	switch om {
+	case O4mini, O3mini, O3, GPT4o, GPT41:
 		return true
 	}
 	return false
@@ -26,9 +48,26 @@ const (
 )
 
 type CreateAgentRequest struct {
+	Name         string            `json:"name"`
 	Provider     InferenceProvider `json:"provider"`
-	Model        AnthropicModel    `json:"model"`
+	Model        string            `json:"model"`
 	SystemPrompt string            `json:"system_prompt"`
+	MaxTokens    int               `json:"max_tokens"`
+	Temperature  float64           `json:"temperature"`
+}
+
+func (r *CreateAgentRequest) IsValidModel() bool {
+	switch r.Provider {
+	case Anthropic:
+		return AnthropicModel(r.Model).IsValid()
+	case OpenAI:
+		return OpenAIModel(r.Model).IsValid()
+	case Google:
+		// TODO: Add Google model validation when implemented
+		return false
+	default:
+		return false
+	}
 }
 
 type CreateUserRequest struct {

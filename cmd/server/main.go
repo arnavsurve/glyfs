@@ -52,7 +52,7 @@ func main() {
 	protected.POST("/agents", func(c echo.Context) error {
 		return h.HandleCreateAgent(c)
 	})
-	protected.POST("/agents/:userId/:agentId", func(c echo.Context) error {
+	protected.POST("/agents/:agentId/invoke", func(c echo.Context) error {
 		return h.HandleAgentInference(c)
 	})
 
