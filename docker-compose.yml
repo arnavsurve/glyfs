@@ -1,0 +1,20 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: agentplane_db
+    environment:
+      - POSTGRES_DB=agentplane
+      - POSTGRES_USER=agentplane
+      - POSTGRES_PASSWORD=agentplane
+    ports:
+      - "5433:5432"
+    volumes:
+      - agentplane-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentplane -d agentplane"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  agentplane-db-data:
