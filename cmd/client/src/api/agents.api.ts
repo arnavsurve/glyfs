@@ -23,6 +23,11 @@ export const agentsApi = {
     return response.data;
   },
 
+  getAgent: async (agentId: string): Promise<{ agent: Agent }> => {
+    const response = await apiClient.get<{ agent: Agent }>(`/agents/${agentId}`);
+    return response.data;
+  },
+
   createAgent: async (agentData: CreateAgentRequest): Promise<CreateAgentResponse> => {
     const response = await apiClient.post<CreateAgentResponse>('/agents', agentData);
     return response.data;

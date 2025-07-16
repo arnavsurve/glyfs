@@ -207,6 +207,32 @@ func (h *Handler) HandleGetAgents(c echo.Context) error {
 	})
 }
 
+func (h *Handler) HandleGetAgent(c echo.Context) error {
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	agentIdStr := c.Param("agentId")
+	if agentIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId path parameter is required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	var agent shared.AgentConfig
+	if err := h.DB.Where(&shared.AgentConfig{UserID: userID, ID: agentId}).First(&agent).Error; err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"agent": agent,
+	})
+}
+
 func generateAPIKey() (string, error) {
 	randomBytes := make([]byte, 32)
 	_, err := rand.Read(randomBytes)

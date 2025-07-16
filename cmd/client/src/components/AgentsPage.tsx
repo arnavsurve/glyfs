@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { agentsApi } from "../api/agents.api";
 import type { Agent } from "../types/agent.types";
 import { AgentCard } from "./AgentCard";
+import { transformAgentsData } from "../utils/agent.utils";
 
 export function AgentsPage() {
   const navigate = useNavigate();
@@ -21,17 +22,7 @@ export function AgentsPage() {
         const response = await agentsApi.getAgents();
 
         // Transform the data to match our interface
-        const transformedAgents = response.agents.map((agent: any) => ({
-          id: agent.ID,
-          name: agent.Name,
-          provider: agent.Provider,
-          llm_model: agent.LLMModel,
-          system_prompt: agent.SystemPrompt,
-          max_tokens: agent.MaxTokens,
-          temperature: agent.Temperature,
-          created_at: agent.CreatedAt,
-          updated_at: agent.UpdatedAt,
-        }));
+        const transformedAgents = transformAgentsData(response.agents);
 
         setAgents(transformedAgents);
       } catch (err: any) {

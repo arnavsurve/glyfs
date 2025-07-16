@@ -85,6 +85,9 @@ func main() {
 	protected.POST("/agents", func(c echo.Context) error {
 		return h.HandleCreateAgent(c)
 	})
+	protected.GET("/agents/:agentId", func(c echo.Context) error {
+		return h.HandleGetAgent(c)
+	})
 	protected.PUT("/agents/:agentId", func(c echo.Context) error {
 		return h.HandleUpdateAgent(c)
 	})

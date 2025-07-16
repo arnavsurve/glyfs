@@ -41,6 +41,7 @@ import {
   type UpdateAgentRequest,
   type Provider,
 } from "../types/agent.types";
+import { transformAgentData } from "../utils/agent.utils";
 
 export function AgentDetailView() {
   const { id } = useParams<{ id: string }>();
@@ -65,33 +66,17 @@ export function AgentDetailView() {
         setIsLoading(true);
         setError(null);
 
-        // For now, we'll get the agent from the agents list
-        // TODO: Implement individual agent fetching endpoint
-        const response = await agentsApi.getAgents();
-        console.log("All agents:", response.agents);
-        console.log("Looking for agent ID:", id);
+        // Fetch individual agent using the new endpoint
+        const response = await agentsApi.getAgent(id);
+        console.log("Agent fetched:", response.agent);
 
-        const foundAgent = response.agents.find((a: any) => a.ID === id);
-        console.log("Found agent:", foundAgent);
-
-        if (!foundAgent) {
+        if (!response.agent) {
           setError(`Agent not found (ID: ${id})`);
           return;
         }
 
         // Transform the backend data to match our frontend interface
-        const rawAgent = foundAgent as any;
-        const transformedAgent: Agent = {
-          id: rawAgent.ID,
-          name: rawAgent.Name,
-          provider: rawAgent.Provider,
-          llm_model: rawAgent.LLMModel,
-          system_prompt: rawAgent.SystemPrompt,
-          max_tokens: rawAgent.MaxTokens,
-          temperature: rawAgent.Temperature,
-          created_at: rawAgent.CreatedAt,
-          updated_at: rawAgent.UpdatedAt,
-        };
+        const transformedAgent = transformAgentData(response.agent);
 
         setAgent(transformedAgent);
         setEditForm({
@@ -122,16 +107,13 @@ export function AgentDetailView() {
 
       await agentsApi.updateAgent(id, editForm);
 
-      // Update local state
-      setAgent((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...editForm,
-              llm_model: editForm.model || prev.llm_model,
-            }
-          : null,
-      );
+      // Refetch the agent to get the latest data
+      const response = await agentsApi.getAgent(id);
+      if (response.agent) {
+        // Transform the backend data to match our frontend interface
+        const transformedAgent = transformAgentData(response.agent);
+        setAgent(transformedAgent);
+      }
 
       // TODO: Show success toast
     } catch (err: any) {
@@ -218,7 +200,6 @@ export function AgentDetailView() {
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
             </Button>
 
             <div className="flex items-center space-x-3">
@@ -271,7 +252,7 @@ export function AgentDetailView() {
             <button
               key={id}
               onClick={() => setActiveTab(id as any)}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                 activeTab === id
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -607,4 +588,3 @@ export function AgentDetailView() {
     </div>
   );
 }
-
