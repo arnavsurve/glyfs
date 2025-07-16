@@ -327,10 +327,8 @@ func (h *Handler) JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 
 			tokenString = authHeader[7:]
-			log.Printf("Using token from Authorization header\n")
 		} else {
 			tokenString = cookie.Value
-			log.Printf("Using token from cookie\n")
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (any, error) {
