@@ -147,15 +147,15 @@ export function AgentDetailView() {
       setError(null);
 
       await agentsApi.deleteAgent(id);
-      
+
       // Navigate immediately to agents list
       navigate("/agents");
-      
+
       // Show persistent success toast with undo action after a brief delay
       // This ensures the toast appears after navigation is complete
       setTimeout(() => {
         toast.success(`"${agent.name}" has been deleted`, {
-          description: "You can undo this action within the next 30 seconds",
+          description: "Undo within the next 30 seconds",
           action: {
             label: "Undo",
             onClick: async () => {
@@ -310,7 +310,8 @@ export function AgentDetailView() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Agent</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete "{agent?.name}"? This action cannot be undone.
+                    Are you sure you want to delete "{agent?.name}"? This action
+                    cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

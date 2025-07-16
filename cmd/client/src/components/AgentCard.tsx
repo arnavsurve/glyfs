@@ -72,7 +72,13 @@ export function AgentCard({ agent }: AgentCardProps) {
 
         {/* System prompt preview */}
         <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-          {agent.system_prompt || 'No system prompt defined'}
+          {agent.system_prompt ? 
+            (agent.system_prompt.length > 50 ? 
+              `${agent.system_prompt.substring(0, 50)}...` : 
+              agent.system_prompt
+            ) : 
+            'No system prompt defined'
+          }
         </p>
 
         {/* Invoke URL */}
