@@ -1,7 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import { Bot, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function AgentsPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
@@ -16,7 +19,10 @@ export function AgentsPage() {
               Manage your AI agents and their configurations.
             </p>
           </div>
-          <Button className="flex items-center space-x-2">
+          <Button 
+            className="flex items-center space-x-2"
+            onClick={() => navigate('/agents/create')}
+          >
             <Plus className="w-4 h-4" />
             <span>Create Agent</span>
           </Button>
