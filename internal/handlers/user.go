@@ -346,8 +346,9 @@ func (h *Handler) JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Check if token is revoked
-		var revokedToken shared.RevokedToken
-		if err := h.DB.Where("signature = ?", hex.EncodeToString(token.Signature)).First(&revokedToken).Error; err == nil {
+		var count int64
+		h.DB.Model(&shared.RevokedToken{}).Where("signature = ?", hex.EncodeToString(token.Signature)).Count(&count)
+		if count > 0 {
 			return echo.NewHTTPError(http.StatusUnauthorized, "token has been revoked")
 		}
 

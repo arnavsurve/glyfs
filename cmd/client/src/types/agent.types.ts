@@ -73,3 +73,13 @@ export const MODELS = {
 } as const;
 
 export type Provider = keyof typeof MODELS;
+
+export const PROVIDER_DISPLAY_NAMES = {
+  [PROVIDERS.ANTHROPIC]: 'Anthropic',
+  [PROVIDERS.OPENAI]: 'OpenAI', 
+  [PROVIDERS.GOOGLE]: 'Google',
+} as const;
+
+export const getProviderDisplayName = (provider: string): string => {
+  return PROVIDER_DISPLAY_NAMES[provider as Provider] || provider;
+};

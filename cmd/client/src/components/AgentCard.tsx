@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Copy, Check, Pencil, MoreVertical } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Copy, Check, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
-import { Button } from "./ui/button";
 import type { Agent } from "../types/agent.types";
-import { MODELS } from "../types/agent.types";
+import { MODELS, getProviderDisplayName } from "../types/agent.types";
 
 interface AgentCardProps {
   agent: Agent;
@@ -11,6 +11,7 @@ interface AgentCardProps {
 
 export function AgentCard({ agent }: AgentCardProps) {
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
 
   // Get the model display name from the model value
   const getModelDisplayName = () => {
@@ -34,7 +35,8 @@ export function AgentCard({ agent }: AgentCardProps) {
   };
 
   // Copy the invoke URL to clipboard
-  const copyInvokeUrl = () => {
+  const copyInvokeUrl = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when copying URL
     navigator.clipboard
       .writeText(getInvokeUrl())
       .then(() => {
@@ -46,42 +48,36 @@ export function AgentCard({ agent }: AgentCardProps) {
       });
   };
 
+  // Handle card click to navigate to agent detail
+  const handleCardClick = () => {
+    navigate(`/agents/${agent.id}`);
+  };
+
   return (
-    <Card className="overflow-hidden">
+    <Card 
+      className="overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/20" 
+      onClick={handleCardClick}
+    >
       <CardContent className="p-4">
-        {/* Header with name and action buttons */}
+        {/* Header with name and chevron */}
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold">{agent.name}</h3>
-          
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              title="Edit agent"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              title="More options"
-            >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
         
         {/* Model info */}
-        <p className="text-sm text-muted-foreground">
-          {getModelDisplayName()}
+        <p className="text-sm text-muted-foreground mb-3">
+          {getProviderDisplayName(agent.provider)} • {getModelDisplayName()}
+        </p>
+
+        {/* System prompt preview */}
+        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+          {agent.system_prompt || 'No system prompt defined'}
         </p>
 
         {/* Invoke URL */}
         <div
-          className="mt-3 p-2 bg-muted/50 rounded border border-border text-xs text-muted-foreground flex items-center cursor-pointer hover:text-foreground transition-colors group"
+          className="p-2 bg-muted/50 rounded border border-border text-xs text-muted-foreground flex items-center hover:text-foreground transition-colors group"
           onClick={copyInvokeUrl}
           title="Click to copy API URL"
         >
