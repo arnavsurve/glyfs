@@ -77,7 +77,7 @@ export function AgentCard({ agent }: AgentCardProps) {
 
         {/* Invoke URL */}
         <div
-          className="p-2 bg-muted/50 rounded border border-border text-xs text-muted-foreground flex items-center hover:text-foreground transition-colors group"
+          className="p-2 bg-muted/50 rounded border border-border text-xs text-muted-foreground flex items-center hover:text-foreground transition-colors group cursor-pointer"
           onClick={copyInvokeUrl}
           title="Click to copy API URL"
         >

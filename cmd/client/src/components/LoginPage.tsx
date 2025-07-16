@@ -112,7 +112,7 @@ export function LoginPage() {
               </Button>
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
+                <Link to="/signup" className="text-primary hover:underline cursor-pointer">
                   Sign up
                 </Link>
               </p>
