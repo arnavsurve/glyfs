@@ -1,5 +1,12 @@
 import type { ApiError } from "../types/auth.types";
 
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
 interface RequestConfig extends RequestInit {
   url: string;
 }
@@ -33,6 +40,13 @@ class ApiClient {
       ...headers,
     };
 
+    const csrfToken = getCookie('_csrf');
+    const isStateChangingMethod = config.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method);
+
+    if (csrfToken && isStateChangingMethod) {
+      (mergedHeaders as Record<string, string>)['X-CSRF-Token'] = csrfToken;
+    }
+
     try {
       const response = await fetch(fullUrl, {
         ...rest,
@@ -53,12 +67,14 @@ class ApiClient {
         // If unauthorized, try to refresh token once
         if (response.status === 401 && !config.url.includes('/auth/refresh')) {
           try {
+            console.log("Attempting to refresh token...");
             const refreshResponse = await fetch('/api/auth/refresh', {
               method: 'POST',
               credentials: 'include',
             });
             
             if (refreshResponse.ok) {
+              console.log("Token refresh successful, retrying original request");
               // Retry the original request
               const retryResponse = await fetch(fullUrl, {
                 ...rest,
@@ -67,6 +83,7 @@ class ApiClient {
               });
               
               if (retryResponse.ok) {
+                console.log("Retry request successful");
                 const retryContentType = retryResponse.headers.get("content-type");
                 let retryData: T;
                 
@@ -81,9 +98,14 @@ class ApiClient {
                   status: retryResponse.status,
                   statusText: retryResponse.statusText,
                 };
+              } else {
+                console.error("Retry request failed:", retryResponse.status, retryResponse.statusText);
               }
+            } else {
+              console.error("Token refresh failed:", refreshResponse.status, refreshResponse.statusText);
             }
           } catch (refreshError) {
+            console.error("Token refresh error:", refreshError);
             // If refresh fails, fall through to original error handling
           }
         }

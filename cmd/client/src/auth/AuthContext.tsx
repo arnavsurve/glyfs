@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthState, AuthContextType, LoginCredentials, SignupCredentials, User } from '../types/auth.types';
+import type { AuthState, AuthContextType, LoginCredentials, SignupCredentials, User, AuthResponse } from '../types/auth.types';
 import { authApi } from '../api/auth.api';
+import { apiClient } from '../api/client';
 
 // Auth Actions
 type AuthAction =
@@ -95,14 +96,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       
       try {
-        // Call a /me endpoint to check if we're authenticated
-        const response = await fetch('/api/auth/me', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        const response = await apiClient.get<AuthResponse>('/auth/me');
         
-        if (response.ok) {
-          const data = await response.json();
+        if (response.status === 200) {
+          const data = response.data;
           const user: User = {
             id: data.user_id,
             email: data.user_email,
@@ -115,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
+        console.error("Auth check failed:", error);
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };

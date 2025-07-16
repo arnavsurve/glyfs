@@ -3,7 +3,9 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 
@@ -19,6 +21,7 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
+// JWT secret key - in production, this should be loaded from environment variables
 const jwtSecret = "secret-key-change-this-in-production"
 
 // Token expiration times
@@ -130,6 +133,22 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
+	// Revoke access token
+	if cookie, err := c.Cookie("auth_token"); err == nil && cookie.Value != "" {
+		token, _ := jwt.ParseWithClaims(cookie.Value, &JWTClaims{}, func(token *jwt.Token) (any, error) {
+			return jwtSecret, nil
+		})
+
+		if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+			expiresAt := claims.ExpiresAt.Time
+			revokedToken := shared.RevokedToken{
+				Signature: hex.EncodeToString(token.Signature),
+				ExpiresAt: expiresAt,
+			}
+			h.DB.Create(&revokedToken)
+		}
+	}
+
 	// Revoke refresh token if present
 	if cookie, err := c.Cookie("refresh_token"); err == nil && cookie.Value != "" {
 		h.DB.Model(&shared.RefreshToken{}).Where("token = ?", cookie.Value).Update("is_revoked", true)
@@ -247,7 +266,7 @@ func setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 		Path:     "/",
 		MaxAge:   int(accessTokenExpiry.Seconds()),
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   os.Getenv("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(accessCookie)
@@ -258,21 +277,20 @@ func setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 		Path:     "/api/auth/refresh", // Only send to refresh endpoint
 		MaxAge:   int(refreshTokenExpiry.Seconds()),
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   os.Getenv("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(refreshCookie)
 }
 
 func clearAuthCookies(c echo.Context) {
-	// Clear access token cookie
 	accessCookie := &http.Cookie{
 		Name:     "auth_token",
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   os.Getenv("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(accessCookie)
@@ -284,19 +302,20 @@ func clearAuthCookies(c echo.Context) {
 		Path:     "/api/auth/refresh",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   os.Getenv("ENV") == "production",
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(refreshCookie)
 }
 
-func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func (h *Handler) JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Try to get token from cookie first
 		cookie, err := c.Cookie("auth_token")
 		var tokenString string
 
 		if err != nil || cookie.Value == "" {
+			log.Printf("Auth cookie not found or empty, checking Authorization header\n")
 			// Fallback to Authorization header for API compatibility
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
@@ -308,8 +327,10 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 
 			tokenString = authHeader[7:]
+			log.Printf("Using token from Authorization header\n")
 		} else {
 			tokenString = cookie.Value
+			log.Printf("Using token from cookie\n")
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (any, error) {
@@ -319,7 +340,15 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return []byte(jwtSecret), nil
 		})
 		if err != nil {
+			// Log the specific JWT error for debugging
+			log.Printf("JWT Parse Error: %v\n", err)
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+		}
+
+		// Check if token is revoked
+		var revokedToken shared.RevokedToken
+		if err := h.DB.Where("signature = ?", hex.EncodeToString(token.Signature)).First(&revokedToken).Error; err == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "token has been revoked")
 		}
 
 		if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
