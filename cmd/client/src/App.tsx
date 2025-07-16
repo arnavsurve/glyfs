@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './components/LoginPage'
 import { SignupPage } from './components/SignupPage'
-import { Dashboard } from './components/Dashboard'
+import { Layout } from './components/Layout'
+import { DashboardPage } from './components/DashboardPage'
+import { AgentsPage } from './components/AgentsPage'
 import { ThemeProvider } from './components/theme-provider'
 import { AuthProvider } from './auth/AuthContext'
 import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute'
@@ -30,45 +32,20 @@ function App() {
               } 
             />
             
-            {/* Protected routes - require authentication */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/agents" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/agents/:id" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Root redirect based on auth status */}
+            {/* Protected routes with layout */}
             <Route 
               path="/" 
-              element={<Navigate to="/dashboard" replace />}
-            />
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="agents" element={<AgentsPage />} />
+              <Route path="agents/:id" element={<AgentsPage />} />
+            </Route>
             
             {/* Catch all route */}
             <Route 
