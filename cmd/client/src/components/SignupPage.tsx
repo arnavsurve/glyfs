@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Alert, AlertDescription } from './ui/alert'
 import { Loader2, UserPlus } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import type { SignupCredentials } from '../types/auth.types'
 
-interface SignupFormData {
-  email: string
-  password: string
+interface SignupFormData extends SignupCredentials {
   confirmPassword: string
 }
 
@@ -19,10 +19,18 @@ export function SignupPage() {
     password: '',
     confirmPassword: ''
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [validationError, setValidationError] = useState('')
   const [success, setSuccess] = useState(false)
+  const { signup, isLoading, error, clearError } = useAuth()
   const navigate = useNavigate()
+
+  // Clear errors when user starts typing
+  useEffect(() => {
+    if (error || validationError) {
+      clearError()
+      setValidationError('')
+    }
+  }, [formData.email, formData.password, formData.confirmPassword, error, validationError, clearError])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -30,33 +38,32 @@ export function SignupPage() {
       ...prev,
       [name]: value
     }))
-    if (error) setError('')
   }
 
   const validateForm = () => {
     if (!formData.email) {
-      setError('Email is required')
+      setValidationError('Email is required')
       return false
     }
     
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address')
+      setValidationError('Please enter a valid email address')
       return false
     }
 
     if (!formData.password) {
-      setError('Password is required')
+      setValidationError('Password is required')
       return false
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
+      setValidationError('Password must be at least 8 characters long')
       return false
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      setValidationError('Passwords do not match')
       return false
     }
 
@@ -65,52 +72,28 @@ export function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setValidationError('')
     
     if (!validateForm()) {
       return
     }
 
-    setIsLoading(true)
-
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password
-        }),
+      await signup({
+        email: formData.email,
+        password: formData.password
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Signup failed')
-      }
-
-      const result = await response.json()
-      console.log('Signup successful:', result)
+      
       setSuccess(true)
       
-      // Redirect to login after 2 seconds
+      // Redirect to dashboard after successful signup (user is now logged in)
       setTimeout(() => {
-        navigate('/login')
+        navigate('/dashboard')
       }, 2000)
       
     } catch (err) {
-      if (err instanceof Error) {
-        if (err.message.includes('already exists')) {
-          setError('An account with this email already exists. Please sign in instead.')
-        } else {
-          setError(err.message)
-        }
-      } else {
-        setError('Something went wrong. Please try again.')
-      }
-    } finally {
-      setIsLoading(false)
+      // Error is handled by the auth context
+      console.error('Signup failed:', err)
     }
   }
 
@@ -125,7 +108,7 @@ export function SignupPage() {
               </div>
               <CardTitle className="text-2xl">Account Created!</CardTitle>
               <CardDescription>
-                Your account has been created successfully. Redirecting to login...
+                Your account has been created successfully. Redirecting to dashboard...
               </CardDescription>
             </CardHeader>
           </Card>
@@ -189,9 +172,9 @@ export function SignupPage() {
                 />
               </div>
               
-              {error && (
+              {(error || validationError) && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{error || validationError}</AlertDescription>
                 </Alert>
               )}
 

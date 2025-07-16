@@ -6,23 +6,32 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Button } from "./ui/button";
-import { LogOut, Plus, Bot, Settings } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { LogOut, Plus, Bot, Settings, Loader2 } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 export function Dashboard() {
-  const navigate = useNavigate();
+  const { user, logout, isLoading } = useAuth();
 
-  const handleLogout = () => {
-    // Clear token from localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user_id");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Logout will still proceed locally even if API call fails
+    }
   };
 
-  const getUserEmail = () => {
-    // This would come from your auth context in a real app
-    return localStorage.getItem("user_email") || "user@example.com";
-  };
+  // Show loading spinner while auth is being checked
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,7 +44,7 @@ export function Dashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-muted-foreground">
-              {getUserEmail()}
+              {user?.email || "user@example.com"}
             </span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />

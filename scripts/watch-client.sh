@@ -16,6 +16,6 @@ cd cmd/client && npm run build && cd ../..
 # Watch for changes in React source files
 fswatch -o cmd/client/src cmd/client/public cmd/client/index.html cmd/client/package.json cmd/client/vite.config.ts cmd/client/tailwind.config.js cmd/client/tsconfig.json | while read f; do
     echo "📦 React files changed, rebuilding..."
-    cd cmd/client && npm run build && cd ../..
+    cd ./cmd/client && npm run build && cd ../..
     echo "✅ Client rebuild complete"
 done

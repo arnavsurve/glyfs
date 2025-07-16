@@ -33,3 +33,11 @@ type AgentAPIKey struct {
 	Key      string    `gorm:"type:text;not null;unique;index"`
 	LastUsed *time.Time
 }
+
+type RefreshToken struct {
+	gorm.Model
+	UserID    uint      `gorm:"not null;index"`
+	Token     string    `gorm:"type:text;not null;unique;index"`
+	ExpiresAt time.Time `gorm:"not null"`
+	IsRevoked bool      `gorm:"default:false"`
+}

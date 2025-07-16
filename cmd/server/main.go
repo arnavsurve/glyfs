@@ -23,9 +23,10 @@ func main() {
 
 	if os.Getenv("ENV") != "production" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOrigins: []string{"http://localhost:5173"},
-			AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
-			AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+			AllowOrigins:     []string{"http://localhost:5173"},
+			AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
+			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+			AllowCredentials: true, // Allow cookies to be sent with CORS requests
 		}))
 	}
 
@@ -51,6 +52,15 @@ func main() {
 	})
 	auth.POST("/login", func(c echo.Context) error {
 		return h.HandleLogin(c)
+	})
+	auth.POST("/logout", func(c echo.Context) error {
+		return h.HandleLogout(c)
+	})
+	auth.GET("/me", handlers.JWTMiddleware(func(c echo.Context) error {
+		return h.HandleMe(c)
+	}))
+	auth.POST("/refresh", func(c echo.Context) error {
+		return h.HandleRefreshToken(c)
 	})
 
 	protected := api.Group("")

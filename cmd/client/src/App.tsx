@@ -3,56 +3,81 @@ import { LoginPage } from './components/LoginPage'
 import { SignupPage } from './components/SignupPage'
 import { Dashboard } from './components/Dashboard'
 import { ThemeProvider } from './components/theme-provider'
-
-// Simple auth check - in a real app you'd use a proper auth context
-const isAuthenticated = () => {
-  return localStorage.getItem('token') !== null
-}
+import { AuthProvider } from './auth/AuthContext'
+import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute'
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <Router>
-        <Routes>
-          {/* Auth routes */}
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* Protected routes */}
-          <Route 
-            path="/dashboard" 
-            element={
-              isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />
-            } 
-          />
-          <Route 
-            path="/agents" 
-            element={
-              isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />
-            } 
-          />
-          <Route 
-            path="/agents/:id" 
-            element={
-              isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              isAuthenticated() ? <Dashboard /> : <Navigate to="/login" replace />
-            } 
-          />
-          
-          {/* Root redirect */}
-          <Route 
-            path="/" 
-            element={
-              isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/signup" replace />
-            } 
-          />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public routes - redirect to dashboard if authenticated */}
+            <Route 
+              path="/signup" 
+              element={
+                <PublicRoute>
+                  <SignupPage />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              } 
+            />
+            
+            {/* Protected routes - require authentication */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/agents" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/agents/:id" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Root redirect based on auth status */}
+            <Route 
+              path="/" 
+              element={<Navigate to="/dashboard" replace />}
+            />
+            
+            {/* Catch all route */}
+            <Route 
+              path="*" 
+              element={<Navigate to="/dashboard" replace />}
+            />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

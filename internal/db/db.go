@@ -12,7 +12,7 @@ func SetupDB() *gorm.DB {
 	if err != nil {
 		panic("failed to connect to database")
 	}
-	db.AutoMigrate(&shared.AgentConfig{}, &shared.AgentAPIKey{}, &shared.User{})
+	db.AutoMigrate(&shared.AgentConfig{}, &shared.AgentAPIKey{}, &shared.User{}, &shared.RefreshToken{})
 
 	return db
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -11,21 +11,25 @@ import {
 } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Loader2, User } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import type { LoginCredentials } from "../types/auth.types";
 
 export function LoginPage() {
-  const [formData, setFormData] = useState<LoginFormData>({
+  const [formData, setFormData] = useState<LoginCredentials>({
     email: "",
     password: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { login, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Clear any previous errors when user starts typing
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+  }, [formData.email, formData.password, error, clearError]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -33,42 +37,20 @@ export function LoginPage() {
       ...prev,
       [name]: value,
     }));
-    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Login failed");
-      }
-
-      const result = await response.json();
-      console.log("Login successful:", result);
-
-      // Store token and user info
-      localStorage.setItem("token", result.token);
-      localStorage.setItem("user_id", result.user_id.toString());
-      localStorage.setItem("user_email", formData.email);
-
-      // Redirect to dashboard
-      navigate("/dashboard");
+      await login(formData);
+      
+      // Get the intended destination or default to dashboard
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
     } catch (err) {
-      setError("Invalid email or password");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      // Error is handled by the auth context
+      console.error("Login failed:", err);
     }
   };
 
