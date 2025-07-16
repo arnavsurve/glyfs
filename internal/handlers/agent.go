@@ -242,6 +242,75 @@ func generateAPIKey() (string, error) {
 	return "apk_" + base64.URLEncoding.EncodeToString(randomBytes), nil
 }
 
+func (h *Handler) HandleDeleteAgent(c echo.Context) error {
+	agentIdStr := c.Param("agentId")
+	if agentIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId path parameter is required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	// Check if agent exists and belongs to user (soft deleted agents won't be found)
+	var agent shared.AgentConfig
+	if err := h.DB.Where(&shared.AgentConfig{UserID: userID, ID: agentId}).First(&agent).Error; err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
+	}
+
+	// Soft delete the agent (sets DeletedAt timestamp)
+	if err := h.DB.Delete(&agent).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete agent")
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"message": "Agent deleted successfully",
+	})
+}
+
+func (h *Handler) HandleRestoreAgent(c echo.Context) error {
+	agentIdStr := c.Param("agentId")
+	if agentIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId path parameter is required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	// Find the soft deleted agent and restore it
+	var agent shared.AgentConfig
+	if err := h.DB.Unscoped().Where(&shared.AgentConfig{UserID: userID, ID: agentId}).First(&agent).Error; err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
+	}
+
+	// Check if the agent is actually deleted
+	if agent.DeletedAt.Time.IsZero() {
+		return echo.NewHTTPError(http.StatusBadRequest, "Agent is not deleted")
+	}
+
+	// Restore the agent by setting DeletedAt to nil
+	if err := h.DB.Unscoped().Model(&agent).Update("deleted_at", nil).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to restore agent")
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"message": "Agent restored successfully",
+	})
+}
+
 func validateAPIKey(providedKey string, storedHash string) bool {
 	keyHash := sha256.Sum256([]byte(providedKey))
 	return hex.EncodeToString(keyHash[:]) == storedHash

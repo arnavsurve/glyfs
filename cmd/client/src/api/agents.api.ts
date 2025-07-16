@@ -47,4 +47,9 @@ export const agentsApi = {
     const response = await apiClient.delete<{ message: string }>(`/agents/${agentId}`);
     return response.data;
   },
+
+  restoreAgent: async (agentId: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(`/agents/${agentId}/restore`);
+    return response.data;
+  },
 };

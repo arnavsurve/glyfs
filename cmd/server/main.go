@@ -39,7 +39,7 @@ func main() {
 		CookieHTTPOnly: false,
 		CookieSameSite: http.SameSiteStrictMode,
 		Skipper: func(c echo.Context) bool {
-			return c.Path() == "/api/auth/me"
+			return c.Path() == "/api/auth/me" || c.Path() == "/api/auth/refresh"
 		},
 	}))
 
@@ -90,6 +90,12 @@ func main() {
 	})
 	protected.PUT("/agents/:agentId", func(c echo.Context) error {
 		return h.HandleUpdateAgent(c)
+	})
+	protected.DELETE("/agents/:agentId", func(c echo.Context) error {
+		return h.HandleDeleteAgent(c)
+	})
+	protected.POST("/agents/:agentId/restore", func(c echo.Context) error {
+		return h.HandleRestoreAgent(c)
 	})
 	protected.POST("/agents/:agentId/invoke", func(c echo.Context) error {
 		return h.HandleAgentInference(c)
