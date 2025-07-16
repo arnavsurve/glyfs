@@ -32,6 +32,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 import { agentsApi } from "../api/agents.api";
 import {
   PROVIDERS,
@@ -42,6 +53,7 @@ import {
   type Provider,
 } from "../types/agent.types";
 import { transformAgentData } from "../utils/agent.utils";
+import { toast } from "sonner";
 
 export function AgentDetailView() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +62,7 @@ export function AgentDetailView() {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "overview" | "configuration" | "api"
@@ -115,11 +128,56 @@ export function AgentDetailView() {
         setAgent(transformedAgent);
       }
 
-      // TODO: Show success toast
+      // Show success toast
+      toast.success("Agent updated successfully!");
     } catch (err: any) {
-      setError(err.message || "Failed to save agent");
+      const errorMessage = err.message || "Failed to save agent";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!agent || !id) return;
+
+    try {
+      setIsDeleting(true);
+      setError(null);
+
+      await agentsApi.deleteAgent(id);
+      
+      // Navigate immediately to agents list
+      navigate("/agents");
+      
+      // Show persistent success toast with undo action after a brief delay
+      // This ensures the toast appears after navigation is complete
+      setTimeout(() => {
+        toast.success(`"${agent.name}" has been deleted`, {
+          description: "You can undo this action within the next 30 seconds",
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              try {
+                await agentsApi.restoreAgent(id);
+                toast.success(`"${agent.name}" has been restored!`);
+                // Navigate back to the restored agent
+                navigate(`/agents/${id}`);
+              } catch (err: any) {
+                toast.error("Failed to restore agent. Please try again.");
+              }
+            },
+          },
+          duration: 30000, // Show for 30 seconds to give plenty of time to undo
+        });
+      }, 100); // Small delay to ensure navigation completes first
+    } catch (err: any) {
+      const errorMessage = err.message || "Failed to delete agent";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -128,8 +186,10 @@ export function AgentDetailView() {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
+      toast.success(`${field} copied to clipboard!`);
     } catch (err) {
       console.error("Failed to copy:", err);
+      toast.error("Failed to copy to clipboard");
     }
   };
 
@@ -236,9 +296,34 @@ export function AgentDetailView() {
               )}
             </Button>
 
-            <Button variant="outline" size="sm">
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isDeleting}>
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{agent?.name}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Agent
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 

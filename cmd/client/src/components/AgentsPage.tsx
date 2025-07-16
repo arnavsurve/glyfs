@@ -34,7 +34,7 @@ export function AgentsPage() {
     }
 
     fetchAgents();
-  }, []);
+  }, [location.key]); // Re-fetch when navigation occurs
 
   return (
     <div className="p-6">
