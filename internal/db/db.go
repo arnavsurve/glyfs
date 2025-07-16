@@ -1,18 +1,24 @@
 package db
 
 import (
+	"log"
+	"os"
+
 	"github.com/arnavsurve/agentplane/internal/shared"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func SetupDB() *gorm.DB {
-	dsn := "host=localhost user=agentplane password=agentplane dbname=agentplane port=5433"
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL environment variable not set")
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect to database")
 	}
-	db.AutoMigrate(&shared.AgentConfig{}, &shared.AgentAPIKey{}, &shared.User{}, &shared.RefreshToken{})
+	db.AutoMigrate(&shared.AgentConfig{}, &shared.AgentAPIKey{}, &shared.User{}, &shared.RefreshToken{}, &shared.RevokedToken{})
 
 	return db
 }

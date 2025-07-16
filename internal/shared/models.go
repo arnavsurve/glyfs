@@ -41,3 +41,9 @@ type RefreshToken struct {
 	ExpiresAt time.Time `gorm:"not null"`
 	IsRevoked bool      `gorm:"default:false"`
 }
+
+type RevokedToken struct {
+	gorm.Model
+	Signature string    `gorm:"type:text;not null;unique;index"`
+	ExpiresAt time.Time `gorm:"not null"`
+}

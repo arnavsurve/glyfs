@@ -1,49 +1,5 @@
 import { apiClient } from './client';
-
-// Agent types (we'll enhance these later)
-export interface Agent {
-  id: string;
-  name: string;
-  provider: string;
-  llm_model: string;
-  system_prompt: string;
-  max_tokens: number;
-  temperature: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateAgentRequest {
-  name: string;
-  provider: 'anthropic' | 'openai' | 'google';
-  model: string;
-  system_prompt: string;
-  max_tokens?: number;
-  temperature?: number;
-}
-
-export interface UpdateAgentRequest {
-  name?: string;
-  provider?: 'anthropic' | 'openai' | 'google';
-  model?: string;
-  system_prompt?: string;
-  max_tokens?: number;
-  temperature?: number;
-}
-
-export interface AgentInferenceRequest {
-  message: string;
-  history?: Array<{ role: string; content: string }>;
-}
-
-export interface AgentInferenceResponse {
-  response: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
+import type { Agent, CreateAgentRequest, UpdateAgentRequest, AgentInferenceRequest, AgentInferenceResponse } from '../types/agent.types';
 
 export interface GetAgentsResponse {
   agents: Agent[];
