@@ -3,18 +3,22 @@ package shared
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type AgentConfig struct {
-	gorm.Model
-	UserID       uint    `gorm:"not null;index"`
-	Name         string  `gorm:"type:text;not null"`
-	Provider     string  `gorm:"type:text;not null"`
-	LLMModel     string  `gorm:"type:text;not null"`
-	SystemPrompt string  `gorm:"type:text"`
-	MaxTokens    int     `gorm:"type:int"`
-	Temperature  float64 `gorm:"type:float"`
+	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+	UserID       uint           `gorm:"not null;uniqueIndex:idx_user_agent_name"`
+	Name         string         `gorm:"type:text;not null;uniqueIndex:idx_user_agent_name"`
+	Provider     string         `gorm:"type:text;not null"`
+	LLMModel     string         `gorm:"type:text;not null"`
+	SystemPrompt string         `gorm:"type:text"`
+	MaxTokens    int            `gorm:"type:int"`
+	Temperature  float64        `gorm:"type:float"`
 }
 
 type User struct {
@@ -25,7 +29,7 @@ type User struct {
 
 type AgentAPIKey struct {
 	gorm.Model
-	AgentID  uint   `gorm:"not null;index"`
-	Key      string `gorm:"type:text;not null;unique;index"`
+	AgentID  uuid.UUID `gorm:"type:uuid;not null;index"`
+	Key      string    `gorm:"type:text;not null;unique;index"`
 	LastUsed *time.Time
 }

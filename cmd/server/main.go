@@ -1,18 +1,25 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/arnavsurve/agentplane/internal/db"
 	"github.com/arnavsurve/agentplane/internal/handlers"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
 	e := echo.New()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	if os.Getenv("ENV") != "production" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -49,8 +56,14 @@ func main() {
 	protected := api.Group("")
 	protected.Use(handlers.JWTMiddleware)
 
+	protected.GET("/agents", func(c echo.Context) error {
+		return h.HandleGetAgents(c)
+	})
 	protected.POST("/agents", func(c echo.Context) error {
 		return h.HandleCreateAgent(c)
+	})
+	protected.PUT("/agents/:agentId", func(c echo.Context) error {
+		return h.HandleUpdateAgent(c)
 	})
 	protected.POST("/agents/:agentId/invoke", func(c echo.Context) error {
 		return h.HandleAgentInference(c)

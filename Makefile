@@ -13,10 +13,15 @@ build: build-client build-server
 
 # Development mode - auto-rebuild on changes
 dev:
-	@echo "Starting development with integrated build..."
-	air -c .air.toml
+	@echo "Starting development with auto-reload..."
+	@echo "Client watcher will rebuild React on file changes"
+	@echo "Server watcher will restart Go server on file changes"
+	@trap 'kill 0' SIGINT; \
+	./scripts/watch-client.sh & \
+	air -c .air.toml & \
+	wait
 
-# Development mode with separate servers (old approach)
+# Development mode with separate servers
 dev-separate:
 	@echo "Starting development servers..."
 	@trap 'kill 0' SIGINT; \
