@@ -9,6 +9,7 @@ import { AgentDetailView } from './components/AgentDetailView'
 import { ThemeProvider } from './components/theme-provider'
 import { AuthProvider } from './auth/AuthContext'
 import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute'
+import { Toaster } from './components/ui/sonner'
 
 function App() {
   return (
@@ -57,6 +58,12 @@ function App() {
             />
           </Routes>
         </Router>
+        <Toaster 
+          position="top-right"
+          expand={true}
+          richColors={true}
+          closeButton={true}
+        />
       </AuthProvider>
     </ThemeProvider>
   )
