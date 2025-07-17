@@ -171,38 +171,32 @@ func (h *Handler) HandleMe(c echo.Context) error {
 }
 
 func (h *Handler) HandleRefreshToken(c echo.Context) error {
-	// Get refresh token from cookie
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil || cookie.Value == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "refresh token required")
 	}
 
-	// Find and validate refresh token
 	var refreshToken shared.RefreshToken
 	if err := h.DB.Where("token = ? AND is_revoked = false AND expires_at > ?",
 		cookie.Value, time.Now()).First(&refreshToken).Error; err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired refresh token")
 	}
 
-	// Get user for token generation
 	var user shared.User
 	if err := h.DB.First(&user, refreshToken.UserID).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "user not found")
 	}
 
-	// Generate new access token
 	newAccessToken, err := generateJWT(user.ID, user.Email)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
 
-	// Generate new refresh token (rotate for security)
 	newRefreshToken, err := h.createRefreshToken(user.ID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
-	// Set new cookies
 	setAuthCookies(c, newAccessToken, newRefreshToken)
 
 	return c.JSON(http.StatusOK, map[string]any{
@@ -310,26 +304,12 @@ func clearAuthCookies(c echo.Context) {
 
 func (h *Handler) JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Try to get token from cookie first
 		cookie, err := c.Cookie("auth_token")
-		var tokenString string
-
 		if err != nil || cookie.Value == "" {
-			log.Printf("Auth cookie not found or empty, checking Authorization header\n")
-			// Fallback to Authorization header for API compatibility
-			authHeader := c.Request().Header.Get("Authorization")
-			if authHeader == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "missing authentication")
-			}
-
-			if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
-				return echo.NewHTTPError(http.StatusUnauthorized, "invalid authorization header format")
-			}
-
-			tokenString = authHeader[7:]
-		} else {
-			tokenString = cookie.Value
+			return echo.NewHTTPError(http.StatusUnauthorized, "missing authentication cookie")
 		}
+
+		tokenString := cookie.Value
 
 		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -338,12 +318,10 @@ func (h *Handler) JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return []byte(jwtSecret), nil
 		})
 		if err != nil {
-			// Log the specific JWT error for debugging
 			log.Printf("JWT Parse Error: %v\n", err)
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 		}
 
-		// Check if token is revoked
 		var count int64
 		h.DB.Model(&shared.RevokedToken{}).Where("signature = ?", hex.EncodeToString(token.Signature)).Count(&count)
 		if count > 0 {
