@@ -7,6 +7,13 @@ export interface ChatMessage {
   created_at: string;
 }
 
+export interface ChatContextMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
 export interface ChatSession {
   id: string;
   title: string;
@@ -19,7 +26,7 @@ export interface ChatSession {
 export interface ChatStreamRequest {
   message: string;
   session_id?: string;
-  context?: ChatMessage[];
+  context?: ChatContextMessage[];
 }
 
 export interface ChatStreamEvent {

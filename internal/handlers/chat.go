@@ -51,6 +51,31 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get chat session: %v", err))
 	}
 
+	// Load conversation history if session exists
+	var conversationHistory []shared.ChatMessage
+	if session.ID != uuid.Nil {
+		if err := h.DB.Where("session_id = ?", session.ID).
+			Order("created_at ASC").Find(&conversationHistory).Error; err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load conversation history")
+		}
+	}
+
+	// Convert database history to context format
+	var contextMessages []shared.ChatContextMessage
+	if len(conversationHistory) > 0 {
+		for _, msg := range conversationHistory {
+			contextMessages = append(contextMessages, shared.ChatContextMessage{
+				ID:        msg.ID.String(),
+				Role:      msg.Role,
+				Content:   msg.Content,
+				CreatedAt: msg.CreatedAt.Format("2006-01-02T15:04:05.000000Z07:00"),
+			})
+		}
+		req.Context = contextMessages
+	} else if req.Context == nil {
+		req.Context = []shared.ChatContextMessage{}
+	}
+
 	// Save user message
 	userMessage := shared.ChatMessage{
 		SessionID: session.ID,

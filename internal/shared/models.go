@@ -76,10 +76,17 @@ type ChatMessage struct {
 }
 
 // Chat API Types
+type ChatContextMessage struct {
+	ID        string `json:"id"`
+	Role      string `json:"role"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+}
+
 type ChatStreamRequest struct {
-	Message   string        `json:"message"`
-	SessionID *uuid.UUID    `json:"session_id,omitempty"`
-	Context   []ChatMessage `json:"context,omitempty"`
+	Message   string               `json:"message"`
+	SessionID *uuid.UUID           `json:"session_id,omitempty"`
+	Context   []ChatContextMessage `json:"context,omitempty"`
 }
 
 type ChatStreamEvent struct {

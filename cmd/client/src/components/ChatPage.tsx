@@ -150,11 +150,18 @@ export function ChatPage({}: ChatPageProps) {
     }, 100);
 
     try {
+      // Convert messages to context format (only include necessary fields)
+      const contextMessages = messages.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        created_at: msg.created_at,
+      }));
+
       const request = {
         message: inputMessage,
         session_id: currentSession?.id,
-        // Don't send context array if it's not needed by the backend
-        // This can cause "Invalid request format" errors if the backend doesn't expect it
+        context: contextMessages, // Send conversation history for context
       };
 
       await chatApi.streamChat(

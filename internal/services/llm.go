@@ -114,7 +114,7 @@ func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.A
 	return nil
 }
 
-func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []shared.ChatMessage, userMessage string) []llms.MessageContent {
+func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []shared.ChatContextMessage, userMessage string) []llms.MessageContent {
 	var messages []llms.MessageContent
 
 	if systemPrompt != "" {

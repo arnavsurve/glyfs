@@ -1,34 +1,8 @@
 import { apiClient } from './client';
+import type { ChatSession, ChatStreamRequest, ChatStreamEvent } from '../types/chat.types';
 
-export interface ChatMessage {
-  id: string;
-  session_id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  metadata?: string;
-  created_at: string;
-}
-
-export interface ChatSession {
-  id: string;
-  title: string;
-  agent_id: string;
-  created_at: string;
-  updated_at: string;
-  messages?: ChatMessage[];
-}
-
-export interface ChatStreamRequest {
-  message: string;
-  session_id?: string;
-  context?: ChatMessage[];
-}
-
-export interface ChatStreamEvent {
-  type: 'token' | 'done' | 'error' | 'metadata';
-  content: string;
-  data?: any;
-}
+// Re-export types for convenience
+export type { ChatMessage, ChatSession, ChatStreamRequest, ChatStreamEvent } from '../types/chat.types';
 
 export const chatApi = {
   // Get all chat sessions for an agent
