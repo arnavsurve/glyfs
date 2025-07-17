@@ -6,33 +6,44 @@
 }
 
 .markdown-content h1 {
-  font-size: 1.125rem; /* text-lg */
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  margin-top: 1rem;
+  font-size: 1.25rem !important; /* text-xl */
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+  margin-top: 1rem !important;
+  line-height: 1.4 !important;
 }
 
 .markdown-content h2 {
-  font-size: 1rem; /* text-base */
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  margin-top: 0.75rem;
+  font-size: 1.125rem !important; /* text-lg */
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+  margin-top: 0.75rem !important;
+  line-height: 1.4 !important;
 }
 
 .markdown-content h3 {
-  font-size: 0.875rem; /* text-sm */
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  margin-top: 0.5rem;
+  font-size: 1rem !important; /* text-base */
+  font-weight: 600 !important;
+  margin-bottom: 0.25rem !important;
+  margin-top: 0.5rem !important;
+  line-height: 1.4 !important;
 }
 
-.markdown-content h4,
+.markdown-content h4 {
+  font-size: 0.9375rem !important; /* slightly larger than body */
+  font-weight: 600 !important;
+  margin-bottom: 0.25rem !important;
+  margin-top: 0.5rem !important;
+  line-height: 1.4 !important;
+}
+
 .markdown-content h5,
 .markdown-content h6 {
-  font-size: 0.875rem; /* text-sm */
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  margin-top: 0.5rem;
+  font-size: 0.875rem !important; /* text-sm */
+  font-weight: 600 !important;
+  margin-bottom: 0.25rem !important;
+  margin-top: 0.5rem !important;
+  line-height: 1.4 !important;
 }
 
 .markdown-content p {
