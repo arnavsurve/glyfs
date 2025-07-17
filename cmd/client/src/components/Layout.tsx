@@ -40,7 +40,7 @@ const sidebarItems: SidebarItem[] = [
 ];
 
 export function Layout() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
