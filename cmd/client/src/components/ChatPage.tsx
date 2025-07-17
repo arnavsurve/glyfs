@@ -33,6 +33,7 @@ export function ChatPage({}: ChatPageProps) {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load agents on component mount
   useEffect(() => {
@@ -54,6 +55,20 @@ export function ChatPage({}: ChatPageProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingMessage]);
+
+  // Auto-focus input when component mounts or agent changes
+  useEffect(() => {
+    if (selectedAgent && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [selectedAgent]);
+
+  // Focus input when session changes
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [currentSession]);
 
   const loadAgents = async () => {
     try {
@@ -127,6 +142,13 @@ export function ChatPage({}: ChatPageProps) {
     setIsStreaming(true);
     setStreamingMessage("");
 
+    // Re-focus input after a brief delay to ensure it's ready
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 100);
+
     try {
       const request = {
         message: inputMessage,
@@ -167,11 +189,23 @@ export function ChatPage({}: ChatPageProps) {
               setStreamingMessage("");
               setIsStreaming(false);
               loadSessions(); // Refresh sessions list
+              // Re-focus input after response is complete
+              setTimeout(() => {
+                if (inputRef.current) {
+                  inputRef.current.focus();
+                }
+              }, 100);
               break;
             case "error":
               console.error("Stream error:", event.content);
               setIsStreaming(false);
               setStreamingMessage("");
+              // Re-focus input even on error
+              setTimeout(() => {
+                if (inputRef.current) {
+                  inputRef.current.focus();
+                }
+              }, 100);
               break;
           }
         },
@@ -180,6 +214,12 @@ export function ChatPage({}: ChatPageProps) {
       console.error("Failed to send message:", error);
       setIsStreaming(false);
       setStreamingMessage("");
+      // Re-focus input even on error
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
     }
   };
 
@@ -343,12 +383,14 @@ export function ChatPage({}: ChatPageProps) {
             <div className="p-4 border-t border-border">
               <div className="flex space-x-2">
                 <Input
+                  ref={inputRef}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Type your message..."
                   disabled={isStreaming}
                   className="flex-1"
+                  autoFocus
                 />
                 <Button
                   onClick={sendMessage}
