@@ -77,9 +77,23 @@ export function ChatPage({}: ChatPageProps) {
       const response = await agentsApi.getAgents();
       console.log("Agents loaded:", response.agents);
       setAgents(response.agents);
-      if (response.agents.length > 0 && !selectedAgent) {
-        console.log("Setting first agent as selected:", response.agents[0]);
-        setSelectedAgent(response.agents[0]);
+      
+      // Try to restore selected agent from localStorage
+      const savedAgentId = localStorage.getItem('selectedAgentId');
+      let agentToSelect = null;
+      
+      if (savedAgentId) {
+        agentToSelect = response.agents.find(agent => agent.id === savedAgentId);
+      }
+      
+      // If saved agent not found or no saved agent, select first available
+      if (!agentToSelect && response.agents.length > 0) {
+        agentToSelect = response.agents[0];
+      }
+      
+      if (agentToSelect && !selectedAgent) {
+        console.log("Setting selected agent:", agentToSelect);
+        setSelectedAgent(agentToSelect);
       }
     } catch (error) {
       console.error("Failed to load agents:", error);
@@ -202,6 +216,10 @@ export function ChatPage({}: ChatPageProps) {
                   inputRef.current.focus();
                 }
               }, 100);
+              // Refresh sessions again after a delay to get updated titles
+              setTimeout(() => {
+                loadSessions();
+              }, 2000);
               break;
             case "error":
               console.error("Stream error:", event.content);
@@ -265,7 +283,10 @@ export function ChatPage({}: ChatPageProps) {
               value={selectedAgent?.id || ""}
               onValueChange={(value) => {
                 const agent = agents.find((a) => a.id === value);
-                if (agent) setSelectedAgent(agent);
+                if (agent) {
+                  setSelectedAgent(agent);
+                  localStorage.setItem('selectedAgentId', agent.id);
+                }
               }}
             >
               <SelectTrigger>

@@ -131,6 +131,26 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	assistantMessage.Content = fullResponse
 	h.DB.Save(&assistantMessage)
 
+	// Generate title for new sessions
+	fmt.Printf("Session title before generation: '%s'\n", session.Title)
+	if session.Title == "New Chat" {
+		title, err := llmService.GenerateChatTitle(c.Request().Context(), req.Message)
+		if err != nil {
+			fmt.Printf("Error generating title with LLM: %v, falling back to simple title\n", err)
+			title = h.generateChatTitle(req.Message)
+		} else {
+			fmt.Printf("Generated title with LLM: '%s' for message: '%s'\n", title, req.Message)
+		}
+		
+		if title != "" && title != "New Chat" {
+			session.Title = title
+			fmt.Printf("Updating session title to: '%s'\n", title)
+			if err := h.DB.Save(&session).Error; err != nil {
+				fmt.Printf("Error saving session title: %v\n", err)
+			}
+		}
+	}
+
 	// Send completion event
 	h.sendStreamEvent(c, "done", "", map[string]any{
 		"message_id": assistantMessage.ID,
