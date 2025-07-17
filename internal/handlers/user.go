@@ -15,16 +15,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var jwtSecret string
+
+func InitJWTSecret() {
+	jwtSecret = os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("environment variable JWT_SECRET is not set")
+	}
+}
+
 type JWTClaims struct {
 	UserID uint   `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
 
-// JWT secret key - in production, this should be loaded from environment variables
-const jwtSecret = "secret-key-change-this-in-production"
-
-// Token expiration times
 const (
 	accessTokenExpiry  = 15 * time.Minute   // Short-lived access token
 	refreshTokenExpiry = 7 * 24 * time.Hour // 7 days

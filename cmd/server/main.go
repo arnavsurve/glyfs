@@ -24,6 +24,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	handlers.InitJWTSecret()
+
 	if os.Getenv("ENV") != "production" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins:     []string{"http://localhost:5173"},
