@@ -12,11 +12,10 @@ export const authApi = {
     return response.data;
   },
 
-  // Future endpoints can be added here
-  // refreshToken: async (): Promise<AuthResponse> => {
-  //   const response = await apiClient.post<AuthResponse>('/auth/refresh');
-  //   return response.data;
-  // },
+  refreshToken: async (): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/auth/refresh');
+    return response.data;
+  },
 
   // forgotPassword: async (email: string): Promise<{ message: string }> => {
   //   const response = await apiClient.post<{ message: string }>('/auth/forgot-password', { email });
