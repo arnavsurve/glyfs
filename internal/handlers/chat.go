@@ -244,6 +244,47 @@ func (h *Handler) HandleGetChatSession(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+// HandleDeleteChatSession soft deletes a chat session
+func (h *Handler) HandleDeleteChatSession(c echo.Context) error {
+	agentIdStr := c.Param("agentId")
+	sessionIdStr := c.Param("sessionId")
+
+	if agentIdStr == "" || sessionIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId and sessionId path parameters are required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	sessionId, err := uuid.Parse(sessionIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid sessionId format")
+	}
+
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	// Find the session to ensure it exists and belongs to the user
+	var session shared.ChatSession
+	if err := h.DB.Where("id = ? AND agent_id = ? AND user_id = ?", sessionId, agentId, userID).First(&session).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "Chat session not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find chat session")
+	}
+
+	// Soft delete the session (GORM will automatically set deleted_at)
+	if err := h.DB.Delete(&session).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete chat session")
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 // Helper functions
 func (h *Handler) sendStreamEvent(c echo.Context, eventType, content string, data any) {
 	event := shared.ChatStreamEvent{

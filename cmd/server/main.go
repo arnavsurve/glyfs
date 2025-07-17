@@ -115,6 +115,9 @@ func main() {
 	protected.GET("/agents/:agentId/chat/sessions/:sessionId", func(c echo.Context) error {
 		return h.HandleGetChatSession(c)
 	})
+	protected.DELETE("/agents/:agentId/chat/sessions/:sessionId", func(c echo.Context) error {
+		return h.HandleDeleteChatSession(c)
+	})
 
 	// API key management routes
 	protected.GET("/agents/:agentId/keys", func(c echo.Context) error {

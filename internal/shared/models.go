@@ -51,12 +51,13 @@ type RevokedToken struct {
 }
 
 type ChatSession struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	AgentID   uuid.UUID `gorm:"type:uuid;not null;index" json:"agent_id"`
-	UserID    uint      `gorm:"not null;index" json:"user_id"`
-	Title     string    `gorm:"type:text;not null" json:"title"`
+	ID        uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	AgentID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"agent_id"`
+	UserID    uint           `gorm:"not null;index" json:"user_id"`
+	Title     string         `gorm:"type:text;not null" json:"title"`
 
 	// Relationships
 	Agent    AgentConfig   `gorm:"foreignKey:AgentID;references:ID" json:"agent"`

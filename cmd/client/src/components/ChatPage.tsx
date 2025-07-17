@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Send, MessageSquare, Bot } from "lucide-react";
+import { Send, MessageSquare, Bot, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -140,6 +140,27 @@ export function ChatPage({}: ChatPageProps) {
   const startNewSession = () => {
     setCurrentSession(null);
     setMessages([]);
+  };
+
+  const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the session click
+    
+    if (!selectedAgent) return;
+    
+    try {
+      await chatApi.deleteChatSession(selectedAgent.id, sessionId);
+      
+      // Remove the session from the local state
+      setSessions(prev => prev.filter(session => session.id !== sessionId));
+      
+      // If we're currently viewing the deleted session, clear it
+      if (currentSession?.id === sessionId) {
+        setCurrentSession(null);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
   };
 
   const sendMessage = async () => {
@@ -343,17 +364,29 @@ export function ChatPage({}: ChatPageProps) {
               <div
                 key={session.id}
                 onClick={() => loadSession(session.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                className={`p-3 rounded-lg cursor-pointer transition-colors relative group ${
                   currentSession?.id === session.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-card hover:bg-accent"
                 }`}
               >
-                <div className="font-medium text-sm truncate">
-                  {session.title}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {new Date(session.updated_at).toLocaleDateString()}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">
+                      {session.title}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {new Date(session.updated_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => deleteSession(session.id, e)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             ))}

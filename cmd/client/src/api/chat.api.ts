@@ -17,6 +17,11 @@ export const chatApi = {
     return response.data;
   },
 
+  // Delete a chat session (soft delete)
+  deleteChatSession: async (agentId: string, sessionId: string): Promise<void> => {
+    await apiClient.delete(`/agents/${agentId}/chat/sessions/${sessionId}`);
+  },
+
   // Create a streaming chat connection - DEPRECATED, use streamChat instead
   createChatStream: (agentId: string, request: ChatStreamRequest): EventSource => {
     // This method is deprecated as it causes race conditions between EventSource and fetch
