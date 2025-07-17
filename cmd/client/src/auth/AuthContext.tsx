@@ -112,13 +112,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
-        console.error("Auth check failed:", error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        // If auth check fails, try to refresh token
+        try {
+          await authApi.refreshToken();
+          const retryResponse = await apiClient.get<AuthResponse>('/auth/me');
+          
+          if (retryResponse.status === 200) {
+            const data = retryResponse.data;
+            const user: User = {
+              id: data.user_id,
+              email: data.user_email,
+            };
+            dispatch({
+              type: 'AUTH_SUCCESS',
+              payload: { user },
+            });
+          } else {
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
+        } catch (refreshError) {
+          console.error("Auth check and refresh failed:", refreshError);
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
       }
     };
 
     checkAuthStatus();
   }, []);
+
+  // Automatic token refresh - runs every 10 minutes when authenticated
+  useEffect(() => {
+    if (!state.isAuthenticated) return;
+
+    const refreshInterval = setInterval(async () => {
+      try {
+        await authApi.refreshToken();
+        console.log('Token refreshed successfully');
+      } catch (error) {
+        console.error('Background token refresh failed:', error);
+        // If refresh fails, the user will be logged out on their next action
+      }
+    }, 10 * 60 * 1000); // Refresh every 10 minutes (access token expires in 15 minutes)
+
+    return () => clearInterval(refreshInterval);
+  }, [state.isAuthenticated]);
 
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {

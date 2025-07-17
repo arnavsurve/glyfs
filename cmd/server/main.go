@@ -44,8 +44,7 @@ func main() {
 		Skipper: func(c echo.Context) bool {
 			return c.Path() == "/api/auth/me" || 
 				   c.Path() == "/api/auth/refresh" ||
-				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke") ||
-				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/stream")
+				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke")
 		},
 	}))
 

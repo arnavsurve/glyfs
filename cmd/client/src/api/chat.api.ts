@@ -36,31 +36,51 @@ export const chatApi = {
 
   // Alternative: Create streaming connection via fetch with streaming response
   streamChat: async (agentId: string, request: ChatStreamRequest, onEvent: (event: ChatStreamEvent) => void): Promise<void> => {
-    // Get CSRF token
-    const csrfToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('_csrf='))
-      ?.split('=')[1];
+    const makeStreamRequest = async (retryCount: number = 0): Promise<Response> => {
+      // Get CSRF token
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('_csrf='))
+        ?.split('=')[1];
 
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      const response = await fetch(`/api/agents/${agentId}/chat/stream`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(request),
+      });
+
+      // Handle authentication errors
+      if (response.status === 401 && retryCount === 0) {
+        try {
+          // Import authApi dynamically to avoid circular dependency
+          const { authApi } = await import('./auth.api');
+          await authApi.refreshToken();
+          console.log('Token refreshed, retrying stream request');
+          return makeStreamRequest(retryCount + 1);
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          throw new Error('Authentication failed - please log in again');
+        }
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      return response;
     };
 
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
-
-    const response = await fetch(`/api/agents/${agentId}/chat/stream`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
+    const response = await makeStreamRequest();
 
     if (!response.body) {
       throw new Error('No response body');

@@ -273,7 +273,7 @@ func setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	refreshCookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		Path:     "/api/auth/refresh", // Only send to refresh endpoint
+		Path:     "/", // Make available to all endpoints
 		MaxAge:   int(refreshTokenExpiry.Seconds()),
 		HttpOnly: true,
 		Secure:   os.Getenv("ENV") == "production",
@@ -298,7 +298,7 @@ func clearAuthCookies(c echo.Context) {
 	refreshCookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
-		Path:     "/api/auth/refresh",
+		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   os.Getenv("ENV") == "production",
