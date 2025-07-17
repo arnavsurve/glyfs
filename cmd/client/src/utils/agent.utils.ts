@@ -2,20 +2,20 @@ import type { Agent } from '../types/agent.types';
 
 /**
  * Transform backend agent data to frontend interface
- * Backend uses capitalized field names (ID, Name, etc.)
+ * Backend uses JSON annotations with snake_case field names
  * Frontend uses snake_case field names (id, name, etc.)
  */
 export function transformAgentData(rawAgent: any): Agent {
   return {
-    id: rawAgent.ID,
-    name: rawAgent.Name,
-    provider: rawAgent.Provider,
-    llm_model: rawAgent.LLMModel,
-    system_prompt: rawAgent.SystemPrompt,
-    max_tokens: rawAgent.MaxTokens,
-    temperature: rawAgent.Temperature,
-    created_at: rawAgent.CreatedAt,
-    updated_at: rawAgent.UpdatedAt,
+    id: rawAgent.id,
+    name: rawAgent.name,
+    provider: rawAgent.provider,
+    llm_model: rawAgent.llm_model,
+    system_prompt: rawAgent.system_prompt,
+    max_tokens: rawAgent.max_tokens,
+    temperature: rawAgent.temperature,
+    created_at: rawAgent.created_at,
+    updated_at: rawAgent.updated_at,
   };
 }
 
