@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Bot,
@@ -9,7 +9,6 @@ import {
   Check,
   Save,
   Loader2,
-  ExternalLink,
   Key,
   Globe,
   Trash2,
@@ -43,7 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
-import { agentsApi } from "../api/agents.api";
+import { agentsApi, type APIKey } from "../api/agents.api";
 import {
   PROVIDERS,
   MODELS,
@@ -58,6 +57,7 @@ import { toast } from "sonner";
 export function AgentDetailView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +70,14 @@ export function AgentDetailView() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const [editForm, setEditForm] = useState<UpdateAgentRequest>({});
+
+  // API Key management state
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
+  const [isLoadingKeys, setIsLoadingKeys] = useState(false);
+  const [isCreatingKey, setIsCreatingKey] = useState(false);
+  const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchAgent() {
@@ -213,6 +221,82 @@ export function AgentDetailView() {
     }));
   };
 
+  // Tab persistence
+  const setActiveTabWithPersistence = (tab: "overview" | "configuration" | "api") => {
+    setActiveTab(tab);
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set('tab', tab);
+      return newParams;
+    }, { replace: true });
+  };
+
+  // API Key management functions
+  const fetchAPIKeys = async () => {
+    if (!id) return;
+
+    try {
+      setIsLoadingKeys(true);
+      const response = await agentsApi.getAPIKeys(id);
+      setApiKeys(response.api_keys || []);
+    } catch (err: any) {
+      console.error("Failed to fetch API keys:", err);
+      // Only show error toast for actual network/server errors
+      if (err?.response?.status >= 500 || !err?.response) {
+        toast.error("Failed to load API keys");
+      }
+      setApiKeys([]);
+    } finally {
+      setIsLoadingKeys(false);
+    }
+  };
+
+  const handleCreateAPIKey = async () => {
+    if (!id || !newKeyName.trim()) return;
+
+    try {
+      setIsCreatingKey(true);
+      const response = await agentsApi.createAPIKey(id, newKeyName.trim());
+      setNewlyCreatedKey(response.api_key);
+      setNewKeyName("");
+      setShowCreateKeyModal(false);
+      await fetchAPIKeys();
+      toast.success("API key created successfully!");
+    } catch (err: any) {
+      console.error("Failed to create API key:", err);
+      toast.error("Failed to create API key");
+    } finally {
+      setIsCreatingKey(false);
+    }
+  };
+
+  const handleDeleteAPIKey = async (keyId: number, keyName: string) => {
+    if (!id) return;
+
+    try {
+      await agentsApi.deleteAPIKey(id, keyId.toString());
+      await fetchAPIKeys();
+      toast.success(`API key "${keyName}" revoked successfully`);
+    } catch (err: any) {
+      console.error("Failed to delete API key:", err);
+      toast.error("Failed to revoke API key");
+    }
+  };
+
+  // Sync activeTab with URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab') as "overview" | "configuration" | "api";
+    const validTab = ["overview", "configuration", "api"].includes(tab) ? tab : "overview";
+    setActiveTab(validTab);
+  }, [searchParams]);
+
+  // Fetch API keys when tab changes to API
+  useEffect(() => {
+    if (activeTab === "api" && id) {
+      fetchAPIKeys();
+    }
+  }, [activeTab, id]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -337,7 +421,7 @@ export function AgentDetailView() {
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id as any)}
+              onClick={() => setActiveTabWithPersistence(id as any)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                 activeTab === id
                   ? "bg-primary text-primary-foreground"
@@ -641,30 +725,168 @@ export function AgentDetailView() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Key className="w-5 h-5" />
-                    <span>Authentication</span>
+                    <span>API Keys</span>
                   </CardTitle>
                   <CardDescription>
-                    API keys and authentication methods
+                    Manage API keys for programmatic access to your agent
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900 rounded-lg">
-                    <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                      <strong>Note:</strong> API key management is coming soon.
-                      For now, use your session authentication.
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Create API keys to invoke your agent programmatically
                     </p>
+                    <Button
+                      onClick={() => setShowCreateKeyModal(true)}
+                      size="sm"
+                    >
+                      <Key className="w-4 h-4 mr-2" />
+                      Generate New Key
+                    </Button>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" disabled>
-                      <Key className="w-4 h-4 mr-2" />
-                      Generate API Key
-                    </Button>
-                    <Button variant="outline" disabled>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View Documentation
-                    </Button>
-                  </div>
+                  {isLoadingKeys ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : apiKeys.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Key className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>No API keys created yet</p>
+                      <p className="text-xs">Generate your first API key to get started</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {apiKeys.map((key) => (
+                        <div
+                          key={key.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="text-sm font-medium">{key.name}</h4>
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                                Active
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Created {new Date(key.created_at).toLocaleDateString()}
+                              {key.last_used && (
+                                <span className="ml-2">
+                                  • Last used {new Date(key.last_used).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to revoke "{key.name}"? This action cannot be undone and any applications using this key will stop working.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteAPIKey(key.id, key.name)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Revoke Key
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Create API Key Modal */}
+                  <AlertDialog open={showCreateKeyModal} onOpenChange={setShowCreateKeyModal}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Create New API Key</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Give your API key a descriptive name to help you identify its purpose.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="py-4">
+                        <Label htmlFor="key-name">Key Name</Label>
+                        <Input
+                          id="key-name"
+                          value={newKeyName}
+                          onChange={(e) => setNewKeyName(e.target.value)}
+                          placeholder="e.g., Production API, Mobile App"
+                          className="mt-2"
+                        />
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleCreateAPIKey}
+                          disabled={!newKeyName.trim() || isCreatingKey}
+                        >
+                          {isCreatingKey ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Key className="w-4 h-4 mr-2" />
+                              Create Key
+                            </>
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {/* Show newly created key */}
+                  {newlyCreatedKey && (
+                    <AlertDialog open={!!newlyCreatedKey} onOpenChange={() => setNewlyCreatedKey(null)}>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>API Key Created</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Save this API key now. You won't be able to see it again.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="py-4">
+                          <Label>Your API Key</Label>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Input
+                              value={newlyCreatedKey}
+                              readOnly
+                              className="font-mono text-sm"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(newlyCreatedKey, "API key")}
+                            >
+                              {copiedField === "API key" ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogAction onClick={() => setNewlyCreatedKey(null)}>
+                            I've saved my key
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </CardContent>
               </Card>
             </div>

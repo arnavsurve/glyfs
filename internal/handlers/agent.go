@@ -69,8 +69,10 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 
 	keyHash := sha256.Sum256([]byte(apiKey))
 	agentAPIKey := shared.AgentAPIKey{
-		AgentID: agent.ID,
-		Key:     hex.EncodeToString(keyHash[:]),
+		AgentID:  agent.ID,
+		Key:      hex.EncodeToString(keyHash[:]),
+		Name:     "Default Key",
+		IsActive: true,
 	}
 	if err := tx.Create(&agentAPIKey).Error; err != nil {
 		tx.Rollback()
@@ -88,7 +90,7 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 	})
 }
 
-func (h *Handler) HandleAgentInference(c echo.Context) error {
+func (h *Handler) HandleAgentInferenceInternal(c echo.Context) error {
 	agentIdStr := c.Param("agentId")
 	if agentIdStr == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "agentId path parameter is required")
@@ -116,6 +118,31 @@ func (h *Handler) HandleAgentInference(c echo.Context) error {
 	llmService := services.NewLLMService()
 
 	response, err := llmService.GenerateResponse(c.Request().Context(), &agent, &req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate response: %v", err))
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+func (h *Handler) HandleAgentInference(c echo.Context) error {
+	agent, ok := c.Get("agent").(*shared.AgentConfig)
+	if !ok {
+		return echo.NewHTTPError(http.StatusInternalServerError, "agent context not found")
+	}
+
+	var req shared.AgentInferenceRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+	}
+
+	if req.Message == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
+	}
+
+	llmService := services.NewLLMService()
+
+	response, err := llmService.GenerateResponse(c.Request().Context(), agent, &req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate response: %v", err))
 	}
@@ -309,9 +336,4 @@ func (h *Handler) HandleRestoreAgent(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Agent restored successfully",
 	})
-}
-
-func validateAPIKey(providedKey string, storedHash string) bool {
-	keyHash := sha256.Sum256([]byte(providedKey))
-	return hex.EncodeToString(keyHash[:]) == storedHash
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/arnavsurve/agentplane/internal/db"
@@ -39,7 +40,9 @@ func main() {
 		CookieHTTPOnly: false,
 		CookieSameSite: http.SameSiteStrictMode,
 		Skipper: func(c echo.Context) bool {
-			return c.Path() == "/api/auth/me" || c.Path() == "/api/auth/refresh"
+			return c.Path() == "/api/auth/me" || 
+				   c.Path() == "/api/auth/refresh" ||
+				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke")
 		},
 	}))
 
@@ -97,9 +100,25 @@ func main() {
 	protected.POST("/agents/:agentId/restore", func(c echo.Context) error {
 		return h.HandleRestoreAgent(c)
 	})
-	protected.POST("/agents/:agentId/invoke", func(c echo.Context) error {
-		return h.HandleAgentInference(c)
+	protected.POST("/agents/:agentId/chat", func(c echo.Context) error {
+		return h.HandleAgentInferenceInternal(c)
 	})
+
+	// API key management routes
+	protected.GET("/agents/:agentId/keys", func(c echo.Context) error {
+		return h.HandleGetAPIKeys(c)
+	})
+	protected.POST("/agents/:agentId/keys", func(c echo.Context) error {
+		return h.HandleCreateAPIKey(c)
+	})
+	protected.DELETE("/agents/:agentId/keys/:keyId", func(c echo.Context) error {
+		return h.HandleDeleteAPIKey(c)
+	})
+
+	// Public API key authenticated route
+	api.POST("/agents/:agentId/invoke", h.APIKeyMiddleware(func(c echo.Context) error {
+		return h.HandleAgentInference(c)
+	}))
 
 	// Catch-all route for React Router
 	if _, err := os.Stat(staticPath); err == nil {
