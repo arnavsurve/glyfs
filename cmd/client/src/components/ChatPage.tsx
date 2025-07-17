@@ -9,6 +9,12 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Send, MessageSquare, Bot } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
+import './markdown.css';
 import {
   chatApi,
   type ChatMessage,
@@ -382,9 +388,18 @@ export function ChatPage({}: ChatPageProps) {
                         : "bg-card border"
                     }`}
                   >
-                    <div className="text-sm whitespace-pre-wrap">
-                      {message.content}
-                    </div>
+                    {message.role === "assistant" ? (
+                      <div className="markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkBreaks]}
+                          rehypePlugins={[rehypeHighlight]}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                    )}
                     <div className="text-xs opacity-70 mt-1">
                       {new Date(message.created_at).toLocaleTimeString()}
                     </div>
@@ -396,8 +411,13 @@ export function ChatPage({}: ChatPageProps) {
               {isStreaming && streamingMessage && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] p-3 rounded-lg bg-card border">
-                    <div className="text-sm whitespace-pre-wrap">
-                      {streamingMessage}
+                    <div className="markdown-content">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkBreaks]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {streamingMessage}
+                      </ReactMarkdown>
                     </div>
                     <div className="text-xs opacity-70 mt-1">Typing...</div>
                   </div>
