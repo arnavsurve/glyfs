@@ -9,12 +9,12 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Send, MessageSquare, Bot } from "lucide-react";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
-import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css';
-import './markdown.css';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github-dark.css";
+import "./markdown.css";
 import {
   chatApi,
   type ChatMessage,
@@ -83,20 +83,22 @@ export function ChatPage({}: ChatPageProps) {
       const response = await agentsApi.getAgents();
       console.log("Agents loaded:", response.agents);
       setAgents(response.agents);
-      
+
       // Try to restore selected agent from localStorage
-      const savedAgentId = localStorage.getItem('selectedAgentId');
+      const savedAgentId = localStorage.getItem("selectedAgentId");
       let agentToSelect = null;
-      
+
       if (savedAgentId) {
-        agentToSelect = response.agents.find(agent => agent.id === savedAgentId);
+        agentToSelect = response.agents.find(
+          (agent) => agent.id === savedAgentId,
+        );
       }
-      
+
       // If saved agent not found or no saved agent, select first available
       if (!agentToSelect && response.agents.length > 0) {
         agentToSelect = response.agents[0];
       }
-      
+
       if (agentToSelect && !selectedAgent) {
         console.log("Setting selected agent:", agentToSelect);
         setSelectedAgent(agentToSelect);
@@ -171,7 +173,7 @@ export function ChatPage({}: ChatPageProps) {
 
     try {
       // Convert messages to context format (only include necessary fields)
-      const contextMessages = messages.map(msg => ({
+      const contextMessages = messages.map((msg) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,
@@ -291,7 +293,7 @@ export function ChatPage({}: ChatPageProps) {
                 const agent = agents.find((a) => a.id === value);
                 if (agent) {
                   setSelectedAgent(agent);
-                  localStorage.setItem('selectedAgentId', agent.id);
+                  localStorage.setItem("selectedAgentId", agent.id);
                 }
               }}
             >
@@ -375,56 +377,79 @@ export function ChatPage({}: ChatPageProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card border"
-                    }`}
-                  >
-                    {message.role === "assistant" ? (
-                      <div className="markdown-content">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkBreaks]}
-                          rehypePlugins={[rehypeHighlight]}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                    )}
-                    <div className="text-xs opacity-70 mt-1">
-                      {new Date(message.created_at).toLocaleTimeString()}
+            <div className="flex-1 overflow-y-auto p-4">
+              {messages.length === 0 && !isStreaming ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center max-w-md">
+                    <MessageSquare className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+                    <h3 className="text-xl font-semibold mb-3">
+                      Start a Conversation
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Begin chatting with{" "}
+                      <span className="font-medium">{selectedAgent.name}</span>.
+                    </p>
+                    <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                      <Bot className="w-4 h-4" />
+                      <span>Powered by {selectedAgent.llm_model}</span>
                     </div>
                   </div>
                 </div>
-              ))}
-
-              {/* Streaming Message */}
-              {isStreaming && streamingMessage && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] p-3 rounded-lg bg-card border">
-                    <div className="markdown-content">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkBreaks]}
-                        rehypePlugins={[rehypeHighlight]}
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[80%] p-3 rounded-lg ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card border"
+                        }`}
                       >
-                        {streamingMessage}
-                      </ReactMarkdown>
+                        {message.role === "assistant" ? (
+                          <div className="markdown-content">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks]}
+                              rehypePlugins={[rehypeHighlight]}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <div className="text-sm whitespace-pre-wrap">
+                            {message.content}
+                          </div>
+                        )}
+                        <div className="text-xs opacity-70 mt-1">
+                          {new Date(message.created_at).toLocaleTimeString()}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs opacity-70 mt-1">Typing...</div>
-                  </div>
+                  ))}
+
+                  {/* Streaming Message */}
+                  {isStreaming && streamingMessage && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] p-3 rounded-lg bg-card border">
+                        <div className="markdown-content">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkBreaks]}
+                            rehypePlugins={[rehypeHighlight]}
+                          >
+                            {streamingMessage}
+                          </ReactMarkdown>
+                        </div>
+                        <div className="text-xs opacity-70 mt-1">Typing...</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
                 </div>
               )}
-
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
@@ -435,7 +460,7 @@ export function ChatPage({}: ChatPageProps) {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type your message..."
+                  placeholder="Say anything"
                   disabled={isStreaming}
                   className="flex-1"
                   autoFocus
@@ -450,13 +475,23 @@ export function ChatPage({}: ChatPageProps) {
               </div>
             </div>
           </>
-        ) : (
+        ) : isLoadingAgents ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Select an Agent</h3>
-              <p className="text-muted-foreground">
-                Choose an agent to start chatting
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading agents...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md">
+              <Bot className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+              <h3 className="text-xl font-semibold mb-3">
+                No Agents Available
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Create an agent to start chatting. Visit the Agents page to get
+                started.
               </p>
             </div>
           </div>
