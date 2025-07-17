@@ -1,0 +1,377 @@
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Send, MessageSquare, Bot } from "lucide-react";
+import {
+  chatApi,
+  type ChatMessage,
+  type ChatSession,
+  type ChatStreamEvent,
+} from "../api/chat.api";
+import { agentsApi } from "../api/agents.api";
+import type { Agent } from "../types/agent.types";
+
+interface ChatPageProps {}
+
+export function ChatPage({}: ChatPageProps) {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(
+    null,
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState("");
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load agents on component mount
+  useEffect(() => {
+    loadAgents();
+  }, []);
+
+  // Load sessions when agent changes
+  useEffect(() => {
+    if (selectedAgent) {
+      loadSessions();
+    } else {
+      setSessions([]);
+      setCurrentSession(null);
+      setMessages([]);
+    }
+  }, [selectedAgent]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, streamingMessage]);
+
+  const loadAgents = async () => {
+    try {
+      setIsLoadingAgents(true);
+      console.log("Loading agents...");
+      const response = await agentsApi.getAgents();
+      console.log("Agents loaded:", response.agents);
+      setAgents(response.agents);
+      if (response.agents.length > 0 && !selectedAgent) {
+        console.log("Setting first agent as selected:", response.agents[0]);
+        setSelectedAgent(response.agents[0]);
+      }
+    } catch (error) {
+      console.error("Failed to load agents:", error);
+    } finally {
+      setIsLoadingAgents(false);
+    }
+  };
+
+  const loadSessions = async () => {
+    if (!selectedAgent || !selectedAgent.id) {
+      setSessions([]);
+      return;
+    }
+
+    try {
+      const response = await chatApi.getChatSessions(selectedAgent.id);
+      setSessions(response.sessions || []);
+    } catch (error) {
+      console.error("Failed to load sessions:", error);
+      setSessions([]);
+    }
+  };
+
+  const loadSession = async (sessionId: string) => {
+    if (!selectedAgent) return;
+
+    try {
+      const session = await chatApi.getChatSession(selectedAgent.id, sessionId);
+      setCurrentSession(session);
+      setMessages(session.messages || []);
+    } catch (error) {
+      console.error("Failed to load session:", error);
+    }
+  };
+
+  const startNewSession = () => {
+    setCurrentSession(null);
+    setMessages([]);
+  };
+
+  const sendMessage = async () => {
+    if (
+      !selectedAgent ||
+      !selectedAgent.id ||
+      !inputMessage.trim() ||
+      isStreaming
+    )
+      return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      session_id: currentSession?.id || "",
+      role: "user",
+      content: inputMessage,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
+    setIsStreaming(true);
+    setStreamingMessage("");
+
+    try {
+      const request = {
+        message: inputMessage,
+        session_id: currentSession?.id,
+        // Don't send context array if it's not needed by the backend
+        // This can cause "Invalid request format" errors if the backend doesn't expect it
+      };
+
+      await chatApi.streamChat(
+        selectedAgent.id,
+        request,
+        (event: ChatStreamEvent) => {
+          switch (event.type) {
+            case "metadata":
+              // Handle session creation or metadata
+              if (event.data?.session_id && !currentSession) {
+                setCurrentSession({
+                  id: event.data.session_id,
+                  title: "New Chat",
+                  agent_id: selectedAgent.id,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                });
+              }
+              break;
+            case "token":
+              setStreamingMessage((prev) => prev + event.content);
+              break;
+            case "done":
+              const assistantMessage: ChatMessage = {
+                id: event.data?.message_id || Date.now().toString(),
+                session_id: currentSession?.id || event.data?.session_id || "",
+                role: "assistant",
+                content: event.data?.content || streamingMessage,
+                created_at: new Date().toISOString(),
+              };
+              setMessages((prev) => [...prev, assistantMessage]);
+              setStreamingMessage("");
+              setIsStreaming(false);
+              loadSessions(); // Refresh sessions list
+              break;
+            case "error":
+              console.error("Stream error:", event.content);
+              setIsStreaming(false);
+              setStreamingMessage("");
+              break;
+          }
+        },
+      );
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      setIsStreaming(false);
+      setStreamingMessage("");
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  return (
+    <div className="flex h-full bg-background">
+      {/* Sidebar */}
+      <div className="w-80 border-r border-border flex flex-col">
+        {/* Agent Selector */}
+        <div className="p-4 border-b border-border">
+          <label className="text-sm font-medium mb-2 block">Select Agent</label>
+          {isLoadingAgents ? (
+            <div className="flex items-center justify-center h-10 bg-muted rounded-md">
+              <span className="text-sm text-muted-foreground">
+                Loading agents...
+              </span>
+            </div>
+          ) : agents.length === 0 ? (
+            <div className="flex items-center justify-center h-10 bg-muted rounded-md">
+              <span className="text-sm text-muted-foreground">
+                No agents found
+              </span>
+            </div>
+          ) : (
+            <Select
+              value={selectedAgent?.id || ""}
+              onValueChange={(value) => {
+                const agent = agents.find((a) => a.id === value);
+                if (agent) setSelectedAgent(agent);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose an agent">
+                  {selectedAgent ? (
+                    <div className="flex items-center space-x-2">
+                      <Bot className="w-4 h-4" />
+                      <span>{selectedAgent.name}</span>
+                    </div>
+                  ) : (
+                    "Choose an agent"
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {agents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    <div className="flex items-center space-x-2">
+                      <Bot className="w-4 h-4" />
+                      <span>{agent.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        {/* New Chat Button */}
+        <div className="p-4 border-b border-border">
+          <Button
+            onClick={startNewSession}
+            className="w-full"
+            variant="outline"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
+
+        {/* Sessions List */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <h3 className="text-sm font-medium mb-2">Recent Chats</h3>
+          <div className="space-y-2">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                onClick={() => loadSession(session.id)}
+                className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                  currentSession?.id === session.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card hover:bg-accent"
+                }`}
+              >
+                <div className="font-medium text-sm truncate">
+                  {session.title}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {new Date(session.updated_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {selectedAgent ? (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center space-x-2">
+                <Bot className="w-5 h-5 text-primary" />
+                <h2 className="font-semibold">{selectedAgent.name}</h2>
+                <span className="text-sm text-muted-foreground">
+                  {selectedAgent.llm_model}
+                </span>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card border"
+                    }`}
+                  >
+                    <div className="text-sm whitespace-pre-wrap">
+                      {message.content}
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {new Date(message.created_at).toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Streaming Message */}
+              {isStreaming && streamingMessage && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] p-3 rounded-lg bg-card border">
+                    <div className="text-sm whitespace-pre-wrap">
+                      {streamingMessage}
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">Typing...</div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-border">
+              <div className="flex space-x-2">
+                <Input
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  disabled={isStreaming}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={!inputMessage.trim() || isStreaming}
+                  size="icon"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Select an Agent</h3>
+              <p className="text-muted-foreground">
+                Choose an agent to start chatting
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

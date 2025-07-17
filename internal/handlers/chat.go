@@ -1,0 +1,246 @@
+package handlers
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/arnavsurve/agentplane/internal/services"
+	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
+)
+
+// HandleChatStream handles streaming chat requests
+func (h *Handler) HandleChatStream(c echo.Context) error {
+	agentIdStr := c.Param("agentId")
+	if agentIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId path parameter is required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	var req shared.ChatStreamRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+	}
+
+	if req.Message == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
+	}
+
+	// Find the agent
+	var agent shared.AgentConfig
+	if err := h.DB.Where("id = ? AND user_id = ?", agentId, userID).First(&agent).Error; err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
+	}
+
+	// Get or create chat session
+	session, err := h.getOrCreateChatSession(agentId, userID, req.SessionID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get chat session: %v", err))
+	}
+
+	// Save user message
+	userMessage := shared.ChatMessage{
+		SessionID: session.ID,
+		Role:      "user",
+		Content:   req.Message,
+		Metadata:  "{}",
+	}
+	if err := h.DB.Create(&userMessage).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save user message")
+	}
+
+	// Set headers for SSE
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+	c.Response().Header().Set("Access-Control-Allow-Headers", "Cache-Control")
+
+	// Send initial event
+	h.sendStreamEvent(c, "metadata", "", map[string]any{
+		"session_id": session.ID,
+		"message_id": userMessage.ID,
+	})
+
+	// Create assistant message to accumulate response
+	assistantMessage := shared.ChatMessage{
+		SessionID: session.ID,
+		Role:      "assistant",
+		Content:   "",
+		Metadata:  "{}",
+	}
+	if err := h.DB.Create(&assistantMessage).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create assistant message")
+	}
+
+	// Stream the response
+	llmService := services.NewLLMService()
+	fullResponse := ""
+
+	streamFunc := func(chunk string) {
+		fullResponse += chunk
+		h.sendStreamEvent(c, "token", chunk, nil)
+		c.Response().Flush()
+	}
+
+	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, streamFunc)
+	if err != nil {
+		h.sendStreamEvent(c, "error", fmt.Sprintf("Failed to generate response: %v", err), nil)
+		return nil
+	}
+
+	// Update the assistant message with the full response
+	assistantMessage.Content = fullResponse
+	h.DB.Save(&assistantMessage)
+
+	// Send completion event
+	h.sendStreamEvent(c, "done", "", map[string]any{
+		"message_id": assistantMessage.ID,
+		"content":    fullResponse,
+	})
+
+	return nil
+}
+
+// HandleGetChatSessions returns all chat sessions for an agent
+func (h *Handler) HandleGetChatSessions(c echo.Context) error {
+	agentIdStr := c.Param("agentId")
+	if agentIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId path parameter is required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	var sessions []shared.ChatSession
+	if err := h.DB.Where("agent_id = ? AND user_id = ?", agentId, userID).
+		Order("updated_at DESC").Find(&sessions).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve chat sessions")
+	}
+
+	var response []shared.ChatSessionResponse
+	for _, session := range sessions {
+		response = append(response, shared.ChatSessionResponse{
+			ID:        session.ID,
+			Title:     session.Title,
+			AgentID:   session.AgentID,
+			CreatedAt: session.CreatedAt,
+			UpdatedAt: session.UpdatedAt,
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"sessions": response,
+		"count":    len(response),
+	})
+}
+
+// HandleGetChatSession returns a specific chat session with messages
+func (h *Handler) HandleGetChatSession(c echo.Context) error {
+	agentIdStr := c.Param("agentId")
+	sessionIdStr := c.Param("sessionId")
+
+	if agentIdStr == "" || sessionIdStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "agentId and sessionId path parameters are required")
+	}
+
+	agentId, err := uuid.Parse(agentIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid agentId format")
+	}
+
+	sessionId, err := uuid.Parse(sessionIdStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid sessionId format")
+	}
+
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	var session shared.ChatSession
+	if err := h.DB.Where("id = ? AND agent_id = ? AND user_id = ?", sessionId, agentId, userID).
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at ASC")
+		}).First(&session).Error; err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Chat session not found")
+	}
+
+	response := shared.ChatSessionResponse{
+		ID:        session.ID,
+		Title:     session.Title,
+		AgentID:   session.AgentID,
+		CreatedAt: session.CreatedAt,
+		UpdatedAt: session.UpdatedAt,
+		Messages:  session.Messages,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// Helper functions
+func (h *Handler) sendStreamEvent(c echo.Context, eventType, content string, data any) {
+	event := shared.ChatStreamEvent{
+		Type:    eventType,
+		Content: content,
+		Data:    data,
+	}
+
+	jsonData, _ := json.Marshal(event)
+	fmt.Fprintf(c.Response(), "data: %s\n\n", jsonData)
+}
+
+func (h *Handler) getOrCreateChatSession(agentId uuid.UUID, userID uint, sessionID *uuid.UUID) (*shared.ChatSession, error) {
+	if sessionID != nil {
+		var session shared.ChatSession
+		if err := h.DB.Where("id = ? AND agent_id = ? AND user_id = ?", *sessionID, agentId, userID).First(&session).Error; err == nil {
+			return &session, nil
+		}
+	}
+
+	// Create new session
+	session := shared.ChatSession{
+		AgentID: agentId,
+		UserID:  userID,
+		Title:   "New Chat",
+	}
+
+	if err := h.DB.Create(&session).Error; err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func (h *Handler) generateChatTitle(firstMessage string) string {
+	title := strings.TrimSpace(firstMessage)
+	if len(title) > 50 {
+		title = title[:50] + "..."
+	}
+	if title == "" {
+		title = "New Chat"
+	}
+	return title
+}
+

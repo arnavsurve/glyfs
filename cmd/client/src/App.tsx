@@ -6,6 +6,7 @@ import { DashboardPage } from './components/DashboardPage'
 import { AgentsPage } from './components/AgentsPage'
 import { CreateAgentForm } from './components/CreateAgentForm'
 import { AgentDetailView } from './components/AgentDetailView'
+import { ChatPage } from './components/ChatPage'
 import { ThemeProvider } from './components/theme-provider'
 import { AuthProvider } from './auth/AuthContext'
 import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute'
@@ -49,6 +50,7 @@ function App() {
               <Route path="agents" element={<AgentsPage />} />
               <Route path="agents/create" element={<CreateAgentForm />} />
               <Route path="agents/:id" element={<AgentDetailView />} />
+              <Route path="chat" element={<ChatPage />} />
             </Route>
             
             {/* Catch all route */}

@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Bot, 
+  MessageSquare,
   LogOut, 
   Menu, 
   X 
@@ -29,6 +30,12 @@ const sidebarItems: SidebarItem[] = [
     label: 'Agents',
     icon: Bot,
     path: '/agents',
+  },
+  {
+    id: 'chat',
+    label: 'Chat',
+    icon: MessageSquare,
+    path: '/chat',
   },
 ];
 
