@@ -260,15 +260,6 @@ func (h *Handler) HandleGetAgent(c echo.Context) error {
 	})
 }
 
-func generateAPIKey() (string, error) {
-	randomBytes := make([]byte, 32)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		return "", fmt.Errorf("generating bytes for agent API key: %w", err)
-	}
-	return "apk_" + base64.URLEncoding.EncodeToString(randomBytes), nil
-}
-
 func (h *Handler) HandleDeleteAgent(c echo.Context) error {
 	agentIdStr := c.Param("agentId")
 	if agentIdStr == "" {
@@ -336,4 +327,13 @@ func (h *Handler) HandleRestoreAgent(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Agent restored successfully",
 	})
+}
+
+func generateAPIKey() (string, error) {
+	randomBytes := make([]byte, 32)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", fmt.Errorf("generating bytes for agent API key: %w", err)
+	}
+	return "apk_" + base64.URLEncoding.EncodeToString(randomBytes), nil
 }

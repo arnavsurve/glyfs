@@ -8,44 +8,91 @@ import (
 )
 
 type AgentConfig struct {
-	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	UserID       uint           `gorm:"not null;uniqueIndex:idx_user_agent_name"`
-	Name         string         `gorm:"type:text;not null;uniqueIndex:idx_user_agent_name"`
-	Provider     string         `gorm:"type:text;not null"`
-	LLMModel     string         `gorm:"type:text;not null"`
-	SystemPrompt string         `gorm:"type:text"`
-	MaxTokens    int            `gorm:"type:int"`
-	Temperature  float64        `gorm:"type:float"`
+	ID           uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	UserID       uint           `gorm:"not null;uniqueIndex:idx_user_agent_name" json:"user_id"`
+	Name         string         `gorm:"type:text;not null;uniqueIndex:idx_user_agent_name" json:"name"`
+	Provider     string         `gorm:"type:text;not null" json:"provider"`
+	LLMModel     string         `gorm:"type:text;not null" json:"llm_model"`
+	SystemPrompt string         `gorm:"type:text" json:"system_prompt"`
+	MaxTokens    int            `gorm:"type:int" json:"max_tokens"`
+	Temperature  float64        `gorm:"type:float" json:"temperature"`
 }
 
 type User struct {
 	gorm.Model
-	Email        string `gorm:"type:text;not null;unique"`
-	PasswordHash []byte `gorm:"type:bytea;not null"`
+	Email        string `gorm:"type:text;not null;unique" json:"email"`
+	PasswordHash []byte `gorm:"type:bytea;not null" json:"-"` // Never serialize password hash
 }
 
 type AgentAPIKey struct {
 	gorm.Model
-	AgentID  uuid.UUID `gorm:"type:uuid;not null;index"`
-	Key      string    `gorm:"type:text;not null;unique;index"`
-	Name     string    `gorm:"type:text;not null"`
-	LastUsed *time.Time
-	IsActive bool `gorm:"default:true"`
+	AgentID  uuid.UUID  `gorm:"type:uuid;not null;index" json:"agent_id"`
+	Key      string     `gorm:"type:text;not null;unique;index" json:"-"` // Never serialize actual key
+	Name     string     `gorm:"type:text;not null" json:"name"`
+	LastUsed *time.Time `json:"last_used,omitempty"`
+	IsActive bool       `gorm:"default:true" json:"is_active"`
 }
 
 type RefreshToken struct {
 	gorm.Model
-	UserID    uint      `gorm:"not null;index"`
-	Token     string    `gorm:"type:text;not null;unique;index"`
-	ExpiresAt time.Time `gorm:"not null"`
-	IsRevoked bool      `gorm:"default:false"`
+	UserID    uint      `gorm:"not null;index" json:"user_id"`
+	Token     string    `gorm:"type:text;not null;unique;index" json:"-"` // Never serialize token
+	ExpiresAt time.Time `gorm:"not null" json:"expires_at"`
+	IsRevoked bool      `gorm:"default:false" json:"is_revoked"`
 }
 
 type RevokedToken struct {
 	gorm.Model
-	Signature string    `gorm:"type:text;not null;unique;index"`
-	ExpiresAt time.Time `gorm:"not null"`
+	Signature string    `gorm:"type:text;not null;unique;index" json:"signature"`
+	ExpiresAt time.Time `gorm:"not null" json:"expires_at"`
+}
+
+type ChatSession struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	AgentID   uuid.UUID `gorm:"type:uuid;not null;index" json:"agent_id"`
+	UserID    uint      `gorm:"not null;index" json:"user_id"`
+	Title     string    `gorm:"type:text;not null" json:"title"`
+
+	// Relationships
+	Agent    AgentConfig   `gorm:"foreignKey:AgentID;references:ID" json:"agent"`
+	Messages []ChatMessage `gorm:"foreignKey:SessionID;references:ID" json:"messages,omitempty"`
+}
+
+type ChatMessage struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	SessionID uuid.UUID `gorm:"type:uuid;not null;index" json:"session_id"`
+	Role      string    `gorm:"type:text;not null" json:"role"` // "user" or "assistant"
+	Content   string    `gorm:"type:text;not null" json:"content"`
+	Metadata  string    `gorm:"type:jsonb" json:"metadata,omitempty"`
+
+	// Relationships
+	Session ChatSession `gorm:"foreignKey:SessionID;references:ID" json:"session"`
+}
+
+// Chat API Types
+type ChatStreamRequest struct {
+	Message   string        `json:"message"`
+	SessionID *uuid.UUID    `json:"session_id,omitempty"`
+	Context   []ChatMessage `json:"context,omitempty"`
+}
+
+type ChatStreamEvent struct {
+	Type    string `json:"type"`    // "token", "done", "error", "metadata"
+	Content string `json:"content"` // Token content or error message
+	Data    any    `json:"data"`    // Additional metadata
+}
+
+type ChatSessionResponse struct {
+	ID        uuid.UUID     `json:"id"`
+	Title     string        `json:"title"`
+	AgentID   uuid.UUID     `json:"agent_id"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+	Messages  []ChatMessage `json:"messages,omitempty"`
 }

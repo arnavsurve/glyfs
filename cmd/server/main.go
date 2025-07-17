@@ -44,7 +44,8 @@ func main() {
 		Skipper: func(c echo.Context) bool {
 			return c.Path() == "/api/auth/me" || 
 				   c.Path() == "/api/auth/refresh" ||
-				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke")
+				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke") ||
+				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/stream")
 		},
 	}))
 
@@ -104,6 +105,15 @@ func main() {
 	})
 	protected.POST("/agents/:agentId/chat", func(c echo.Context) error {
 		return h.HandleAgentInferenceInternal(c)
+	})
+	protected.POST("/agents/:agentId/chat/stream", func(c echo.Context) error {
+		return h.HandleChatStream(c)
+	})
+	protected.GET("/agents/:agentId/chat/sessions", func(c echo.Context) error {
+		return h.HandleGetChatSessions(c)
+	})
+	protected.GET("/agents/:agentId/chat/sessions/:sessionId", func(c echo.Context) error {
+		return h.HandleGetChatSession(c)
 	})
 
 	// API key management routes
