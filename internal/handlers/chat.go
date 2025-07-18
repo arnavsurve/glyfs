@@ -160,7 +160,13 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		c.Response().Flush()
 	}
 
-	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, streamFunc, toolEventFunc)
+	reasoningEventFunc := func(event *shared.ReasoningEvent) {
+		// Send reasoning event for real-time display
+		h.sendStreamEvent(c, "reasoning_event", "", event)
+		c.Response().Flush()
+	}
+
+	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, streamFunc, toolEventFunc, reasoningEventFunc)
 	if err != nil {
 		h.sendStreamEvent(c, "error", fmt.Sprintf("Failed to generate response: %v", err), nil)
 		return nil
