@@ -56,17 +56,18 @@ export function ToolCallDisplay({ toolCalls }: ToolCallDisplayProps) {
   return (
     <div className="my-2 space-y-2">
       {toolCallsArray.map((toolCall) => {
-        const isExpanded = expandedCalls[toolCall.call_id];
+        const callId = toolCall.call_id!; // We know it exists because we filtered above
+        const isExpanded = expandedCalls[callId];
         const hasDetails = toolCall.arguments || toolCall.result || toolCall.error;
         
         return (
           <div
-            key={toolCall.call_id}
+            key={callId}
             className="border border-border rounded-lg bg-muted/20 overflow-hidden"
           >
             <div
               className={`flex items-center justify-between p-3 ${hasDetails ? 'cursor-pointer hover:bg-muted/40' : ''}`}
-              onClick={hasDetails ? () => toggleExpanded(toolCall.call_id) : undefined}
+              onClick={hasDetails ? () => toggleExpanded(callId) : undefined}
             >
               <div className="flex items-center space-x-3">
                 {getStatusIcon(toolCall)}

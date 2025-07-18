@@ -342,10 +342,10 @@ export function ChatPage({}: ChatPageProps) {
                 if (toolEvent.type === "tool_batch_complete") {
                   // Clear tool calls from display after batch completes
                   setCurrentToolCalls({});
-                } else {
+                } else if (toolEvent.call_id) {
                   setCurrentToolCalls((prev) => ({
                     ...prev,
-                    [toolEvent.call_id]: toolEvent,
+                    [toolEvent.call_id!]: toolEvent,
                   }));
                 }
               }
