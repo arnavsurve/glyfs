@@ -21,10 +21,11 @@ import {
   type ChatSession,
   type ChatStreamEvent,
 } from "../api/chat.api";
-import type { ToolCallEvent } from "../types/chat.types";
+import type { ToolCallEvent, ReasoningEvent } from "../types/chat.types";
 import { agentsApi } from "../api/agents.api";
 import type { Agent } from "../types/agent.types";
 import { ToolCallDisplay } from "./ToolCallDisplay";
+import { ReasoningDisplay } from "./ReasoningDisplay";
 
 interface ChatPageProps {}
 
@@ -120,6 +121,9 @@ export function ChatPage({}: ChatPageProps) {
   const [currentToolCalls, setCurrentToolCalls] = useState<
     Record<string, ToolCallEvent>
   >({});
+  const [currentReasoningEvents, setCurrentReasoningEvents] = useState<
+    ReasoningEvent[]
+  >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -142,7 +146,7 @@ export function ChatPage({}: ChatPageProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage, currentToolCalls]);
+  }, [messages, streamingMessage, currentToolCalls, currentReasoningEvents]);
 
   // Auto-focus input when component mounts or agent changes
   useEffect(() => {
@@ -263,6 +267,7 @@ export function ChatPage({}: ChatPageProps) {
     setInputMessage("");
     setIsStreaming(true);
     setStreamingMessage("");
+    setCurrentReasoningEvents([]);
 
     // Re-focus input after a brief delay to ensure it's ready
     setTimeout(() => {
@@ -317,6 +322,7 @@ export function ChatPage({}: ChatPageProps) {
               setMessages((prev) => [...prev, assistantMessage]);
               setStreamingMessage("");
               setCurrentToolCalls({});
+              setCurrentReasoningEvents([]);
               setIsStreaming(false);
               loadSessions(); // Refresh sessions list
               // Re-focus input after response is complete
@@ -339,6 +345,12 @@ export function ChatPage({}: ChatPageProps) {
                 }));
               }
               break;
+            case "reasoning_event":
+              if (event.data) {
+                const reasoningEvent = event.data as ReasoningEvent;
+                setCurrentReasoningEvents((prev) => [...prev, reasoningEvent]);
+              }
+              break;
             case "error":
               console.error("Stream error:", event.content);
 
@@ -355,6 +367,7 @@ export function ChatPage({}: ChatPageProps) {
               setIsStreaming(false);
               setStreamingMessage("");
               setCurrentToolCalls({});
+              setCurrentReasoningEvents([]);
               // Re-focus input even on error
               setTimeout(() => {
                 if (inputRef.current) {
@@ -381,6 +394,7 @@ export function ChatPage({}: ChatPageProps) {
       setIsStreaming(false);
       setStreamingMessage("");
       setCurrentToolCalls({});
+      setCurrentReasoningEvents([]);
       // Re-focus input even on error
       setTimeout(() => {
         if (inputRef.current) {
@@ -584,12 +598,14 @@ export function ChatPage({}: ChatPageProps) {
           <>
             {/* Chat Header */}
             <div className="p-4 border-b border-border">
-              <div className="flex items-center space-x-2">
-                <Bot className="w-5 h-5 text-primary" />
-                <h2 className="font-semibold">{selectedAgent.name}</h2>
-                <span className="text-sm text-muted-foreground">
-                  {selectedAgent.llm_model}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Bot className="w-5 h-5 text-primary" />
+                  <h2 className="font-semibold">{selectedAgent.name}</h2>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedAgent.llm_model}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -652,6 +668,41 @@ export function ChatPage({}: ChatPageProps) {
                       </div>
                     </div>
                   ))}
+
+                  {/* Thinking Indicator */}
+                  {isStreaming &&
+                    currentReasoningEvents.length === 0 &&
+                    Object.keys(currentToolCalls).length === 0 &&
+                    !streamingMessage && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[80%] p-3 rounded-lg bg-card border">
+                          <div className="flex items-center space-x-2">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.2s" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.4s" }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Reasoning Display */}
+                  {isStreaming && currentReasoningEvents.length > 0 && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%]">
+                        <ReasoningDisplay
+                          reasoningEvents={currentReasoningEvents}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Tool Calls Display */}
                   {isStreaming && Object.keys(currentToolCalls).length > 0 && (
