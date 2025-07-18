@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Send, MessageSquare, Bot, Trash2 } from "lucide-react";
+import { Send, MessageSquare, Bot, Trash2, Clock, CheckCircle, XCircle, Wrench, ChevronDown, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -42,60 +42,99 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
     // Invalid JSON, ignore
   }
 
-  const getIcon = () => {
-    if (message.content.includes("🔧")) return "🔧";
-    if (message.content.includes("✅")) return "✅";
-    if (message.content.includes("❌")) return "❌";
-    return "🔧";
+  if (!toolEvent) return null;
+
+  const getStatusIcon = () => {
+    switch (toolEvent.type) {
+      case "tool_start":
+        return <Clock className="w-4 h-4 text-blue-500 animate-pulse" />;
+      case "tool_result":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "tool_error":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <Wrench className="w-4 h-4 text-gray-500" />;
+    }
   };
 
-  const hasDetails =
-    toolEvent && (toolEvent.arguments || toolEvent.result || toolEvent.error);
+  const getStatusText = () => {
+    switch (toolEvent.type) {
+      case "tool_start":
+        return "Running...";
+      case "tool_result":
+        return "Completed";
+      case "tool_error":
+        return "Failed";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const formatArguments = (args?: Record<string, any>) => {
+    if (!args || Object.keys(args).length === 0) return "No arguments";
+    return JSON.stringify(args, null, 2);
+  };
+
+  const hasDetails = toolEvent.arguments || toolEvent.result || toolEvent.error;
 
   return (
-    <div className="text-sm">
+    <div className="border border-border rounded-lg bg-muted/20 overflow-hidden">
       <div
-        className={`flex items-center space-x-2 ${hasDetails ? "cursor-pointer" : ""}`}
-        onClick={() => hasDetails && setIsExpanded(!isExpanded)}
+        className={`flex items-center justify-between p-3 ${hasDetails ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+        onClick={hasDetails ? () => setIsExpanded(!isExpanded) : undefined}
       >
-        <span className="text-base">{getIcon()}</span>
-        <span className="font-medium">{message.content}</span>
+        <div className="flex items-center space-x-3">
+          {getStatusIcon()}
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-medium text-sm">{toolEvent.tool_name}</span>
+              <span className="text-xs text-muted-foreground">
+                {getStatusText()}
+              </span>
+              {toolEvent.duration_ms && (
+                <span className="text-xs text-muted-foreground">
+                  ({toolEvent.duration_ms}ms)
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        
         {hasDetails && (
-          <span className="text-xs">{isExpanded ? "▼" : "▶"}</span>
-        )}
-        {toolEvent?.duration_ms && (
-          <span className="text-xs opacity-70">
-            ({toolEvent.duration_ms}ms)
-          </span>
+          <div className="flex items-center space-x-2">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
         )}
       </div>
-
-      {isExpanded && hasDetails && toolEvent && (
-        <div className="mt-2 space-y-2 pl-6 border-l-2 border-current opacity-75">
+      
+      {isExpanded && hasDetails && (
+        <div className="border-t border-border bg-muted/10 p-3 space-y-3">
           {toolEvent.arguments && (
             <div>
-              <div className="text-xs font-medium opacity-70">Arguments:</div>
-              <pre className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded mt-1 overflow-x-auto">
-                {JSON.stringify(toolEvent.arguments, null, 2)}
+              <h4 className="text-xs font-medium text-muted-foreground mb-1">Arguments</h4>
+              <pre className="text-xs bg-background p-2 rounded border overflow-x-auto">
+                {formatArguments(toolEvent.arguments)}
               </pre>
             </div>
           )}
-
+          
           {toolEvent.result && (
             <div>
-              <div className="text-xs font-medium opacity-70">Result:</div>
-              <div className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded mt-1 whitespace-pre-wrap">
+              <h4 className="text-xs font-medium text-muted-foreground mb-1">Result</h4>
+              <div className="text-xs bg-background p-2 rounded border">
                 {toolEvent.result}
               </div>
             </div>
           )}
-
+          
           {toolEvent.error && (
             <div>
-              <div className="text-xs font-medium text-red-600 dark:text-red-400">
-                Error:
-              </div>
-              <div className="text-xs bg-red-100 dark:bg-red-900/20 p-2 rounded mt-1 text-red-800 dark:text-red-200">
+              <h4 className="text-xs font-medium text-red-600 mb-1">Error</h4>
+              <div className="text-xs bg-red-50 border border-red-200 p-2 rounded text-red-700">
                 {toolEvent.error}
               </div>
             </div>
@@ -340,8 +379,26 @@ export function ChatPage({}: ChatPageProps) {
               if (event.data) {
                 const toolEvent = event.data as ToolCallEvent;
                 if (toolEvent.type === "tool_batch_complete") {
-                  // Mark all current tool calls as batch complete (for thinking indicator logic)
+                  // Add completed tool calls to chat history and mark as batch complete
                   setCurrentToolCalls((prev) => {
+                    const completedCalls = Object.values(prev);
+                    
+                    // Add each completed tool call to messages
+                    completedCalls.forEach((toolCall) => {
+                      if (toolCall.call_id && (toolCall.type === "tool_result" || toolCall.type === "tool_error")) {
+                        const toolMessage: ChatMessage = {
+                          id: `tool_${toolCall.call_id}`,
+                          session_id: currentSession?.id || "",
+                          role: "tool",
+                          content: `🔧 ${toolCall.tool_name}`,
+                          metadata: JSON.stringify(toolCall),
+                          created_at: new Date().toISOString(),
+                        };
+                        setMessages((prevMessages) => [...prevMessages, toolMessage]);
+                      }
+                    });
+
+                    // Mark all as batch complete for thinking indicator
                     const updated = { ...prev };
                     Object.keys(updated).forEach(key => {
                       updated[key] = { ...updated[key], batch_complete: true };
@@ -647,14 +704,14 @@ export function ChatPage({}: ChatPageProps) {
                       className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[80%] p-3 rounded-lg ${
+                        className={`max-w-[80%] ${
                           message.role === "user"
-                            ? "bg-primary text-primary-foreground"
+                            ? "p-3 rounded-lg bg-primary text-primary-foreground"
                             : message.role === "tool"
-                              ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200"
+                              ? "" // No padding/styling for tool messages - they have their own
                               : message.content.startsWith("⚠️ **Error**:")
-                                ? "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
-                                : "bg-card border"
+                                ? "p-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+                                : "p-3 rounded-lg bg-card border"
                         }`}
                       >
                         {message.role === "tool" ? (
@@ -679,6 +736,15 @@ export function ChatPage({}: ChatPageProps) {
                       </div>
                     </div>
                   ))}
+
+                  {/* Tool Calls Display */}
+                  {isStreaming && Object.keys(currentToolCalls).length > 0 && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%]">
+                        <ToolCallDisplay toolCalls={currentToolCalls} />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Thinking Indicator */}
                   {isStreaming &&
@@ -712,15 +778,6 @@ export function ChatPage({}: ChatPageProps) {
                         <ReasoningDisplay
                           reasoningEvents={currentReasoningEvents}
                         />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tool Calls Display */}
-                  {isStreaming && Object.keys(currentToolCalls).length > 0 && (
-                    <div className="flex justify-start">
-                      <div className="max-w-[80%]">
-                        <ToolCallDisplay toolCalls={currentToolCalls} />
                       </div>
                     </div>
                   )}
