@@ -340,6 +340,21 @@ export function ChatPage({}: ChatPageProps) {
               if (event.data) {
                 const toolEvent = event.data as ToolCallEvent;
                 if (toolEvent.type === "tool_batch_complete") {
+                  // Add completed tool calls to chat history
+                  const completedToolCalls = Object.values(currentToolCalls);
+                  if (completedToolCalls.length > 0) {
+                    completedToolCalls.forEach((toolCall) => {
+                      const toolMessage: ChatMessage = {
+                        id: `tool_${toolCall.call_id}_${Date.now()}`,
+                        session_id: currentSession?.id || "",
+                        role: "tool",
+                        content: `${toolCall.type === "tool_result" ? "✅" : "❌"} ${toolCall.tool_name}`,
+                        metadata: JSON.stringify(toolCall),
+                        created_at: new Date().toISOString(),
+                      };
+                      setMessages((prev) => [...prev, toolMessage]);
+                    });
+                  }
                   // Clear tool calls from display after batch completes
                   setCurrentToolCalls({});
                 } else if (toolEvent.call_id) {
