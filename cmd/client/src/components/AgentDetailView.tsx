@@ -730,7 +730,7 @@ export function AgentDetailView() {
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
-    "message": "Hello, how can you help me today?"
+    "message": "Hello, agent!"
   }'`}
                     </pre>
                   </div>

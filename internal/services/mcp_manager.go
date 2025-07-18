@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,7 +65,6 @@ func (m *MCPConnectionManager) GetConnection(ctx context.Context, serverID uuid.
 		return conn, nil
 	}
 
-	// Need to create new connection
 	return m.createConnection(ctx, serverID)
 }
 
@@ -71,24 +72,38 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// Double-check pattern
 	if conn, exists := m.connections[serverID]; exists && conn.Status == StatusConnected {
 		return conn, nil
 	}
 
-	// Load server configuration
 	var server shared.MCPServer
 	if err := m.db.First(&server, "id = ?", serverID).Error; err != nil {
 		return nil, fmt.Errorf("server not found: %w", err)
 	}
 
-	// Parse server configuration
+	decryptedServer := server
+
+	// Check if data looks encrypted (long base64-like string without protocol)
+	needsDecryption := server.EncryptedURL || server.SensitiveHeaders != "" ||
+		(len(server.ServerURL) > 100 && !strings.HasPrefix(server.ServerURL, "http"))
+
+	if needsDecryption {
+		encryptionService, err := NewEncryptionService()
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize encryption service: %w", err)
+		}
+
+		decryptedServer, err = m.decryptServerData(server, encryptionService)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt server data: %w", err)
+		}
+	}
+
 	var config shared.MCPServerConfig
-	if err := json.Unmarshal([]byte(server.Config), &config); err != nil {
+	if err := json.Unmarshal([]byte(decryptedServer.Config), &config); err != nil {
 		return nil, fmt.Errorf("invalid server config: %w", err)
 	}
 
-	// Create MCP client based on type (HTTP/SSE only)
 	var mcpClient *client.Client
 	var err error
 
@@ -131,7 +146,6 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 
 	m.connections[serverID] = connection
 
-	// Update server status in database
 	m.updateServerStatus(serverID, "active", nil)
 
 	return connection, nil
@@ -149,9 +163,9 @@ func (m *MCPConnectionManager) createHTTPClient(config shared.MCPServerConfig) (
 
 	// Prepare options
 	var options []transport.StreamableHTTPCOption
-	
+
 	// Add headers if provided
-	if config.Headers != nil && len(config.Headers) > 0 {
+	if len(config.Headers) > 0 {
 		options = append(options, transport.WithHTTPHeaders(config.Headers))
 	}
 
@@ -170,9 +184,9 @@ func (m *MCPConnectionManager) createSSEClient(config shared.MCPServerConfig) (*
 
 	// Prepare options
 	var options []transport.ClientOption
-	
+
 	// Add headers if provided
-	if config.Headers != nil && len(config.Headers) > 0 {
+	if len(config.Headers) > 0 {
 		options = append(options, transport.WithHeaders(config.Headers))
 	}
 
@@ -268,15 +282,13 @@ func (m *MCPConnectionManager) checkConnections() {
 
 func (m *MCPConnectionManager) updateServerStatus(serverID uuid.UUID, status string, err error) {
 	now := time.Now()
-	update := map[string]interface{}{
+	update := map[string]any{
 		"status":    status,
 		"last_seen": now,
 	}
 
-	// Could add error logging here if needed
 	if err != nil {
-		// Log error for debugging
-		fmt.Printf("MCP Server %s error: %v\n", serverID, err)
+		log.Printf("MCP Server %s error: %v\n", serverID, err)
 	}
 
 	m.db.Model(&shared.MCPServer{}).Where("id = ?", serverID).Updates(update)
@@ -337,3 +349,68 @@ func (st *ServerTool) Call(ctx context.Context, input string) (string, error) {
 	return st.Tool.Call(ctx, input)
 }
 
+// decryptServerData decrypts sensitive fields in an MCP server
+func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryptionService *EncryptionService) (shared.MCPServer, error) {
+	decryptedServer := server
+
+	// Decrypt URL if it's encrypted or looks like encrypted data
+	var decryptedURL string
+	urlDecrypted := false
+	if server.EncryptedURL || (len(server.ServerURL) > 100 && !strings.HasPrefix(server.ServerURL, "http")) {
+		var err error
+		decryptedURL, err = encryptionService.Decrypt(server.ServerURL)
+		if err != nil {
+			return server, fmt.Errorf("failed to decrypt URL: %w", err)
+		}
+		decryptedServer.ServerURL = decryptedURL
+		urlDecrypted = true
+	}
+
+	// Parse config to update with decrypted data
+	var config shared.MCPServerConfig
+	if err := json.Unmarshal([]byte(server.Config), &config); err != nil {
+		return server, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	// Update URL in config if it was decrypted
+	if urlDecrypted {
+		config.URL = decryptedURL
+	}
+
+	// Decrypt sensitive headers in config if they exist
+	if server.SensitiveHeaders != "" {
+		var sensitiveHeaders []string
+		if err := json.Unmarshal([]byte(server.SensitiveHeaders), &sensitiveHeaders); err != nil {
+			return server, fmt.Errorf("failed to parse sensitive headers: %w", err)
+		}
+
+		if len(sensitiveHeaders) > 0 && config.Headers != nil {
+			configHeaders := make(map[string]interface{})
+			for k, v := range config.Headers {
+				configHeaders[k] = v
+			}
+
+			decryptedHeaders, err := encryptionService.DecryptSensitiveFields(configHeaders, sensitiveHeaders)
+			if err != nil {
+				return server, fmt.Errorf("failed to decrypt headers: %w", err)
+			}
+
+			// Convert back to string map
+			config.Headers = make(map[string]string)
+			for k, v := range decryptedHeaders {
+				if str, ok := v.(string); ok {
+					config.Headers[k] = str
+				}
+			}
+		}
+	}
+
+	// Marshal updated config back to JSON
+	configJSON, err := json.Marshal(config)
+	if err != nil {
+		return server, fmt.Errorf("failed to marshal config: %w", err)
+	}
+	decryptedServer.Config = string(configJSON)
+
+	return decryptedServer, nil
+}
