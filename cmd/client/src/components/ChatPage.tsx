@@ -379,26 +379,8 @@ export function ChatPage({}: ChatPageProps) {
               if (event.data) {
                 const toolEvent = event.data as ToolCallEvent;
                 if (toolEvent.type === "tool_batch_complete") {
-                  // Add completed tool calls to chat history and mark as batch complete
+                  // Mark all current tool calls as batch complete (for thinking indicator logic)
                   setCurrentToolCalls((prev) => {
-                    const completedCalls = Object.values(prev);
-                    
-                    // Add each completed tool call to messages
-                    completedCalls.forEach((toolCall) => {
-                      if (toolCall.call_id && (toolCall.type === "tool_result" || toolCall.type === "tool_error")) {
-                        const toolMessage: ChatMessage = {
-                          id: `tool_${toolCall.call_id}`,
-                          session_id: currentSession?.id || "",
-                          role: "tool",
-                          content: `🔧 ${toolCall.tool_name}`,
-                          metadata: JSON.stringify(toolCall),
-                          created_at: new Date().toISOString(),
-                        };
-                        setMessages((prevMessages) => [...prevMessages, toolMessage]);
-                      }
-                    });
-
-                    // Mark all as batch complete for thinking indicator
                     const updated = { ...prev };
                     Object.keys(updated).forEach(key => {
                       updated[key] = { ...updated[key], batch_complete: true };
