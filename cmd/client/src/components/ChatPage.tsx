@@ -265,6 +265,17 @@ export function ChatPage({}: ChatPageProps) {
               break;
             case "error":
               console.error("Stream error:", event.content);
+              
+              // Add error message to chat
+              const errorMessage: ChatMessage = {
+                id: Date.now().toString(),
+                session_id: currentSession?.id || "",
+                role: "assistant",
+                content: `⚠️ **Error**: ${formatErrorMessage(event.content)}`,
+                created_at: new Date().toISOString(),
+              };
+              setMessages((prev) => [...prev, errorMessage]);
+              
               setIsStreaming(false);
               setStreamingMessage("");
               setCurrentToolCalls({});
@@ -280,6 +291,17 @@ export function ChatPage({}: ChatPageProps) {
       );
     } catch (error) {
       console.error("Failed to send message:", error);
+      
+      // Add error message to chat
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        session_id: currentSession?.id || "",
+        role: "assistant",
+        content: `⚠️ **Error**: ${formatErrorMessage(error instanceof Error ? error.message : String(error))}`,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      
       setIsStreaming(false);
       setStreamingMessage("");
       setCurrentToolCalls({});
@@ -294,6 +316,58 @@ export function ChatPage({}: ChatPageProps) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const formatErrorMessage = (errorText: string): string => {
+    // Handle rate limiting errors
+    if (errorText.includes("Rate limit reached") || errorText.includes("429")) {
+      if (errorText.includes("gpt-4")) {
+        return "OpenAI API rate limit reached. Please wait a few seconds and try again, or consider switching to a different model.";
+      } else if (errorText.includes("claude")) {
+        return "Anthropic API rate limit reached. Please wait a few seconds and try again.";
+      }
+      return "API rate limit reached. Please wait a moment and try again.";
+    }
+    
+    // Handle authentication errors
+    if (errorText.includes("401") || errorText.includes("authentication") || errorText.includes("unauthorized")) {
+      return "Authentication failed. Please check your API keys in the agent configuration.";
+    }
+    
+    // Handle quota/billing errors
+    if (errorText.includes("quota") || errorText.includes("billing") || errorText.includes("insufficient_quota")) {
+      return "API quota exceeded or billing issue. Please check your account status and billing information.";
+    }
+    
+    // Handle context length errors
+    if (errorText.includes("context_length") || errorText.includes("maximum context length") || errorText.includes("too long")) {
+      return "Message too long for the model's context window. Try shortening your message or starting a new conversation.";
+    }
+    
+    // Handle model availability errors
+    if (errorText.includes("model") && (errorText.includes("not found") || errorText.includes("unavailable"))) {
+      return "The selected model is not available. Please try a different model in the agent configuration.";
+    }
+    
+    // Handle network/connection errors
+    if (errorText.includes("connection") || errorText.includes("network") || errorText.includes("timeout")) {
+      return "Connection error. Please check your internet connection and try again.";
+    }
+    
+    // Handle MCP/tool errors
+    if (errorText.includes("MCP") || errorText.includes("tool")) {
+      return "Tool execution error. Some external tools may be temporarily unavailable.";
+    }
+    
+    // Default fallback - clean up technical details but keep essential info
+    if (errorText.length > 200) {
+      // Extract key error information if the message is very long
+      const lines = errorText.split('\n');
+      const firstLine = lines[0] || errorText;
+      return `${firstLine.substring(0, 150)}...`;
+    }
+    
+    return errorText;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -454,6 +528,8 @@ export function ChatPage({}: ChatPageProps) {
                         className={`max-w-[80%] p-3 rounded-lg ${
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
+                            : message.content.startsWith("⚠️ **Error**:")
+                            ? "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
                             : "bg-card border"
                         }`}
                       >

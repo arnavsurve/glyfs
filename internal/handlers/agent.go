@@ -115,7 +115,7 @@ func (h *Handler) HandleAgentInferenceInternal(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
 	}
 
-	llmService := services.NewLLMService()
+	llmService := services.NewLLMService(h.MCPManager)
 
 	response, err := llmService.GenerateResponse(c.Request().Context(), &agent, &req)
 	if err != nil {
@@ -140,7 +140,7 @@ func (h *Handler) HandleAgentInference(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
 	}
 
-	llmService := services.NewLLMService()
+	llmService := services.NewLLMService(h.MCPManager)
 
 	response, err := llmService.GenerateResponse(c.Request().Context(), agent, &req)
 	if err != nil {

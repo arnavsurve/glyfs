@@ -10,6 +10,7 @@ import (
 
 	"github.com/arnavsurve/agentplane/internal/db"
 	"github.com/arnavsurve/agentplane/internal/handlers"
+	"github.com/arnavsurve/agentplane/internal/services"
 	"github.com/arnavsurve/agentplane/internal/shared"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -49,7 +50,14 @@ func main() {
 	}))
 
 	db := db.SetupDB()
-	h := handlers.Handler{DB: db}
+	
+	// Initialize MCP Connection Manager
+	mcpManager := services.NewMCPConnectionManager(db)
+	
+	h := handlers.Handler{
+		DB:         db,
+		MCPManager: mcpManager,
+	}
 
 	// Serve static files from React build
 	staticPath := filepath.Join("cmd", "client", "dist")
@@ -128,6 +136,10 @@ func main() {
 	protected.DELETE("/agents/:agentId/keys/:keyId", func(c echo.Context) error {
 		return h.HandleDeleteAPIKey(c)
 	})
+
+	// MCP Server management routes
+	mcpHandler := handlers.NewMCPHandler(db, mcpManager)
+	mcpHandler.RegisterMCPRoutes(protected)
 
 	// Public API key authenticated route
 	api.POST("/agents/:agentId/invoke", h.APIKeyMiddleware(func(c echo.Context) error {

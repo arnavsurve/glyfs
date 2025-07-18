@@ -112,7 +112,7 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	}
 
 	// Stream the response
-	llmService := services.NewLLMService()
+	llmService := services.NewLLMService(h.MCPManager)
 	fullResponse := ""
 
 	streamFunc := func(chunk string) {
@@ -121,7 +121,12 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		c.Response().Flush()
 	}
 
-	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, streamFunc)
+	toolEventFunc := func(event *shared.ToolCallEvent) {
+		h.sendStreamEvent(c, "tool_event", "", event)
+		c.Response().Flush()
+	}
+
+	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, streamFunc, toolEventFunc)
 	if err != nil {
 		h.sendStreamEvent(c, "error", fmt.Sprintf("Failed to generate response: %v", err), nil)
 		return nil

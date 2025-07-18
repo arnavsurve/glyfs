@@ -151,10 +151,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     try {
       setIsCreating(true);
 
-      // Debug: Log the form state before sending
-      console.log("DEBUG: Form state before sending:", createForm);
-      console.log("DEBUG: Headers in form:", createForm.config.headers);
-
       // Set URL in config to match server_url, preserving headers
       const serverData = {
         ...createForm,
@@ -164,9 +160,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
           server_type: createForm.server_type,
         },
       };
-
-      console.log("DEBUG: Server data being sent:", serverData);
-      console.log("DEBUG: Headers in server data:", serverData.config.headers);
 
       await mcpApi.createServer(serverData);
 

@@ -104,3 +104,90 @@ type ChatSessionResponse struct {
 	UpdatedAt time.Time     `json:"updated_at"`
 	Messages  []ChatMessage `json:"messages,omitempty"`
 }
+
+type MCPServer struct {
+	ID          uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	UserID      uint           `gorm:"not null;index" json:"user_id"`
+	Name        string         `gorm:"type:text;not null" json:"name"`
+	Description string         `gorm:"type:text" json:"description"`
+	ServerURL   string         `gorm:"type:text;not null" json:"server_url"`
+	ServerType  string         `gorm:"type:text;not null" json:"server_type"` // "sse", "http"
+	Config      string         `gorm:"type:jsonb" json:"config"`              // JSON config
+	Status      string         `gorm:"type:text;default:'inactive'" json:"status"`
+	LastSeen    *time.Time     `json:"last_seen,omitempty"`
+
+	// Relationships
+	User            User             `gorm:"foreignKey:UserID;references:ID" json:"user"`
+	AgentMCPServers []AgentMCPServer `gorm:"foreignKey:MCPServerID;references:ID" json:"agent_mcp_servers,omitempty"`
+}
+
+type AgentMCPServer struct {
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	AgentID     uuid.UUID `gorm:"type:uuid;not null;index" json:"agent_id"`
+	MCPServerID uuid.UUID `gorm:"type:uuid;not null;index" json:"mcp_server_id"`
+	Enabled     bool      `gorm:"default:true" json:"enabled"`
+	CreatedAt   time.Time `json:"created_at"`
+
+	// Relationships
+	Agent     AgentConfig `gorm:"foreignKey:AgentID;references:ID" json:"agent"`
+	MCPServer MCPServer   `gorm:"foreignKey:MCPServerID;references:ID" json:"mcp_server"`
+}
+
+type ToolCall struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	MessageID uuid.UUID `gorm:"type:uuid;not null;index" json:"message_id"`
+	ToolName  string    `gorm:"type:text;not null" json:"tool_name"`
+	Arguments string    `gorm:"type:jsonb" json:"arguments"`
+	Result    string    `gorm:"type:text" json:"result"`
+	Status    string    `gorm:"type:text;not null" json:"status"` // "pending", "success", "error"
+	ErrorMsg  string    `gorm:"type:text" json:"error_msg,omitempty"`
+	Duration  int64     `gorm:"type:bigint" json:"duration_ms"` // milliseconds
+
+	// Relationships
+	Message ChatMessage `gorm:"foreignKey:MessageID;references:ID" json:"message"`
+}
+
+// MCP Server Configuration Types
+type MCPServerConfig struct {
+	ServerType string            `json:"server_type"`
+	Env        map[string]string `json:"env,omitempty"`         // Environment variables
+	URL        string            `json:"url,omitempty"`         // For HTTP
+	Headers    map[string]string `json:"headers,omitempty"`     // For HTTP
+	Timeout    int               `json:"timeout,omitempty"`     // Timeout in seconds
+	MaxRetries int               `json:"max_retries,omitempty"` // Max retry attempts
+}
+
+// API Response Types
+type MCPServerResponse struct {
+	ID          uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	ServerURL   string     `json:"server_url"`
+	ServerType  string     `json:"server_type"`
+	Status      string     `json:"status"`
+	LastSeen    *time.Time `json:"last_seen,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+type AgentMCPServerResponse struct {
+	ServerID   uuid.UUID `json:"server_id"`
+	ServerName string    `json:"server_name"`
+	Enabled    bool      `json:"enabled"`
+	Status     string    `json:"status"`
+}
+
+// Tool calling related types
+type ToolCallEvent struct {
+	Type      string         `json:"type"` // "tool_start", "tool_result", "tool_error"
+	CallID    string         `json:"call_id"`
+	ToolName  string         `json:"tool_name"`
+	Arguments map[string]any `json:"arguments,omitempty"`
+	Result    string         `json:"result,omitempty"`
+	Error     string         `json:"error,omitempty"`
+	Duration  int64          `json:"duration_ms,omitempty"`
+}
