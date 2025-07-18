@@ -3,7 +3,7 @@ import type { ApiError } from "../types/auth.types";
 function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
   return null;
 }
 
@@ -40,18 +40,22 @@ class ApiClient {
       ...headers,
     };
 
-    const csrfToken = getCookie('_csrf');
-    const isStateChangingMethod = config.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method);
+    const csrfToken = getCookie("_csrf");
+    const isStateChangingMethod =
+      config.method &&
+      ["POST", "PUT", "DELETE", "PATCH"].includes(config.method);
+    const isAuthEndpoint = url.includes("/auth/");
 
-    if (csrfToken && isStateChangingMethod) {
-      (mergedHeaders as Record<string, string>)['X-CSRF-Token'] = csrfToken;
+    // Don't send CSRF tokens to auth endpoints as they're exempt
+    if (csrfToken && isStateChangingMethod && !isAuthEndpoint) {
+      (mergedHeaders as Record<string, string>)["X-CSRF-Token"] = csrfToken;
     }
 
     try {
       const response = await fetch(fullUrl, {
         ...rest,
         headers: mergedHeaders,
-        credentials: 'include', // Include cookies in requests
+        credentials: "include", // Include cookies in requests
       });
 
       let data: T;
@@ -64,51 +68,7 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        // If unauthorized, try to refresh token once
-        if (response.status === 401 && !config.url.includes('/auth/refresh')) {
-          try {
-            console.log("Attempting to refresh token...");
-            const refreshResponse = await fetch('/api/auth/refresh', {
-              method: 'POST',
-              credentials: 'include',
-            });
-            
-            if (refreshResponse.ok) {
-              console.log("Token refresh successful, retrying original request");
-              // Retry the original request
-              const retryResponse = await fetch(fullUrl, {
-                ...rest,
-                headers: mergedHeaders,
-                credentials: 'include',
-              });
-              
-              if (retryResponse.ok) {
-                console.log("Retry request successful");
-                const retryContentType = retryResponse.headers.get("content-type");
-                let retryData: T;
-                
-                if (retryContentType && retryContentType.includes("application/json")) {
-                  retryData = await retryResponse.json();
-                } else {
-                  retryData = (await retryResponse.text()) as unknown as T;
-                }
-                
-                return {
-                  data: retryData,
-                  status: retryResponse.status,
-                  statusText: retryResponse.statusText,
-                };
-              } else {
-                console.error("Retry request failed:", retryResponse.status, retryResponse.statusText);
-              }
-            } else {
-              console.error("Token refresh failed:", refreshResponse.status, refreshResponse.statusText);
-            }
-          } catch (refreshError) {
-            console.error("Token refresh error:", refreshError);
-            // If refresh fails, fall through to original error handling
-          }
-        }
+        // We let AuthContext handle token refresh centrally
 
         const errorMessage =
           typeof data === "object" && data !== null && "message" in data
@@ -207,4 +167,3 @@ export const apiClient = new ApiClient();
 
 // Export the class for testing or custom instances
 export { ApiClient };
-

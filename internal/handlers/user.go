@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/arnavsurve/agentplane/internal/shared"
@@ -16,6 +17,7 @@ import (
 )
 
 var jwtSecret string
+var refreshTokenMutex sync.Mutex
 
 func InitJWTSecret() {
 	jwtSecret = os.Getenv("JWT_SECRET")
@@ -178,27 +180,32 @@ func (h *Handler) HandleMe(c echo.Context) error {
 func (h *Handler) HandleRefreshToken(c echo.Context) error {
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil || cookie.Value == "" {
+		log.Printf("Refresh token error: missing cookie, err=%v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, "refresh token required")
 	}
 
 	var refreshToken shared.RefreshToken
 	if err := h.DB.Where("token = ? AND is_revoked = false AND expires_at > ?",
 		cookie.Value, time.Now()).First(&refreshToken).Error; err != nil {
+		log.Printf("Refresh token validation failed: token=%s, err=%v", cookie.Value[:10]+"...", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired refresh token")
 	}
 
 	var user shared.User
 	if err := h.DB.First(&user, refreshToken.UserID).Error; err != nil {
+		log.Printf("User lookup failed for refresh token: user_id=%d, err=%v", refreshToken.UserID, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "user not found")
 	}
 
 	newAccessToken, err := generateJWT(user.ID, user.Email)
 	if err != nil {
+		log.Printf("JWT generation failed: user_id=%d, err=%v", user.ID, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
 
 	newRefreshToken, err := h.createRefreshToken(user.ID)
 	if err != nil {
+		log.Printf("Refresh token creation failed: user_id=%d, err=%v", user.ID, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
@@ -237,13 +244,36 @@ func generateRefreshToken() (string, error) {
 }
 
 func (h *Handler) createRefreshToken(userID uint) (string, error) {
-	h.DB.Model(&shared.RefreshToken{}).Where("user_id = ?", userID).Update("is_revoked", true)
+	// Use mutex to prevent race conditions for the same user
+	refreshTokenMutex.Lock()
+	defer refreshTokenMutex.Unlock()
 
+	// Generate token first to fail fast if there's an issue
 	tokenString, err := generateRefreshToken()
 	if err != nil {
 		return "", err
 	}
 
+	// Use database transaction to ensure atomicity
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+	
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Revoke all existing refresh tokens for this user
+	if err := tx.Model(&shared.RefreshToken{}).Where("user_id = ?", userID).Update("is_revoked", true).Error; err != nil {
+		tx.Rollback()
+		log.Printf("Failed to revoke existing tokens for user %d: %v", userID, err)
+		return "", err
+	}
+
+	// Create new refresh token
 	refreshToken := shared.RefreshToken{
 		UserID:    userID,
 		Token:     tokenString,
@@ -251,7 +281,15 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 		IsRevoked: false,
 	}
 
-	if err := h.DB.Create(&refreshToken).Error; err != nil {
+	if err := tx.Create(&refreshToken).Error; err != nil {
+		tx.Rollback()
+		log.Printf("Failed to create refresh token for user %d: %v", userID, err)
+		return "", err
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		log.Printf("Failed to commit refresh token transaction for user %d: %v", userID, err)
 		return "", err
 	}
 

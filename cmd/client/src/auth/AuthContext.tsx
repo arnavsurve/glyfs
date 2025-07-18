@@ -112,47 +112,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
-        // If auth check fails, try to refresh token
-        try {
-          await authApi.refreshToken();
-          const retryResponse = await apiClient.get<AuthResponse>('/auth/me');
-          
-          if (retryResponse.status === 200) {
-            const data = retryResponse.data;
-            const user: User = {
-              id: data.user_id,
-              email: data.user_email,
-            };
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: { user },
-            });
-          } else {
-            dispatch({ type: 'SET_LOADING', payload: false });
-          }
-        } catch (refreshError) {
-          console.error("Auth check and refresh failed:", refreshError);
-          dispatch({ type: 'SET_LOADING', payload: false });
-        }
+        // If initial auth check fails, just set loading to false
+        // Don't attempt refresh here to avoid conflicts with other refresh logic
+        console.log("Initial auth check failed, user likely not logged in");
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
     checkAuthStatus();
   }, []);
 
-  // Automatic token refresh - runs every 10 minutes when authenticated
+  // Automatic token refresh - runs every 12 minutes when authenticated
+  // (access token expires in 15 minutes, so this gives a 3-minute buffer)
   useEffect(() => {
     if (!state.isAuthenticated) return;
 
     const refreshInterval = setInterval(async () => {
       try {
         await authApi.refreshToken();
-        console.log('Token refreshed successfully');
+        console.log('Background token refresh successful');
       } catch (error) {
         console.error('Background token refresh failed:', error);
-        // If refresh fails, the user will be logged out on their next action
+        // If background refresh fails, don't logout immediately
+        // Let the user's next authenticated action trigger the auth check
       }
-    }, 10 * 60 * 1000); // Refresh every 10 minutes (access token expires in 15 minutes)
+    }, 12 * 60 * 1000); // Refresh every 12 minutes
 
     return () => clearInterval(refreshInterval);
   }, [state.isAuthenticated]);
