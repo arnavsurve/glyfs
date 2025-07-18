@@ -12,6 +12,7 @@ import {
   Key,
   Globe,
   Trash2,
+  Wrench,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -53,6 +54,7 @@ import {
 } from "../types/agent.types";
 import { transformAgentData } from "../utils/agent.utils";
 import { toast } from "sonner";
+import { AgentToolsTab } from "./AgentToolsTab";
 
 export function AgentDetailView() {
   const { id } = useParams<{ id: string }>();
@@ -65,7 +67,7 @@ export function AgentDetailView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "configuration" | "api"
+    "overview" | "configuration" | "tools" | "api"
   >("overview");
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -222,7 +224,7 @@ export function AgentDetailView() {
   };
 
   // Tab persistence
-  const setActiveTabWithPersistence = (tab: "overview" | "configuration" | "api") => {
+  const setActiveTabWithPersistence = (tab: "overview" | "configuration" | "tools" | "api") => {
     setActiveTab(tab);
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev);
@@ -285,8 +287,8 @@ export function AgentDetailView() {
 
   // Sync activeTab with URL changes
   useEffect(() => {
-    const tab = searchParams.get('tab') as "overview" | "configuration" | "api";
-    const validTab = ["overview", "configuration", "api"].includes(tab) ? tab : "overview";
+    const tab = searchParams.get('tab') as "overview" | "configuration" | "tools" | "api";
+    const validTab = ["overview", "configuration", "tools", "api"].includes(tab) ? tab : "overview";
     setActiveTab(validTab);
   }, [searchParams]);
 
@@ -417,6 +419,7 @@ export function AgentDetailView() {
           {[
             { id: "overview", label: "Overview", icon: Bot },
             { id: "configuration", label: "Configuration", icon: Settings },
+            { id: "tools", label: "Tools", icon: Wrench },
             { id: "api", label: "API & Integration", icon: Code },
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -667,6 +670,11 @@ export function AgentDetailView() {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {/* Tools Tab */}
+          {activeTab === "tools" && id && (
+            <AgentToolsTab agentId={id} />
           )}
 
           {/* API Tab */}

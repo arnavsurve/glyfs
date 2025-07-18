@@ -30,9 +30,19 @@ export interface ChatStreamRequest {
 }
 
 export interface ChatStreamEvent {
-  type: 'token' | 'done' | 'error' | 'metadata';
+  type: 'token' | 'done' | 'error' | 'metadata' | 'tool_event';
   content: string;
   data?: any;
+}
+
+export interface ToolCallEvent {
+  type: 'tool_start' | 'tool_result' | 'tool_error';
+  call_id: string;
+  tool_name: string;
+  arguments?: Record<string, any>;
+  result?: string;
+  error?: string;
+  duration_ms?: number;
 }
 
 export interface ChatState {

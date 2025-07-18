@@ -21,8 +21,10 @@ import {
   type ChatSession,
   type ChatStreamEvent,
 } from "../api/chat.api";
+import type { ToolCallEvent } from "../types/chat.types";
 import { agentsApi } from "../api/agents.api";
 import type { Agent } from "../types/agent.types";
+import { ToolCallDisplay } from "./ToolCallDisplay";
 
 interface ChatPageProps {}
 
@@ -38,6 +40,7 @@ export function ChatPage({}: ChatPageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [currentToolCalls, setCurrentToolCalls] = useState<Record<string, ToolCallEvent>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -237,6 +240,7 @@ export function ChatPage({}: ChatPageProps) {
               };
               setMessages((prev) => [...prev, assistantMessage]);
               setStreamingMessage("");
+              setCurrentToolCalls({});
               setIsStreaming(false);
               loadSessions(); // Refresh sessions list
               // Re-focus input after response is complete
@@ -250,10 +254,20 @@ export function ChatPage({}: ChatPageProps) {
                 loadSessions();
               }, 2000);
               break;
+            case "tool_event":
+              if (event.data) {
+                const toolEvent = event.data as ToolCallEvent;
+                setCurrentToolCalls((prev) => ({
+                  ...prev,
+                  [toolEvent.call_id]: toolEvent,
+                }));
+              }
+              break;
             case "error":
               console.error("Stream error:", event.content);
               setIsStreaming(false);
               setStreamingMessage("");
+              setCurrentToolCalls({});
               // Re-focus input even on error
               setTimeout(() => {
                 if (inputRef.current) {
@@ -268,6 +282,7 @@ export function ChatPage({}: ChatPageProps) {
       console.error("Failed to send message:", error);
       setIsStreaming(false);
       setStreamingMessage("");
+      setCurrentToolCalls({});
       // Re-focus input even on error
       setTimeout(() => {
         if (inputRef.current) {
@@ -462,6 +477,15 @@ export function ChatPage({}: ChatPageProps) {
                       </div>
                     </div>
                   ))}
+
+                  {/* Tool Calls Display */}
+                  {isStreaming && Object.keys(currentToolCalls).length > 0 && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%]">
+                        <ToolCallDisplay toolCalls={currentToolCalls} />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Streaming Message */}
                   {isStreaming && streamingMessage && (
