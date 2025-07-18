@@ -179,6 +179,7 @@ export function ChatPage({}: ChatPageProps) {
       setSessions([]);
       setCurrentSession(null);
       setMessages([]);
+      setCurrentToolCalls({}); // Clear tool calls when no agent selected
     }
   }, [selectedAgent]);
 
@@ -254,6 +255,7 @@ export function ChatPage({}: ChatPageProps) {
       const session = await chatApi.getChatSession(selectedAgent.id, sessionId);
       setCurrentSession(session);
       setMessages(session.messages || []);
+      setCurrentToolCalls({}); // Clear tool calls when loading a session
     } catch (error) {
       console.error("Failed to load session:", error);
     }
@@ -262,6 +264,7 @@ export function ChatPage({}: ChatPageProps) {
   const startNewSession = () => {
     setCurrentSession(null);
     setMessages([]);
+    setCurrentToolCalls({}); // Clear tool calls when starting new session
   };
 
   const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
@@ -307,6 +310,7 @@ export function ChatPage({}: ChatPageProps) {
     setIsStreaming(true);
     setStreamingMessage("");
     setCurrentReasoningEvents([]);
+    setCurrentToolCalls({}); // Clear tool calls when starting a new message
 
     // Re-focus input after a brief delay to ensure it's ready
     setTimeout(() => {
@@ -360,9 +364,9 @@ export function ChatPage({}: ChatPageProps) {
               };
               setMessages((prev) => [...prev, assistantMessage]);
               setStreamingMessage("");
-              setCurrentToolCalls({});
               setCurrentReasoningEvents([]);
               setIsStreaming(false);
+              // Don't clear currentToolCalls - let them persist in the UI
               loadSessions(); // Refresh sessions list
               // Re-focus input after response is complete
               setTimeout(() => {
