@@ -36,9 +36,9 @@ export interface ChatStreamEvent {
 }
 
 export interface ToolCallEvent {
-  type: 'tool_start' | 'tool_result' | 'tool_error';
-  call_id: string;
-  tool_name: string;
+  type: 'tool_start' | 'tool_result' | 'tool_error' | 'tool_batch_complete';
+  call_id?: string;
+  tool_name?: string;
   arguments?: Record<string, any>;
   result?: string;
   error?: string;

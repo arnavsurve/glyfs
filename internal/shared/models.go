@@ -187,9 +187,9 @@ type AgentMCPServerResponse struct {
 
 // Tool calling related types
 type ToolCallEvent struct {
-	Type      string         `json:"type"` // "tool_start", "tool_result", "tool_error"
-	CallID    string         `json:"call_id"`
-	ToolName  string         `json:"tool_name"`
+	Type      string         `json:"type"` // "tool_start", "tool_result", "tool_error", "tool_batch_complete"
+	CallID    string         `json:"call_id,omitempty"`
+	ToolName  string         `json:"tool_name,omitempty"`
 	Arguments map[string]any `json:"arguments,omitempty"`
 	Result    string         `json:"result,omitempty"`
 	Error     string         `json:"error,omitempty"`

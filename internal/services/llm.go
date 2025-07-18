@@ -307,6 +307,13 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 			conversationMessages = append(conversationMessages, assistantMsg)
 			conversationMessages = append(conversationMessages, toolResults...)
 
+			// Send tool batch complete event to indicate all tools in this iteration are done
+			if toolEventFunc != nil {
+				toolEventFunc(&shared.ToolCallEvent{
+					Type: "tool_batch_complete",
+				})
+			}
+
 			// Continue to next iteration to get final response
 			continue
 		}

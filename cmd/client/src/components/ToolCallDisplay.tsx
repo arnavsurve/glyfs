@@ -47,7 +47,7 @@ export function ToolCallDisplay({ toolCalls }: ToolCallDisplayProps) {
     return JSON.stringify(args, null, 2);
   };
 
-  const toolCallsArray = Object.values(toolCalls);
+  const toolCallsArray = Object.values(toolCalls).filter(tc => tc.call_id); // Filter out batch complete events
 
   if (toolCallsArray.length === 0) {
     return null;

@@ -339,10 +339,15 @@ export function ChatPage({}: ChatPageProps) {
             case "tool_event":
               if (event.data) {
                 const toolEvent = event.data as ToolCallEvent;
-                setCurrentToolCalls((prev) => ({
-                  ...prev,
-                  [toolEvent.call_id]: toolEvent,
-                }));
+                if (toolEvent.type === "tool_batch_complete") {
+                  // Clear tool calls from display after batch completes
+                  setCurrentToolCalls({});
+                } else {
+                  setCurrentToolCalls((prev) => ({
+                    ...prev,
+                    [toolEvent.call_id]: toolEvent,
+                  }));
+                }
               }
               break;
             case "reasoning_event":
