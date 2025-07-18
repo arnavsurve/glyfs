@@ -672,8 +672,9 @@ export function ChatPage({}: ChatPageProps) {
                   {/* Thinking Indicator */}
                   {isStreaming &&
                     currentReasoningEvents.length === 0 &&
-                    Object.keys(currentToolCalls).length === 0 &&
-                    !streamingMessage && (
+                    !streamingMessage && 
+                    (Object.keys(currentToolCalls).length === 0 || 
+                     Object.values(currentToolCalls).every(tc => tc.type === "tool_result" || tc.type === "tool_error")) && (
                       <div className="flex justify-start">
                         <div className="max-w-[80%] p-3 rounded-lg bg-card border">
                           <div className="flex items-center space-x-2">
