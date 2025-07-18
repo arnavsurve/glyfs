@@ -1,7 +1,7 @@
 export interface ChatMessage {
   id: string;
   session_id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   content: string;
   metadata?: string;
   created_at: string;
@@ -9,7 +9,7 @@ export interface ChatMessage {
 
 export interface ChatContextMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   content: string;
   created_at: string;
 }

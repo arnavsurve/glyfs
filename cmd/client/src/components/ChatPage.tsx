@@ -28,6 +28,82 @@ import { ToolCallDisplay } from "./ToolCallDisplay";
 
 interface ChatPageProps {}
 
+// Component to display tool messages with expanded details
+function ToolMessageDisplay({ message }: { message: ChatMessage }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  let toolEvent: ToolCallEvent | null = null;
+  try {
+    if (message.metadata) {
+      toolEvent = JSON.parse(message.metadata);
+    }
+  } catch (e) {
+    // Invalid JSON, ignore
+  }
+
+  const getIcon = () => {
+    if (message.content.includes("🔧")) return "🔧";
+    if (message.content.includes("✅")) return "✅";
+    if (message.content.includes("❌")) return "❌";
+    return "🔧";
+  };
+
+  const hasDetails = toolEvent && (toolEvent.arguments || toolEvent.result || toolEvent.error);
+
+  return (
+    <div className="text-sm">
+      <div 
+        className={`flex items-center space-x-2 ${hasDetails ? 'cursor-pointer' : ''}`}
+        onClick={() => hasDetails && setIsExpanded(!isExpanded)}
+      >
+        <span className="text-base">{getIcon()}</span>
+        <span className="font-medium">{message.content}</span>
+        {hasDetails && (
+          <span className="text-xs">
+            {isExpanded ? "▼" : "▶"}
+          </span>
+        )}
+        {toolEvent?.duration_ms && (
+          <span className="text-xs opacity-70">
+            ({toolEvent.duration_ms}ms)
+          </span>
+        )}
+      </div>
+      
+      {isExpanded && hasDetails && toolEvent && (
+        <div className="mt-2 space-y-2 pl-6 border-l-2 border-current opacity-75">
+          {toolEvent.arguments && (
+            <div>
+              <div className="text-xs font-medium opacity-70">Arguments:</div>
+              <pre className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded mt-1 overflow-x-auto">
+                {JSON.stringify(toolEvent.arguments, null, 2)}
+              </pre>
+            </div>
+          )}
+          
+          {toolEvent.result && (
+            <div>
+              <div className="text-xs font-medium opacity-70">Result:</div>
+              <div className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded mt-1 whitespace-pre-wrap">
+                {toolEvent.result}
+              </div>
+            </div>
+          )}
+          
+          {toolEvent.error && (
+            <div>
+              <div className="text-xs font-medium text-red-600 dark:text-red-400">Error:</div>
+              <div className="text-xs bg-red-100 dark:bg-red-900/20 p-2 rounded mt-1 text-red-800 dark:text-red-200">
+                {toolEvent.error}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ChatPage({}: ChatPageProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -63,7 +139,7 @@ export function ChatPage({}: ChatPageProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage]);
+  }, [messages, streamingMessage, currentToolCalls]);
 
   // Auto-focus input when component mounts or agent changes
   useEffect(() => {
@@ -528,12 +604,16 @@ export function ChatPage({}: ChatPageProps) {
                         className={`max-w-[80%] p-3 rounded-lg ${
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
+                            : message.role === "tool"
+                            ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200"
                             : message.content.startsWith("⚠️ **Error**:")
                             ? "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
                             : "bg-card border"
                         }`}
                       >
-                        {message.role === "assistant" ? (
+                        {message.role === "tool" ? (
+                          <ToolMessageDisplay message={message} />
+                        ) : message.role === "assistant" ? (
                           <div className="markdown-content">
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm, remarkBreaks]}

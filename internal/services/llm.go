@@ -147,6 +147,11 @@ func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []sha
 	}
 
 	for _, msg := range context {
+		// Skip tool messages - they're for UI display only, not LLM context
+		if msg.Role == "tool" {
+			continue
+		}
+		
 		msgType := llms.ChatMessageTypeHuman
 		if msg.Role == "assistant" {
 			msgType = llms.ChatMessageTypeAI

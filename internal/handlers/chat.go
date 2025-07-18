@@ -122,6 +122,34 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	}
 
 	toolEventFunc := func(event *shared.ToolCallEvent) {
+		// Save tool call as a message for persistence
+		toolMessage := shared.ChatMessage{
+			SessionID: session.ID,
+			Role:      "tool",
+			Content:   "", // We'll set this based on the event type
+			Metadata:  "",
+		}
+
+		// Set content and metadata based on tool event type
+		switch event.Type {
+		case "tool_start":
+			toolMessage.Content = fmt.Sprintf("🔧 Executing tool: %s", event.ToolName)
+			metadataBytes, _ := json.Marshal(event)
+			toolMessage.Metadata = string(metadataBytes)
+		case "tool_result":
+			toolMessage.Content = fmt.Sprintf("✅ Tool completed: %s", event.ToolName)
+			metadataBytes, _ := json.Marshal(event)
+			toolMessage.Metadata = string(metadataBytes)
+		case "tool_error":
+			toolMessage.Content = fmt.Sprintf("❌ Tool failed: %s", event.ToolName)
+			metadataBytes, _ := json.Marshal(event)
+			toolMessage.Metadata = string(metadataBytes)
+		}
+
+		// Save to database
+		h.DB.Create(&toolMessage)
+
+		// Send real-time event
 		h.sendStreamEvent(c, "tool_event", "", event)
 		c.Response().Flush()
 	}
