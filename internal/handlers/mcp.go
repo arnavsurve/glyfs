@@ -25,18 +25,20 @@ func NewMCPHandler(db *gorm.DB, mcpManager *services.MCPConnectionManager) *MCPH
 }
 
 type CreateMCPServerRequest struct {
-	Name        string                     `json:"name" binding:"required"`
-	Description string                     `json:"description"`
-	ServerURL   string                     `json:"server_url" binding:"required"`
-	ServerType  string                     `json:"server_type" binding:"required,oneof=http sse"`
-	Config      shared.MCPServerConfig     `json:"config"`
+	Name             string                 `json:"name" binding:"required"`
+	Description      string                 `json:"description"`
+	ServerURL        string                 `json:"server_url" binding:"required"`
+	ServerType       string                 `json:"server_type" binding:"required,oneof=http sse"`
+	Config           shared.MCPServerConfig `json:"config"`
+	SensitiveURL     bool                   `json:"sensitive_url"`
+	SensitiveHeaders []string               `json:"sensitive_headers"`
 }
 
 type UpdateMCPServerRequest struct {
-	Name        *string                    `json:"name"`
-	Description *string                    `json:"description"`
-	ServerURL   *string                    `json:"server_url"`
-	Config      *shared.MCPServerConfig    `json:"config"`
+	Name        *string                 `json:"name"`
+	Description *string                 `json:"description"`
+	ServerURL   *string                 `json:"server_url"`
+	Config      *shared.MCPServerConfig `json:"config"`
 }
 
 // RegisterMCPRoutes registers all MCP-related routes
@@ -75,6 +77,12 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "server_type must be 'http' or 'sse'")
 	}
 
+	// Initialize encryption service
+	encryptionService, err := services.NewEncryptionService()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize encryption service")
+	}
+
 	// Set default config based on server type
 	if req.Config.ServerType == "" {
 		req.Config.ServerType = req.ServerType
@@ -86,20 +94,60 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 		req.Config.Timeout = 30
 	}
 
+	// Handle encryption for sensitive data
+	serverURL := req.ServerURL
+	if req.SensitiveURL {
+		encryptedURL, err := encryptionService.Encrypt(req.ServerURL)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt URL")
+		}
+		serverURL = encryptedURL
+		req.Config.URL = encryptedURL
+	}
+
+	// Encrypt sensitive headers in config
+	if len(req.SensitiveHeaders) > 0 && req.Config.Headers != nil {
+		configHeaders := make(map[string]any)
+		for k, v := range req.Config.Headers {
+			configHeaders[k] = v
+		}
+
+		encryptedHeaders, err := encryptionService.EncryptSensitiveFields(configHeaders, req.SensitiveHeaders)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt headers")
+		}
+
+		// Convert back to string map
+		req.Config.Headers = make(map[string]string)
+		for k, v := range encryptedHeaders {
+			if str, ok := v.(string); ok {
+				req.Config.Headers[k] = str
+			}
+		}
+	}
+
 	// Marshal config to JSON
 	configJSON, err := json.Marshal(req.Config)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid config format")
 	}
 
+	// Marshal sensitive headers list
+	sensitiveHeadersJSON, err := json.Marshal(req.SensitiveHeaders)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid sensitive headers format")
+	}
+
 	server := shared.MCPServer{
-		UserID:      userID,
-		Name:        req.Name,
-		Description: req.Description,
-		ServerURL:   req.ServerURL,
-		ServerType:  req.ServerType,
-		Config:      string(configJSON),
-		Status:      "inactive",
+		UserID:           userID,
+		Name:             req.Name,
+		Description:      req.Description,
+		ServerURL:        serverURL,
+		ServerType:       req.ServerType,
+		Config:           string(configJSON),
+		Status:           "inactive",
+		EncryptedURL:     req.SensitiveURL,
+		SensitiveHeaders: string(sensitiveHeadersJSON),
 	}
 
 	if err := h.db.Create(&server).Error; err != nil {
@@ -118,7 +166,7 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 		UpdatedAt:   server.UpdatedAt,
 	}
 
-	return c.JSON(http.StatusCreated, map[string]interface{}{
+	return c.JSON(http.StatusCreated, map[string]any{
 		"server": response,
 	})
 }
@@ -136,20 +184,35 @@ func (h *MCPHandler) ListMCPServers(c echo.Context) error {
 
 	response := make([]shared.MCPServerResponse, len(servers))
 	for i, server := range servers {
+		decryptedServer := server
+
+		// Only decrypt if needed
+		if server.EncryptedURL || server.SensitiveHeaders != "" {
+			encryptionService, err := services.NewEncryptionService()
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize encryption service")
+			}
+
+			decryptedServer, err = h.decryptServerData(server, encryptionService)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt server data")
+			}
+		}
+
 		response[i] = shared.MCPServerResponse{
-			ID:          server.ID,
-			Name:        server.Name,
-			Description: server.Description,
-			ServerURL:   server.ServerURL,
-			ServerType:  server.ServerType,
-			Status:      server.Status,
-			LastSeen:    server.LastSeen,
-			CreatedAt:   server.CreatedAt,
-			UpdatedAt:   server.UpdatedAt,
+			ID:          decryptedServer.ID,
+			Name:        decryptedServer.Name,
+			Description: decryptedServer.Description,
+			ServerURL:   decryptedServer.ServerURL,
+			ServerType:  decryptedServer.ServerType,
+			Status:      decryptedServer.Status,
+			LastSeen:    decryptedServer.LastSeen,
+			CreatedAt:   decryptedServer.CreatedAt,
+			UpdatedAt:   decryptedServer.UpdatedAt,
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"servers": response,
 	})
 }
@@ -173,21 +236,99 @@ func (h *MCPHandler) GetMCPServer(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch MCP server")
 	}
 
-	response := shared.MCPServerResponse{
-		ID:          server.ID,
-		Name:        server.Name,
-		Description: server.Description,
-		ServerURL:   server.ServerURL,
-		ServerType:  server.ServerType,
-		Status:      server.Status,
-		LastSeen:    server.LastSeen,
-		CreatedAt:   server.CreatedAt,
-		UpdatedAt:   server.UpdatedAt,
+	decryptedServer := server
+
+	// Only decrypt if needed
+	if server.EncryptedURL || server.SensitiveHeaders != "" {
+		encryptionService, err := services.NewEncryptionService()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize encryption service")
+		}
+
+		decryptedServer, err = h.decryptServerData(server, encryptionService)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt server data")
+		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	response := shared.MCPServerResponse{
+		ID:          decryptedServer.ID,
+		Name:        decryptedServer.Name,
+		Description: decryptedServer.Description,
+		ServerURL:   decryptedServer.ServerURL,
+		ServerType:  decryptedServer.ServerType,
+		Status:      decryptedServer.Status,
+		LastSeen:    decryptedServer.LastSeen,
+		CreatedAt:   decryptedServer.CreatedAt,
+		UpdatedAt:   decryptedServer.UpdatedAt,
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
 		"server": response,
 	})
+}
+
+// decryptServerData decrypts sensitive fields in an MCP server
+func (h *MCPHandler) decryptServerData(server shared.MCPServer, encryptionService *services.EncryptionService) (shared.MCPServer, error) {
+	decryptedServer := server
+
+	// Decrypt URL if it's encrypted
+	if server.EncryptedURL {
+		decryptedURL, err := encryptionService.Decrypt(server.ServerURL)
+		if err != nil {
+			return server, err
+		}
+		decryptedServer.ServerURL = decryptedURL
+	}
+
+	// Decrypt sensitive headers in config
+	if server.SensitiveHeaders != "" {
+		var sensitiveHeaders []string
+		if err := json.Unmarshal([]byte(server.SensitiveHeaders), &sensitiveHeaders); err != nil {
+			return server, err
+		}
+
+		if len(sensitiveHeaders) > 0 {
+			var config shared.MCPServerConfig
+			if err := json.Unmarshal([]byte(server.Config), &config); err != nil {
+				return server, err
+			}
+
+			if config.Headers != nil {
+				configHeaders := make(map[string]any)
+				for k, v := range config.Headers {
+					configHeaders[k] = v
+				}
+
+				decryptedHeaders, err := encryptionService.DecryptSensitiveFields(configHeaders, sensitiveHeaders)
+				if err != nil {
+					return server, err
+				}
+
+				// Convert back to string map
+				config.Headers = make(map[string]string)
+				for k, v := range decryptedHeaders {
+					if str, ok := v.(string); ok {
+						config.Headers[k] = str
+					}
+				}
+
+				// Update decrypted URL in config if needed
+				if server.EncryptedURL {
+					config.URL = decryptedServer.ServerURL
+				}
+
+				// Marshal updated config back to JSON
+				configJSON, err := json.Marshal(config)
+				if err != nil {
+					return server, err
+				}
+				decryptedServer.Config = string(configJSON)
+			}
+		}
+	}
+
+	return decryptedServer, nil
 }
 
 func (h *MCPHandler) UpdateMCPServer(c echo.Context) error {
@@ -217,7 +358,7 @@ func (h *MCPHandler) UpdateMCPServer(c echo.Context) error {
 	// Close existing connection if URL or config changes
 	shouldReconnect := false
 
-	updates := make(map[string]interface{})
+	updates := make(map[string]any)
 	if req.Name != nil {
 		updates["name"] = *req.Name
 	}
@@ -263,7 +404,7 @@ func (h *MCPHandler) UpdateMCPServer(c echo.Context) error {
 		UpdatedAt:   server.UpdatedAt,
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"server": response,
 	})
 }
@@ -323,13 +464,13 @@ func (h *MCPHandler) TestMCPServerConnection(c echo.Context) error {
 	// Test connection
 	ctx := context.Background()
 	if err := h.mcpManager.TestConnection(ctx, serverID); err != nil {
-		return c.JSON(http.StatusOK, map[string]interface{}{
+		return c.JSON(http.StatusOK, map[string]any{
 			"success": false,
 			"error":   err.Error(),
 		})
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Connection successful",
 	})
@@ -362,7 +503,7 @@ func (h *MCPHandler) GetMCPServerTools(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"tools": tools,
 		"count": len(tools),
 	})
@@ -403,7 +544,7 @@ func (h *MCPHandler) GetAgentMCPServers(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"servers": response,
 	})
 }
@@ -545,3 +686,4 @@ func (h *MCPHandler) ToggleAgentMCPServer(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Association " + status + " successfully"})
 }
+

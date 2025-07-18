@@ -81,6 +81,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
   const [headerKey, setHeaderKey] = useState("");
   const [headerValue, setHeaderValue] = useState("");
+  const [isHeaderSensitive, setIsHeaderSensitive] = useState(false);
+  const [isUrlSensitive, setIsUrlSensitive] = useState(false);
+  const [sensitiveHeaders, setSensitiveHeaders] = useState<string[]>([]);
 
   const addHeader = () => {
     if (headerKey.trim() && headerValue.trim()) {
@@ -94,8 +97,15 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
           },
         },
       }));
+
+      // Track sensitive headers
+      if (isHeaderSensitive) {
+        setSensitiveHeaders((prev) => [...prev, headerKey.trim()]);
+      }
+
       setHeaderKey("");
       setHeaderValue("");
+      setIsHeaderSensitive(false);
     }
   };
 
@@ -111,6 +121,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         },
       };
     });
+
+    // Remove from sensitive headers if present
+    setSensitiveHeaders((prev) => prev.filter((h) => h !== key));
   };
 
   const fetchData = async () => {
@@ -159,6 +172,8 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
           url: createForm.server_url,
           server_type: createForm.server_type,
         },
+        sensitive_url: isUrlSensitive,
+        sensitive_headers: sensitiveHeaders,
       };
 
       await mcpApi.createServer(serverData);
@@ -179,6 +194,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
       setHeaderKey("");
       setHeaderValue("");
+      setIsHeaderSensitive(false);
+      setIsUrlSensitive(false);
+      setSensitiveHeaders([]);
       setShowCreateModal(false);
       await fetchData();
       toast.success("MCP server created successfully");
@@ -554,6 +572,18 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                 placeholder="https://your-mcp-server.com/mcp"
                 className="mt-1"
               />
+              <div className="flex items-center space-x-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="url-sensitive"
+                  checked={isUrlSensitive}
+                  onChange={(e) => setIsUrlSensitive(e.target.checked)}
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                />
+                <Label htmlFor="url-sensitive" className="text-sm">
+                  🔒 URL contains sensitive data (API keys, tokens, etc.)
+                </Label>
+              </div>
             </div>
 
             <div>
@@ -608,60 +638,84 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
               {Object.entries(createForm.config.headers || {}).length > 0 && (
                 <div className="space-y-2 mb-3">
                   {Object.entries(createForm.config.headers || {}).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center space-x-2 p-2 bg-muted rounded-lg"
-                      >
-                        <span className="text-sm font-medium">{key}:</span>
-                        <span className="text-sm text-muted-foreground flex-1">
-                          {key.toLowerCase().includes("auth") ||
-                          key.toLowerCase().includes("token")
-                            ? "*".repeat(Math.min(value.length, 20))
-                            : value}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeHeader(key)}
-                          className="h-6 w-6 p-0"
+                    ([key, value]) => {
+                      const isSensitive = sensitiveHeaders.includes(key);
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center space-x-2 p-2 bg-muted rounded-lg"
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ),
+                          <span className="text-sm font-medium flex items-center space-x-1">
+                            {isSensitive && <span className="text-xs">🔒</span>}
+                            <span>{key}:</span>
+                          </span>
+                          <span className="text-sm text-muted-foreground flex-1">
+                            {isSensitive ||
+                            key.toLowerCase().includes("auth") ||
+                            key.toLowerCase().includes("token")
+                              ? "*".repeat(Math.min(value.length, 20))
+                              : value}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeHeader(key)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    },
                   )}
                 </div>
               )}
 
               {/* Add Header Form */}
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  value={headerKey}
-                  onChange={(e) => setHeaderKey(e.target.value)}
-                  placeholder="Header name (e.g., Authorization)"
-                />
-                <div className="flex space-x-2">
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Input
-                    value={headerValue}
-                    onChange={(e) => setHeaderValue(e.target.value)}
-                    placeholder="Header value (e.g., Bearer token123)"
-                    type={
-                      headerKey.toLowerCase().includes("auth") ||
-                      headerKey.toLowerCase().includes("token")
-                        ? "password"
-                        : "text"
-                    }
+                    value={headerKey}
+                    onChange={(e) => setHeaderKey(e.target.value)}
+                    placeholder="Authorization"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addHeader}
-                    disabled={!headerKey.trim() || !headerValue.trim()}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Input
+                      value={headerValue}
+                      onChange={(e) => setHeaderValue(e.target.value)}
+                      placeholder="Bearer token123"
+                      type={
+                        headerKey.toLowerCase().includes("auth") ||
+                        headerKey.toLowerCase().includes("token") ||
+                        isHeaderSensitive
+                          ? "password"
+                          : "text"
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addHeader}
+                      disabled={!headerKey.trim() || !headerValue.trim()}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Sensitive header checkbox */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="header-sensitive"
+                    checked={isHeaderSensitive}
+                    onChange={(e) => setIsHeaderSensitive(e.target.checked)}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <Label htmlFor="header-sensitive" className="text-sm">
+                    🔒 This header contains sensitive data (will be encrypted)
+                  </Label>
                 </div>
               </div>
             </div>

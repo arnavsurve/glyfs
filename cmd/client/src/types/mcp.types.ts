@@ -24,6 +24,8 @@ export interface CreateMCPServerRequest {
   server_url: string;
   server_type: 'http' | 'sse';
   config: MCPServerConfig;
+  sensitive_url?: boolean;
+  sensitive_headers?: string[];
 }
 
 export interface UpdateMCPServerRequest {
