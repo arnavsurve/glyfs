@@ -149,8 +149,14 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		// Save to database
 		h.DB.Create(&toolMessage)
 
-		// Send real-time event
-		h.sendStreamEvent(c, "tool_event", "", event)
+		// Create a copy of the event for streaming with truncated result if needed
+		streamEvent := *event
+		if len(streamEvent.Result) > 2000 {
+			streamEvent.Result = streamEvent.Result[:2000] + "... [truncated for streaming]"
+		}
+
+		// Send real-time event with potentially truncated data
+		h.sendStreamEvent(c, "tool_event", "", &streamEvent)
 		c.Response().Flush()
 	}
 
@@ -326,7 +332,20 @@ func (h *Handler) sendStreamEvent(c echo.Context, eventType, content string, dat
 		Data:    data,
 	}
 
-	jsonData, _ := json.Marshal(event)
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		// If JSON marshaling fails, send a simplified error event
+		errorEvent := shared.ChatStreamEvent{
+			Type:    eventType,
+			Content: content,
+			Data:    map[string]string{"error": "Failed to serialize event data"},
+		}
+		if fallbackData, fallbackErr := json.Marshal(errorEvent); fallbackErr == nil {
+			fmt.Fprintf(c.Response(), "data: %s\n\n", fallbackData)
+		}
+		return
+	}
+	
 	fmt.Fprintf(c.Response(), "data: %s\n\n", jsonData)
 }
 

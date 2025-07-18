@@ -84,7 +84,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
   const addHeader = () => {
     if (headerKey.trim() && headerValue.trim()) {
-      setCreateForm(prev => ({
+      setCreateForm((prev) => ({
         ...prev,
         config: {
           ...prev.config,
@@ -100,7 +100,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   };
 
   const removeHeader = (key: string) => {
-    setCreateForm(prev => {
+    setCreateForm((prev) => {
       const newHeaders = { ...prev.config.headers };
       delete newHeaders[key];
       return {
@@ -403,9 +403,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                             isConnected,
                           )
                         }
-                        className={
-                          isConnected ? "border-green-200 bg-green-50" : ""
-                        }
                       >
                         {isConnected ? (
                           <>
@@ -603,33 +600,40 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
             <div>
               <Label>HTTP Headers (Optional)</Label>
               <p className="text-sm text-muted-foreground mb-3">
-                Add authentication or custom headers. For GitHub, use Authorization: Bearer YOUR_TOKEN
+                Add authentication or custom headers. For GitHub, use
+                Authorization: Bearer YOUR_TOKEN
               </p>
-              
+
               {/* Existing Headers */}
               {Object.entries(createForm.config.headers || {}).length > 0 && (
                 <div className="space-y-2 mb-3">
-                  {Object.entries(createForm.config.headers || {}).map(([key, value]) => (
-                    <div key={key} className="flex items-center space-x-2 p-2 bg-muted rounded-lg">
-                      <span className="text-sm font-medium">{key}:</span>
-                      <span className="text-sm text-muted-foreground flex-1">
-                        {key.toLowerCase().includes('auth') || key.toLowerCase().includes('token') 
-                          ? '*'.repeat(Math.min(value.length, 20))
-                          : value}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeHeader(key)}
-                        className="h-6 w-6 p-0"
+                  {Object.entries(createForm.config.headers || {}).map(
+                    ([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-center space-x-2 p-2 bg-muted rounded-lg"
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+                        <span className="text-sm font-medium">{key}:</span>
+                        <span className="text-sm text-muted-foreground flex-1">
+                          {key.toLowerCase().includes("auth") ||
+                          key.toLowerCase().includes("token")
+                            ? "*".repeat(Math.min(value.length, 20))
+                            : value}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeHeader(key)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  )}
                 </div>
               )}
-              
+
               {/* Add Header Form */}
               <div className="grid grid-cols-2 gap-2">
                 <Input
@@ -642,7 +646,12 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                     value={headerValue}
                     onChange={(e) => setHeaderValue(e.target.value)}
                     placeholder="Header value (e.g., Bearer token123)"
-                    type={headerKey.toLowerCase().includes('auth') || headerKey.toLowerCase().includes('token') ? 'password' : 'text'}
+                    type={
+                      headerKey.toLowerCase().includes("auth") ||
+                      headerKey.toLowerCase().includes("token")
+                        ? "password"
+                        : "text"
+                    }
                   />
                   <Button
                     type="button"
@@ -684,4 +693,3 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     </div>
   );
 }
-
