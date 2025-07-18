@@ -43,6 +43,7 @@ export interface ToolCallEvent {
   result?: string;
   error?: string;
   duration_ms?: number;
+  batch_complete?: boolean; // Frontend-only flag to track when tool batch is complete
 }
 
 export interface ReasoningEvent {

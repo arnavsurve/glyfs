@@ -340,23 +340,14 @@ export function ChatPage({}: ChatPageProps) {
               if (event.data) {
                 const toolEvent = event.data as ToolCallEvent;
                 if (toolEvent.type === "tool_batch_complete") {
-                  // Add completed tool calls to chat history
-                  const completedToolCalls = Object.values(currentToolCalls);
-                  if (completedToolCalls.length > 0) {
-                    completedToolCalls.forEach((toolCall) => {
-                      const toolMessage: ChatMessage = {
-                        id: `tool_${toolCall.call_id}_${Date.now()}`,
-                        session_id: currentSession?.id || "",
-                        role: "tool",
-                        content: `${toolCall.type === "tool_result" ? "✅" : "❌"} ${toolCall.tool_name}`,
-                        metadata: JSON.stringify(toolCall),
-                        created_at: new Date().toISOString(),
-                      };
-                      setMessages((prev) => [...prev, toolMessage]);
+                  // Mark all current tool calls as batch complete (for thinking indicator logic)
+                  setCurrentToolCalls((prev) => {
+                    const updated = { ...prev };
+                    Object.keys(updated).forEach(key => {
+                      updated[key] = { ...updated[key], batch_complete: true };
                     });
-                  }
-                  // Clear tool calls from display after batch completes
-                  setCurrentToolCalls({});
+                    return updated;
+                  });
                 } else if (toolEvent.call_id) {
                   setCurrentToolCalls((prev) => ({
                     ...prev,
@@ -694,7 +685,7 @@ export function ChatPage({}: ChatPageProps) {
                     currentReasoningEvents.length === 0 &&
                     !streamingMessage && 
                     (Object.keys(currentToolCalls).length === 0 || 
-                     Object.values(currentToolCalls).every(tc => tc.type === "tool_result" || tc.type === "tool_error")) && (
+                     Object.values(currentToolCalls).every(tc => tc.batch_complete)) && (
                       <div className="flex justify-start">
                         <div className="max-w-[80%] p-3 rounded-lg bg-card border">
                           <div className="flex items-center space-x-2">
