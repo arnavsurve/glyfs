@@ -26,6 +26,7 @@ func main() {
 	}
 
 	handlers.InitJWTSecret()
+	services.InitEncryptionKey()
 
 	if os.Getenv("ENV") != "production" {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{

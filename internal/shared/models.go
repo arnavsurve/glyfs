@@ -118,7 +118,11 @@ type MCPServer struct {
 	Config      string         `gorm:"type:jsonb" json:"config"`              // JSON config
 	Status      string         `gorm:"type:text;default:'inactive'" json:"status"`
 	LastSeen    *time.Time     `json:"last_seen,omitempty"`
-
+	
+	// Encryption metadata
+	EncryptedURL      bool   `gorm:"default:false" json:"encrypted_url"`        // Whether ServerURL is encrypted
+	SensitiveHeaders  string `gorm:"type:text" json:"sensitive_headers"`        // JSON array of sensitive header names
+	
 	// Relationships
 	User            User             `gorm:"foreignKey:UserID;references:ID" json:"user"`
 	AgentMCPServers []AgentMCPServer `gorm:"foreignKey:MCPServerID;references:ID" json:"agent_mcp_servers,omitempty"`
