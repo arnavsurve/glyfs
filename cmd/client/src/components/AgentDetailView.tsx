@@ -91,7 +91,6 @@ export function AgentDetailView() {
 
         // Fetch individual agent using the new endpoint
         const response = await agentsApi.getAgent(id);
-        console.log("Agent fetched:", response.agent);
 
         if (!response.agent) {
           setError(`Agent not found (ID: ${id})`);
@@ -224,13 +223,18 @@ export function AgentDetailView() {
   };
 
   // Tab persistence
-  const setActiveTabWithPersistence = (tab: "overview" | "configuration" | "tools" | "api") => {
+  const setActiveTabWithPersistence = (
+    tab: "overview" | "configuration" | "tools" | "api",
+  ) => {
     setActiveTab(tab);
-    setSearchParams(prev => {
-      const newParams = new URLSearchParams(prev);
-      newParams.set('tab', tab);
-      return newParams;
-    }, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set("tab", tab);
+        return newParams;
+      },
+      { replace: true },
+    );
   };
 
   // API Key management functions
@@ -287,8 +291,14 @@ export function AgentDetailView() {
 
   // Sync activeTab with URL changes
   useEffect(() => {
-    const tab = searchParams.get('tab') as "overview" | "configuration" | "tools" | "api";
-    const validTab = ["overview", "configuration", "tools", "api"].includes(tab) ? tab : "overview";
+    const tab = searchParams.get("tab") as
+      | "overview"
+      | "configuration"
+      | "tools"
+      | "api";
+    const validTab = ["overview", "configuration", "tools", "api"].includes(tab)
+      ? tab
+      : "overview";
     setActiveTab(validTab);
   }, [searchParams]);
 
@@ -673,9 +683,7 @@ export function AgentDetailView() {
           )}
 
           {/* Tools Tab */}
-          {activeTab === "tools" && id && (
-            <AgentToolsTab agentId={id} />
-          )}
+          {activeTab === "tools" && id && <AgentToolsTab agentId={id} />}
 
           {/* API Tab */}
           {activeTab === "api" && (
@@ -761,7 +769,9 @@ export function AgentDetailView() {
                     <div className="text-center py-8 text-muted-foreground">
                       <Key className="w-12 h-12 mx-auto mb-4 opacity-20" />
                       <p>No API keys created yet</p>
-                      <p className="text-xs">Generate your first API key to get started</p>
+                      <p className="text-xs">
+                        Generate your first API key to get started
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -772,16 +782,20 @@ export function AgentDetailView() {
                         >
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <h4 className="text-sm font-medium">{key.name}</h4>
+                              <h4 className="text-sm font-medium">
+                                {key.name}
+                              </h4>
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                                 Active
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              Created {new Date(key.created_at).toLocaleDateString()}
+                              Created{" "}
+                              {new Date(key.created_at).toLocaleDateString()}
                               {key.last_used && (
                                 <span className="ml-2">
-                                  • Last used {new Date(key.last_used).toLocaleDateString()}
+                                  • Last used{" "}
+                                  {new Date(key.last_used).toLocaleDateString()}
                                 </span>
                               )}
                             </div>
@@ -794,15 +808,21 @@ export function AgentDetailView() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Revoke API Key
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to revoke "{key.name}"? This action cannot be undone and any applications using this key will stop working.
+                                  Are you sure you want to revoke "{key.name}"?
+                                  This action cannot be undone and any
+                                  applications using this key will stop working.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteAPIKey(key.id, key.name)}
+                                  onClick={() =>
+                                    handleDeleteAPIKey(key.id, key.name)
+                                  }
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Revoke Key
@@ -816,12 +836,16 @@ export function AgentDetailView() {
                   )}
 
                   {/* Create API Key Modal */}
-                  <AlertDialog open={showCreateKeyModal} onOpenChange={setShowCreateKeyModal}>
+                  <AlertDialog
+                    open={showCreateKeyModal}
+                    onOpenChange={setShowCreateKeyModal}
+                  >
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Create New API Key</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Give your API key a descriptive name to help you identify its purpose.
+                          Give your API key a descriptive name to help you
+                          identify its purpose.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <div className="py-4">
@@ -858,12 +882,16 @@ export function AgentDetailView() {
 
                   {/* Show newly created key */}
                   {newlyCreatedKey && (
-                    <AlertDialog open={!!newlyCreatedKey} onOpenChange={() => setNewlyCreatedKey(null)}>
+                    <AlertDialog
+                      open={!!newlyCreatedKey}
+                      onOpenChange={() => setNewlyCreatedKey(null)}
+                    >
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>API Key Created</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Save this API key now. You won't be able to see it again.
+                            Save this API key now. You won't be able to see it
+                            again.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <div className="py-4">
@@ -877,7 +905,9 @@ export function AgentDetailView() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => copyToClipboard(newlyCreatedKey, "API key")}
+                              onClick={() =>
+                                copyToClipboard(newlyCreatedKey, "API key")
+                              }
                             >
                               {copiedField === "API key" ? (
                                 <Check className="w-4 h-4 text-green-500" />
@@ -888,7 +918,9 @@ export function AgentDetailView() {
                           </div>
                         </div>
                         <AlertDialogFooter>
-                          <AlertDialogAction onClick={() => setNewlyCreatedKey(null)}>
+                          <AlertDialogAction
+                            onClick={() => setNewlyCreatedKey(null)}
+                          >
                             I've saved my key
                           </AlertDialogAction>
                         </AlertDialogFooter>

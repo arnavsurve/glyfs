@@ -43,8 +43,8 @@ func main() {
 		CookieHTTPOnly: false,
 		CookieSameSite: http.SameSiteStrictMode,
 		Skipper: func(c echo.Context) bool {
-			return c.Path() == "/api/auth/me" || 
-				   c.Path() == "/api/auth/refresh" ||
+			// Skip CSRF for all auth endpoints to match frontend behavior
+			return strings.HasPrefix(c.Path(), "/api/auth/") ||
 				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke")
 		},
 	}))

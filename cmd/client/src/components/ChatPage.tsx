@@ -31,7 +31,7 @@ interface ChatPageProps {}
 // Component to display tool messages with expanded details
 function ToolMessageDisplay({ message }: { message: ChatMessage }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   let toolEvent: ToolCallEvent | null = null;
   try {
     if (message.metadata) {
@@ -48,20 +48,19 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
     return "🔧";
   };
 
-  const hasDetails = toolEvent && (toolEvent.arguments || toolEvent.result || toolEvent.error);
+  const hasDetails =
+    toolEvent && (toolEvent.arguments || toolEvent.result || toolEvent.error);
 
   return (
     <div className="text-sm">
-      <div 
-        className={`flex items-center space-x-2 ${hasDetails ? 'cursor-pointer' : ''}`}
+      <div
+        className={`flex items-center space-x-2 ${hasDetails ? "cursor-pointer" : ""}`}
         onClick={() => hasDetails && setIsExpanded(!isExpanded)}
       >
         <span className="text-base">{getIcon()}</span>
         <span className="font-medium">{message.content}</span>
         {hasDetails && (
-          <span className="text-xs">
-            {isExpanded ? "▼" : "▶"}
-          </span>
+          <span className="text-xs">{isExpanded ? "▼" : "▶"}</span>
         )}
         {toolEvent?.duration_ms && (
           <span className="text-xs opacity-70">
@@ -69,7 +68,7 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
           </span>
         )}
       </div>
-      
+
       {isExpanded && hasDetails && toolEvent && (
         <div className="mt-2 space-y-2 pl-6 border-l-2 border-current opacity-75">
           {toolEvent.arguments && (
@@ -80,7 +79,7 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
               </pre>
             </div>
           )}
-          
+
           {toolEvent.result && (
             <div>
               <div className="text-xs font-medium opacity-70">Result:</div>
@@ -89,10 +88,12 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
               </div>
             </div>
           )}
-          
+
           {toolEvent.error && (
             <div>
-              <div className="text-xs font-medium text-red-600 dark:text-red-400">Error:</div>
+              <div className="text-xs font-medium text-red-600 dark:text-red-400">
+                Error:
+              </div>
               <div className="text-xs bg-red-100 dark:bg-red-900/20 p-2 rounded mt-1 text-red-800 dark:text-red-200">
                 {toolEvent.error}
               </div>
@@ -116,7 +117,9 @@ export function ChatPage({}: ChatPageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
-  const [currentToolCalls, setCurrentToolCalls] = useState<Record<string, ToolCallEvent>>({});
+  const [currentToolCalls, setCurrentToolCalls] = useState<
+    Record<string, ToolCallEvent>
+  >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -158,9 +161,7 @@ export function ChatPage({}: ChatPageProps) {
   const loadAgents = async () => {
     try {
       setIsLoadingAgents(true);
-      console.log("Loading agents...");
       const response = await agentsApi.getAgents();
-      console.log("Agents loaded:", response.agents);
       setAgents(response.agents);
 
       // Try to restore selected agent from localStorage
@@ -179,7 +180,6 @@ export function ChatPage({}: ChatPageProps) {
       }
 
       if (agentToSelect && !selectedAgent) {
-        console.log("Setting selected agent:", agentToSelect);
         setSelectedAgent(agentToSelect);
       }
     } catch (error) {
@@ -223,22 +223,22 @@ export function ChatPage({}: ChatPageProps) {
 
   const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the session click
-    
+
     if (!selectedAgent) return;
-    
+
     try {
       await chatApi.deleteChatSession(selectedAgent.id, sessionId);
-      
+
       // Remove the session from the local state
-      setSessions(prev => prev.filter(session => session.id !== sessionId));
-      
+      setSessions((prev) => prev.filter((session) => session.id !== sessionId));
+
       // If we're currently viewing the deleted session, clear it
       if (currentSession?.id === sessionId) {
         setCurrentSession(null);
         setMessages([]);
       }
     } catch (error) {
-      console.error('Failed to delete session:', error);
+      console.error("Failed to delete session:", error);
     }
   };
 
@@ -341,7 +341,7 @@ export function ChatPage({}: ChatPageProps) {
               break;
             case "error":
               console.error("Stream error:", event.content);
-              
+
               // Add error message to chat
               const errorMessage: ChatMessage = {
                 id: Date.now().toString(),
@@ -351,7 +351,7 @@ export function ChatPage({}: ChatPageProps) {
                 created_at: new Date().toISOString(),
               };
               setMessages((prev) => [...prev, errorMessage]);
-              
+
               setIsStreaming(false);
               setStreamingMessage("");
               setCurrentToolCalls({});
@@ -367,7 +367,7 @@ export function ChatPage({}: ChatPageProps) {
       );
     } catch (error) {
       console.error("Failed to send message:", error);
-      
+
       // Add error message to chat
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -377,7 +377,7 @@ export function ChatPage({}: ChatPageProps) {
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
-      
+
       setIsStreaming(false);
       setStreamingMessage("");
       setCurrentToolCalls({});
@@ -404,45 +404,64 @@ export function ChatPage({}: ChatPageProps) {
       }
       return "API rate limit reached. Please wait a moment and try again.";
     }
-    
+
     // Handle authentication errors
-    if (errorText.includes("401") || errorText.includes("authentication") || errorText.includes("unauthorized")) {
+    if (
+      errorText.includes("401") ||
+      errorText.includes("authentication") ||
+      errorText.includes("unauthorized")
+    ) {
       return "Authentication failed. Please check your API keys in the agent configuration.";
     }
-    
+
     // Handle quota/billing errors
-    if (errorText.includes("quota") || errorText.includes("billing") || errorText.includes("insufficient_quota")) {
+    if (
+      errorText.includes("quota") ||
+      errorText.includes("billing") ||
+      errorText.includes("insufficient_quota")
+    ) {
       return "API quota exceeded or billing issue. Please check your account status and billing information.";
     }
-    
+
     // Handle context length errors
-    if (errorText.includes("context_length") || errorText.includes("maximum context length") || errorText.includes("too long")) {
+    if (
+      errorText.includes("context_length") ||
+      errorText.includes("maximum context length") ||
+      errorText.includes("too long")
+    ) {
       return "Message too long for the model's context window. Try shortening your message or starting a new conversation.";
     }
-    
+
     // Handle model availability errors
-    if (errorText.includes("model") && (errorText.includes("not found") || errorText.includes("unavailable"))) {
+    if (
+      errorText.includes("model") &&
+      (errorText.includes("not found") || errorText.includes("unavailable"))
+    ) {
       return "The selected model is not available. Please try a different model in the agent configuration.";
     }
-    
+
     // Handle network/connection errors
-    if (errorText.includes("connection") || errorText.includes("network") || errorText.includes("timeout")) {
+    if (
+      errorText.includes("connection") ||
+      errorText.includes("network") ||
+      errorText.includes("timeout")
+    ) {
       return "Connection error. Please check your internet connection and try again.";
     }
-    
+
     // Handle MCP/tool errors
     if (errorText.includes("MCP") || errorText.includes("tool")) {
       return "Tool execution error. Some external tools may be temporarily unavailable.";
     }
-    
+
     // Default fallback - clean up technical details but keep essential info
     if (errorText.length > 200) {
       // Extract key error information if the message is very long
-      const lines = errorText.split('\n');
+      const lines = errorText.split("\n");
       const firstLine = lines[0] || errorText;
       return `${firstLine.substring(0, 150)}...`;
     }
-    
+
     return errorText;
   };
 
@@ -605,10 +624,10 @@ export function ChatPage({}: ChatPageProps) {
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
                             : message.role === "tool"
-                            ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200"
-                            : message.content.startsWith("⚠️ **Error**:")
-                            ? "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
-                            : "bg-card border"
+                              ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200"
+                              : message.content.startsWith("⚠️ **Error**:")
+                                ? "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+                                : "bg-card border"
                         }`}
                       >
                         {message.role === "tool" ? (
