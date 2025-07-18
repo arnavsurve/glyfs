@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/arnavsurve/agentplane/internal/services"
 	"github.com/arnavsurve/agentplane/internal/shared"
@@ -122,6 +123,13 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	}
 
 	toolEventFunc := func(event *shared.ToolCallEvent) {
+		// Skip saving tool_batch_complete events - they're just signals
+		if event.Type == "tool_batch_complete" {
+			// Send the event but don't save to database
+			h.sendStreamEvent(c, "tool_event", "", event)
+			return
+		}
+
 		// Save tool call as a message for persistence
 		toolMessage := shared.ChatMessage{
 			SessionID: session.ID,
@@ -172,8 +180,9 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return nil
 	}
 
-	// Update the assistant message with the full response
+	// Update the assistant message with the full response and set timestamp to now
 	assistantMessage.Content = fullResponse
+	assistantMessage.CreatedAt = time.Now() // Set timestamp to when response finishes
 	h.DB.Save(&assistantMessage)
 
 	// Generate title for new sessions
