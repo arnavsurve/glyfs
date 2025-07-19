@@ -165,7 +165,7 @@ func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []sha
 }
 
 func (s *LLMService) GenerateChatTitle(ctx context.Context, firstMessage string) (string, error) {
-	llm, err := s.CreateLLM("anthropic")
+	llm, err := s.CreateLLM("openai")
 	if err != nil {
 		return "", fmt.Errorf("creating LLM client: %w", err)
 	}
@@ -191,7 +191,7 @@ Title:`, firstMessage)
 	}
 
 	response, err := llm.GenerateContent(ctx, messages,
-		llms.WithModel("claude-3-5-haiku-20241022"),
+		llms.WithModel(string(shared.GPT4oMini)),
 		llms.WithTemperature(0.3),
 		llms.WithMaxTokens(20),
 	)
@@ -212,7 +212,7 @@ Title:`, firstMessage)
 
 func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model, agent *shared.AgentConfig, messages []llms.MessageContent, toolsList []tools.Tool, toolsMap map[string]tools.Tool, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent), reasoningEventFunc func(*shared.ReasoningEvent)) error {
 	conversationMessages := messages
-	maxIterations := 25
+	maxIterations := 15
 
 	// Add reasoning instruction to system prompt if tools are available
 	if len(toolsList) > 0 && reasoningEventFunc != nil {

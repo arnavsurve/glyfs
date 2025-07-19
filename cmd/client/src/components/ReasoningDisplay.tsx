@@ -31,21 +31,6 @@ export function ReasoningDisplay({
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "planning":
-        return "🎯";
-      case "analysis":
-        return "🔍";
-      case "error_recovery":
-        return "🔧";
-      case "decision":
-        return "⚡";
-      default:
-        return "💭";
-    }
-  };
-
   return (
     <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm">
       <div
@@ -53,7 +38,6 @@ export function ReasoningDisplay({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center space-x-2">
-          <span className="text-lg">🧠</span>
           <span className="font-medium text-gray-700 dark:text-gray-300">
             AI Reasoning ({reasoningEvents.length} steps)
           </span>
@@ -69,9 +53,6 @@ export function ReasoningDisplay({
               className="border-l-2 border-gray-300 dark:border-gray-600 pl-3 py-1"
             >
               <div className="flex items-center space-x-2 mb-1">
-                <span className="text-sm">
-                  {getCategoryIcon(event.category)}
-                </span>
                 <span
                   className={`text-xs font-medium ${getCategoryColor(event.category)}`}
                 >

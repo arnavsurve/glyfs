@@ -325,7 +325,7 @@ export function ChatPage({}: ChatPageProps) {
     setIsStreaming(true);
     setStreamingMessage("");
     setCurrentReasoningEvents([]);
-    setCurrentToolCalls({}); // Clear tool calls when starting a new message
+    setCurrentToolCalls({}); // Clear tool calls when starting new message
 
     // Re-focus input after a brief delay to ensure it's ready
     setTimeout(() => {
@@ -381,8 +381,8 @@ export function ChatPage({}: ChatPageProps) {
               setStreamingMessage("");
               setCurrentReasoningEvents([]);
               setIsStreaming(false);
-              // Don't clear currentToolCalls - let them persist in the UI
-              loadSessions(); // Refresh sessions list
+              setCurrentToolCalls({}); // Clear tool calls - they're now in messages
+              loadSessions();
               // Re-focus input after response is complete
               setTimeout(() => {
                 if (inputRef.current) {
@@ -407,10 +407,33 @@ export function ChatPage({}: ChatPageProps) {
                     return updated;
                   });
                 } else if (toolEvent.call_id) {
-                  setCurrentToolCalls((prev) => ({
-                    ...prev,
-                    [toolEvent.call_id!]: toolEvent,
-                  }));
+                  // Add tool messages to the message list for completed tools
+                  if (toolEvent.type === "tool_result" || toolEvent.type === "tool_error") {
+                    const toolMessage: ChatMessage = {
+                      id: `tool-${toolEvent.call_id}-${Date.now()}`,
+                      session_id: currentSession?.id || event.data?.session_id || "",
+                      role: "tool",
+                      content: toolEvent.type === "tool_result" 
+                        ? `Tool completed: ${toolEvent.tool_name}`
+                        : `Tool failed: ${toolEvent.tool_name}`,
+                      metadata: JSON.stringify(toolEvent),
+                      created_at: new Date().toISOString(),
+                    };
+                    setMessages((prev) => [...prev, toolMessage]);
+                    
+                    // Remove from currentToolCalls since it's now in messages
+                    setCurrentToolCalls((prev) => {
+                      const updated = { ...prev };
+                      delete updated[toolEvent.call_id!];
+                      return updated;
+                    });
+                  } else {
+                    // Only add to currentToolCalls if it's not a completion event
+                    setCurrentToolCalls((prev) => ({
+                      ...prev,
+                      [toolEvent.call_id!]: toolEvent,
+                    }));
+                  }
                 }
               }
               break;
@@ -746,7 +769,7 @@ export function ChatPage({}: ChatPageProps) {
                   ))}
 
                   {/* Tool Calls Display */}
-                  {isStreaming && Object.keys(currentToolCalls).length > 0 && (
+                  {Object.keys(currentToolCalls).length > 0 && (
                     <div className="flex justify-start">
                       <div className="max-w-[80%]">
                         <ToolCallDisplay toolCalls={currentToolCalls} />

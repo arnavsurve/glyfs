@@ -141,15 +141,15 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		// Set content and metadata based on tool event type
 		switch event.Type {
 		case "tool_start":
-			toolMessage.Content = fmt.Sprintf("🔧 Executing tool: %s", event.ToolName)
+			toolMessage.Content = fmt.Sprintf("Executing tool: %s", event.ToolName)
 			metadataBytes, _ := json.Marshal(event)
 			toolMessage.Metadata = string(metadataBytes)
 		case "tool_result":
-			toolMessage.Content = fmt.Sprintf("✅ Tool completed: %s", event.ToolName)
+			toolMessage.Content = fmt.Sprintf("Tool completed: %s", event.ToolName)
 			metadataBytes, _ := json.Marshal(event)
 			toolMessage.Metadata = string(metadataBytes)
 		case "tool_error":
-			toolMessage.Content = fmt.Sprintf("❌ Tool failed: %s", event.ToolName)
+			toolMessage.Content = fmt.Sprintf("Tool failed: %s", event.ToolName)
 			metadataBytes, _ := json.Marshal(event)
 			toolMessage.Metadata = string(metadataBytes)
 		}
@@ -195,7 +195,7 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		} else {
 			fmt.Printf("Generated title with LLM: '%s' for message: '%s'\n", title, req.Message)
 		}
-		
+
 		if title != "" && title != "New Chat" {
 			session.Title = title
 			fmt.Printf("Updating session title to: '%s'\n", title)
@@ -360,7 +360,7 @@ func (h *Handler) sendStreamEvent(c echo.Context, eventType, content string, dat
 		}
 		return
 	}
-	
+
 	fmt.Fprintf(c.Response(), "data: %s\n\n", jsonData)
 }
 
@@ -396,4 +396,3 @@ func (h *Handler) generateChatTitle(firstMessage string) string {
 	}
 	return title
 }
-

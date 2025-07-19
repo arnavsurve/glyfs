@@ -117,11 +117,11 @@ type MCPServer struct {
 	ServerType  string         `gorm:"type:text;not null" json:"server_type"` // "sse", "http"
 	Config      string         `gorm:"type:jsonb" json:"config"`              // JSON config
 	LastSeen    *time.Time     `json:"last_seen,omitempty"`
-	
+
 	// Encryption metadata
-	EncryptedURL      bool   `gorm:"default:false" json:"encrypted_url"`        // Whether ServerURL is encrypted
-	SensitiveHeaders  string `gorm:"type:text" json:"sensitive_headers"`        // JSON array of sensitive header names
-	
+	EncryptedURL     bool   `gorm:"default:false" json:"encrypted_url"` // Whether ServerURL is encrypted
+	SensitiveHeaders string `gorm:"type:text" json:"sensitive_headers"` // JSON array of sensitive header names
+
 	// Relationships
 	User            User             `gorm:"foreignKey:UserID;references:ID" json:"user"`
 	AgentMCPServers []AgentMCPServer `gorm:"foreignKey:MCPServerID;references:ID" json:"agent_mcp_servers,omitempty"`
@@ -137,21 +137,6 @@ type AgentMCPServer struct {
 	// Relationships
 	Agent     AgentConfig `gorm:"foreignKey:AgentID;references:ID" json:"agent"`
 	MCPServer MCPServer   `gorm:"foreignKey:MCPServerID;references:ID" json:"mcp_server"`
-}
-
-type ToolCall struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	MessageID uuid.UUID `gorm:"type:uuid;not null;index" json:"message_id"`
-	ToolName  string    `gorm:"type:text;not null" json:"tool_name"`
-	Arguments string    `gorm:"type:jsonb" json:"arguments"`
-	Result    string    `gorm:"type:text" json:"result"`
-	Status    string    `gorm:"type:text;not null" json:"status"` // "pending", "success", "error"
-	ErrorMsg  string    `gorm:"type:text" json:"error_msg,omitempty"`
-	Duration  int64     `gorm:"type:bigint" json:"duration_ms"` // milliseconds
-
-	// Relationships
-	Message ChatMessage `gorm:"foreignKey:MessageID;references:ID" json:"message"`
 }
 
 // MCP Server Configuration Types
@@ -195,11 +180,11 @@ type ToolCallEvent struct {
 
 // LLM reasoning related types
 type ReasoningEvent struct {
-	Type         string `json:"type"`          // "reasoning_start", "reasoning_step", "reasoning_conclusion"
-	Category     string `json:"category"`      // "planning", "analysis", "error_recovery", "decision"
-	Content      string `json:"content"`       // The reasoning text
-	Iteration    int    `json:"iteration"`     // Current iteration number
-	Timestamp    int64  `json:"timestamp"`     // Unix timestamp
+	Type         string `json:"type"`                    // "reasoning_start", "reasoning_step", "reasoning_conclusion"
+	Category     string `json:"category"`                // "planning", "analysis", "error_recovery", "decision"
+	Content      string `json:"content"`                 // The reasoning text
+	Iteration    int    `json:"iteration"`               // Current iteration number
+	Timestamp    int64  `json:"timestamp"`               // Unix timestamp
 	ToolContext  string `json:"tool_context,omitempty"`  // Related tool call context
 	ErrorContext string `json:"error_context,omitempty"` // Previous error context if applicable
 }
