@@ -145,7 +145,6 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 		ServerURL:        serverURL,
 		ServerType:       req.ServerType,
 		Config:           string(configJSON),
-		Status:           "inactive",
 		EncryptedURL:     req.SensitiveURL,
 		SensitiveHeaders: string(sensitiveHeadersJSON),
 	}
@@ -160,7 +159,6 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 		Description: server.Description,
 		ServerURL:   server.ServerURL,
 		ServerType:  server.ServerType,
-		Status:      server.Status,
 		LastSeen:    server.LastSeen,
 		CreatedAt:   server.CreatedAt,
 		UpdatedAt:   server.UpdatedAt,
@@ -205,7 +203,6 @@ func (h *MCPHandler) ListMCPServers(c echo.Context) error {
 			Description: decryptedServer.Description,
 			ServerURL:   decryptedServer.ServerURL,
 			ServerType:  decryptedServer.ServerType,
-			Status:      decryptedServer.Status,
 			LastSeen:    decryptedServer.LastSeen,
 			CreatedAt:   decryptedServer.CreatedAt,
 			UpdatedAt:   decryptedServer.UpdatedAt,
@@ -257,7 +254,6 @@ func (h *MCPHandler) GetMCPServer(c echo.Context) error {
 		Description: decryptedServer.Description,
 		ServerURL:   decryptedServer.ServerURL,
 		ServerType:  decryptedServer.ServerType,
-		Status:      decryptedServer.Status,
 		LastSeen:    decryptedServer.LastSeen,
 		CreatedAt:   decryptedServer.CreatedAt,
 		UpdatedAt:   decryptedServer.UpdatedAt,
@@ -398,7 +394,6 @@ func (h *MCPHandler) UpdateMCPServer(c echo.Context) error {
 		Description: server.Description,
 		ServerURL:   server.ServerURL,
 		ServerType:  server.ServerType,
-		Status:      server.Status,
 		LastSeen:    server.LastSeen,
 		CreatedAt:   server.CreatedAt,
 		UpdatedAt:   server.UpdatedAt,
@@ -540,7 +535,6 @@ func (h *MCPHandler) GetAgentMCPServers(c echo.Context) error {
 			ServerID:   assoc.MCPServerID,
 			ServerName: assoc.MCPServer.Name,
 			Enabled:    assoc.Enabled,
-			Status:     assoc.MCPServer.Status,
 		}
 	}
 

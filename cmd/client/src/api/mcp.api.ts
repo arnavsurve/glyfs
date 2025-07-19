@@ -6,7 +6,6 @@ export interface MCPServer {
   description: string;
   server_url: string;
   server_type: 'http' | 'sse';
-  status: 'active' | 'inactive' | 'error';
   last_seen?: string;
   created_at: string;
   updated_at: string;
@@ -39,7 +38,6 @@ export interface AgentMCPServer {
   server_id: string;
   server_name: string;
   enabled: boolean;
-  status: string;
 }
 
 export interface TestConnectionResponse {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -201,10 +199,6 @@ func (m *MCPConnectionManager) GetAgentTools(ctx context.Context, agentID uuid.U
 	var errors []error
 
 	for _, assoc := range associations {
-		// Skip if server is not active
-		if assoc.MCPServer.Status != "active" {
-			continue
-		}
 
 		conn, err := m.GetConnection(ctx, assoc.MCPServerID)
 		if err != nil {
@@ -261,7 +255,6 @@ func (m *MCPConnectionManager) checkConnections() {
 		if time.Since(conn.LastUsed) > 10*time.Minute {
 			conn.Client.Close()
 			delete(m.connections, serverID)
-			m.updateServerStatus(serverID, "inactive", nil)
 			continue
 		}
 
@@ -270,24 +263,10 @@ func (m *MCPConnectionManager) checkConnections() {
 		if conn.Status == StatusError {
 			conn.Client.Close()
 			delete(m.connections, serverID)
-			m.updateServerStatus(serverID, "error", conn.Error)
 		}
 	}
 }
 
-func (m *MCPConnectionManager) updateServerStatus(serverID uuid.UUID, status string, err error) {
-	now := time.Now()
-	update := map[string]any{
-		"status":    status,
-		"last_seen": now,
-	}
-
-	if err != nil {
-		log.Printf("MCP Server %s error: %v\n", serverID, err)
-	}
-
-	m.db.Model(&shared.MCPServer{}).Where("id = ?", serverID).Updates(update)
-}
 
 // TestConnection tests if we can connect to an MCP server
 func (m *MCPConnectionManager) TestConnection(ctx context.Context, serverID uuid.UUID) error {

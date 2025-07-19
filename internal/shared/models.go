@@ -116,7 +116,6 @@ type MCPServer struct {
 	ServerURL   string         `gorm:"type:text;not null" json:"server_url"`
 	ServerType  string         `gorm:"type:text;not null" json:"server_type"` // "sse", "http"
 	Config      string         `gorm:"type:jsonb" json:"config"`              // JSON config
-	Status      string         `gorm:"type:text;default:'inactive'" json:"status"`
 	LastSeen    *time.Time     `json:"last_seen,omitempty"`
 	
 	// Encryption metadata
@@ -172,7 +171,6 @@ type MCPServerResponse struct {
 	Description string     `json:"description"`
 	ServerURL   string     `json:"server_url"`
 	ServerType  string     `json:"server_type"`
-	Status      string     `json:"status"`
 	LastSeen    *time.Time `json:"last_seen,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
@@ -182,7 +180,6 @@ type AgentMCPServerResponse struct {
 	ServerID   uuid.UUID `json:"server_id"`
 	ServerName string    `json:"server_name"`
 	Enabled    bool      `json:"enabled"`
-	Status     string    `json:"status"`
 }
 
 // Tool calling related types

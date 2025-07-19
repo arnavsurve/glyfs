@@ -13,7 +13,6 @@ import {
   ToggleRight,
   ExternalLink,
   Wrench,
-  AlertCircle,
   RefreshCw,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -274,27 +273,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     return agentServers.find((as) => as.server_id === serverId);
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      active: { color: "bg-green-100 text-green-800", icon: Check },
-      inactive: { color: "bg-gray-100 text-gray-800", icon: X },
-      error: { color: "bg-red-100 text-red-800", icon: AlertCircle },
-    };
-
-    const config =
-      statusConfig[status as keyof typeof statusConfig] ||
-      statusConfig.inactive;
-    const Icon = config.icon;
-
-    return (
-      <span
-        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-      >
-        <Icon className="w-3 h-3 mr-1" />
-        {status}
-      </span>
-    );
-  };
 
   if (isLoading) {
     return (
@@ -398,7 +376,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                         <span className="uppercase font-medium">
                           {server.server_type}
                         </span>
-                        {getStatusBadge(server.status)}
                       </div>
 
                       {server.last_seen && (

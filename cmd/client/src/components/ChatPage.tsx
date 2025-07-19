@@ -8,7 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Send, MessageSquare, Bot, Trash2, Clock, CheckCircle, XCircle, Wrench, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Send,
+  MessageSquare,
+  Bot,
+  Trash2,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Wrench,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -80,7 +91,7 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
   return (
     <div className="border border-border rounded-lg bg-muted/20 overflow-hidden">
       <div
-        className={`flex items-center justify-between p-3 ${hasDetails ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+        className={`flex items-center justify-between p-3 ${hasDetails ? "cursor-pointer hover:bg-muted/40" : ""}`}
         onClick={hasDetails ? () => setIsExpanded(!isExpanded) : undefined}
       >
         <div className="flex items-center space-x-3">
@@ -99,7 +110,7 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
             </div>
           </div>
         </div>
-        
+
         {hasDetails && (
           <div className="flex items-center space-x-2">
             {isExpanded ? (
@@ -110,27 +121,31 @@ function ToolMessageDisplay({ message }: { message: ChatMessage }) {
           </div>
         )}
       </div>
-      
+
       {isExpanded && hasDetails && (
         <div className="border-t border-border bg-muted/10 p-3 space-y-3">
           {toolEvent.arguments && (
             <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">Arguments</h4>
+              <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                Arguments
+              </h4>
               <pre className="text-xs bg-background p-2 rounded border overflow-x-auto">
                 {formatArguments(toolEvent.arguments)}
               </pre>
             </div>
           )}
-          
+
           {toolEvent.result && (
             <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">Result</h4>
+              <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                Result
+              </h4>
               <div className="text-xs bg-background p-2 rounded border">
                 {toolEvent.result}
               </div>
             </div>
           )}
-          
+
           {toolEvent.error && (
             <div>
               <h4 className="text-xs font-medium text-red-600 mb-1">Error</h4>
@@ -386,7 +401,7 @@ export function ChatPage({}: ChatPageProps) {
                   // Mark all current tool calls as batch complete (for thinking indicator logic)
                   setCurrentToolCalls((prev) => {
                     const updated = { ...prev };
-                    Object.keys(updated).forEach(key => {
+                    Object.keys(updated).forEach((key) => {
                       updated[key] = { ...updated[key], batch_complete: true };
                     });
                     return updated;
@@ -742,9 +757,11 @@ export function ChatPage({}: ChatPageProps) {
                   {/* Thinking Indicator */}
                   {isStreaming &&
                     currentReasoningEvents.length === 0 &&
-                    !streamingMessage && 
-                    (Object.keys(currentToolCalls).length === 0 || 
-                     Object.values(currentToolCalls).every(tc => tc.batch_complete)) && (
+                    !streamingMessage &&
+                    (Object.keys(currentToolCalls).length === 0 ||
+                      Object.values(currentToolCalls).every(
+                        (tc) => tc.batch_complete,
+                      )) && (
                       <div className="flex justify-start">
                         <div className="max-w-[80%] p-3 rounded-lg bg-card border">
                           <div className="flex items-center space-x-2">
