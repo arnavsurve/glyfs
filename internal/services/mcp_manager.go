@@ -83,9 +83,7 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 
 	decryptedServer := server
 
-	// Check if data looks encrypted (long base64-like string without protocol)
-	needsDecryption := server.EncryptedURL || server.SensitiveHeaders != "" ||
-		(len(server.ServerURL) > 100 && !strings.HasPrefix(server.ServerURL, "http"))
+	needsDecryption := server.EncryptedURL || server.SensitiveHeaders != ""
 
 	if needsDecryption {
 		encryptionService, err := NewEncryptionService()
@@ -145,8 +143,6 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 	}
 
 	m.connections[serverID] = connection
-
-	m.updateServerStatus(serverID, "active", nil)
 
 	return connection, nil
 }
@@ -244,7 +240,6 @@ func (m *MCPConnectionManager) CloseConnection(serverID uuid.UUID) {
 	if conn, exists := m.connections[serverID]; exists {
 		conn.Client.Close()
 		delete(m.connections, serverID)
-		m.updateServerStatus(serverID, "inactive", nil)
 	}
 }
 
@@ -353,10 +348,10 @@ func (st *ServerTool) Call(ctx context.Context, input string) (string, error) {
 func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryptionService *EncryptionService) (shared.MCPServer, error) {
 	decryptedServer := server
 
-	// Decrypt URL if it's encrypted or looks like encrypted data
+	// Decrypt URL if it's encrypted
 	var decryptedURL string
 	urlDecrypted := false
-	if server.EncryptedURL || (len(server.ServerURL) > 100 && !strings.HasPrefix(server.ServerURL, "http")) {
+	if server.EncryptedURL {
 		var err error
 		decryptedURL, err = encryptionService.Decrypt(server.ServerURL)
 		if err != nil {
