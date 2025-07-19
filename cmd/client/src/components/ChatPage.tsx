@@ -567,6 +567,13 @@ export function ChatPage({}: ChatPageProps) {
                 if (agent) {
                   setSelectedAgent(agent);
                   localStorage.setItem("selectedAgentId", agent.id);
+                  // Reset chat state when switching agents
+                  setCurrentSession(null);
+                  setMessages([]);
+                  setCurrentToolCalls({});
+                  setStreamingMessage("");
+                  setCurrentReasoningEvents([]);
+                  setIsStreaming(false);
                 }
               }}
             >
