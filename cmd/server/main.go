@@ -60,6 +60,9 @@ func main() {
 		MCPManager: mcpManager,
 	}
 
+	// Start token cleanup worker - runs every hour
+	h.StartTokenCleanupWorker(1 * time.Hour)
+
 	// Serve static files from React build
 	staticPath := filepath.Join("cmd", "client", "dist")
 	if _, err := os.Stat(staticPath); err == nil {
@@ -89,6 +92,14 @@ func main() {
 	auth.POST("/refresh", func(c echo.Context) error {
 		return h.HandleRefreshToken(c)
 	})
+
+	// Admin endpoint for manual token cleanup (protected)
+	api.POST("/admin/cleanup-tokens", h.JWTMiddleware(func(c echo.Context) error {
+		if err := h.CleanupExpiredTokens(); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to cleanup tokens")
+		}
+		return c.JSON(http.StatusOK, map[string]string{"message": "token cleanup completed"})
+	}))
 
 	protected := api.Group("")
 	protected.Use(h.JWTMiddleware)
