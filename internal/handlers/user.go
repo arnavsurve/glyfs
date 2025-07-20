@@ -332,28 +332,6 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 	return tokenString, nil
 }
 
-func (h *Handler) createRefreshTokenWithoutRevokingAll(userID uint) (string, error) {
-	// Generate token first to fail fast if there's an issue
-	tokenString, err := generateRefreshToken()
-	if err != nil {
-		return "", err
-	}
-
-	// Create new refresh token without revoking existing ones
-	refreshToken := shared.RefreshToken{
-		UserID:    userID,
-		Token:     tokenString,
-		ExpiresAt: time.Now().Add(refreshTokenExpiry),
-		IsRevoked: false,
-	}
-
-	if err := h.DB.Create(&refreshToken).Error; err != nil {
-		log.Printf("Failed to create refresh token for user %d: %v", userID, err)
-		return "", err
-	}
-
-	return tokenString, nil
-}
 
 func setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	accessCookie := &http.Cookie{
