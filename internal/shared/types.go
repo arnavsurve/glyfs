@@ -34,6 +34,7 @@ const (
 	GPT41     OpenAIModel = "gpt-4.1"
 	GPT4o     OpenAIModel = "gpt-4o"
 	GPT4oMini OpenAIModel = "gpt-4o-mini"
+	GPT41Nano OpenAIModel = "gpt-4.1-nano-2025-04-14"
 )
 
 func (om OpenAIModel) IsValid() bool {

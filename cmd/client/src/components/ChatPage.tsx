@@ -21,11 +21,10 @@ import {
   type ChatSession,
   type ChatStreamEvent,
 } from "../api/chat.api";
-import type { ToolCallEvent, ReasoningEvent } from "../types/chat.types";
+import type { ToolCallEvent } from "../types/chat.types";
 import { agentsApi } from "../api/agents.api";
 import type { Agent } from "../types/agent.types";
 import { ToolCallDisplay } from "./ToolCallDisplay";
-import { ReasoningDisplay } from "./ReasoningDisplay";
 
 interface ChatPageProps {}
 
@@ -41,9 +40,6 @@ export function ChatPage({}: ChatPageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
-  const [currentReasoningEvents, setCurrentReasoningEvents] = useState<
-    ReasoningEvent[]
-  >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -66,7 +62,7 @@ export function ChatPage({}: ChatPageProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage, currentReasoningEvents]);
+  }, [messages, streamingMessage]);
 
   // Auto-focus input when component mounts or agent changes
   useEffect(() => {
@@ -201,7 +197,6 @@ export function ChatPage({}: ChatPageProps) {
     setInputMessage("");
     setIsStreaming(true);
     setStreamingMessage("");
-    setCurrentReasoningEvents([]);
 
     // Re-focus input after a brief delay to ensure it's ready
     setTimeout(() => {
@@ -255,7 +250,6 @@ export function ChatPage({}: ChatPageProps) {
               };
               setMessages((prev) => [...prev, assistantMessage]);
               setStreamingMessage("");
-              setCurrentReasoningEvents([]);
               setIsStreaming(false);
               loadSessions();
               // Re-focus input after response is complete
@@ -311,12 +305,6 @@ export function ChatPage({}: ChatPageProps) {
                 }
               }
               break;
-            case "reasoning_event":
-              if (event.data) {
-                const reasoningEvent = event.data as ReasoningEvent;
-                setCurrentReasoningEvents((prev) => [...prev, reasoningEvent]);
-              }
-              break;
             case "error":
               console.error("Stream error:", event.content);
 
@@ -332,7 +320,6 @@ export function ChatPage({}: ChatPageProps) {
 
               setIsStreaming(false);
               setStreamingMessage("");
-              setCurrentReasoningEvents([]);
               // Re-focus input even on error
               setTimeout(() => {
                 if (inputRef.current) {
@@ -358,7 +345,6 @@ export function ChatPage({}: ChatPageProps) {
 
       setIsStreaming(false);
       setStreamingMessage("");
-      setCurrentReasoningEvents([]);
       // Re-focus input even on error
       setTimeout(() => {
         if (inputRef.current) {
@@ -481,7 +467,6 @@ export function ChatPage({}: ChatPageProps) {
                   setCurrentSession(null);
                   setMessages([]);
                   setStreamingMessage("");
-                  setCurrentReasoningEvents([]);
                   setIsStreaming(false);
                 }
               }}
@@ -640,9 +625,7 @@ export function ChatPage({}: ChatPageProps) {
                   ))}
 
                   {/* Thinking Indicator */}
-                  {isStreaming &&
-                    currentReasoningEvents.length === 0 &&
-                    !streamingMessage && (
+                  {isStreaming && !streamingMessage && (
                       <div className="flex justify-start">
                         <div className="max-w-[80%] p-3 rounded-lg bg-card border">
                           <div className="flex items-center space-x-2">
@@ -662,16 +645,6 @@ export function ChatPage({}: ChatPageProps) {
                       </div>
                     )}
 
-                  {/* Reasoning Display */}
-                  {isStreaming && currentReasoningEvents.length > 0 && (
-                    <div className="flex justify-start">
-                      <div className="max-w-[80%]">
-                        <ReasoningDisplay
-                          reasoningEvents={currentReasoningEvents}
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   {/* Streaming Message */}
                   {isStreaming && streamingMessage && (

@@ -111,7 +111,7 @@ func (s *LLMService) buildMessages(systemPrompt string, history []shared.Message
 	return messages
 }
 
-func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.AgentConfig, req *shared.ChatStreamRequest, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent), reasoningEventFunc func(*shared.ReasoningEvent)) error {
+func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.AgentConfig, req *shared.ChatStreamRequest, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent)) error {
 	llm, err := s.CreateLLM(agent.Provider)
 	if err != nil {
 		return fmt.Errorf("creating LLM client: %w", err)
@@ -136,7 +136,7 @@ func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.A
 		}
 	}
 
-	return s.generateWithToolSupport(ctx, llm, agent, messages, toolsList, toolsMap, streamFunc, toolEventFunc, reasoningEventFunc)
+	return s.generateWithToolSupport(ctx, llm, agent, messages, toolsList, toolsMap, streamFunc, toolEventFunc)
 }
 
 func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []shared.ChatContextMessage, userMessage string) []llms.MessageContent {
@@ -170,7 +170,7 @@ func (s *LLMService) GenerateChatTitle(ctx context.Context, firstMessage string)
 		return "", fmt.Errorf("creating LLM client: %w", err)
 	}
 
-	prompt := fmt.Sprintf(`Generate a very short, descriptive title (3-5 words max) for a chat conversation that starts with this message: "%s"llm
+	prompt := fmt.Sprintf(`Generate a very short, descriptive title (3-5 words max) for a chat conversation that starts with this message: "%s"
 
 The title should:
 - Be concise and capture the main topic
@@ -191,7 +191,7 @@ Title:`, firstMessage)
 	}
 
 	response, err := llm.GenerateContent(ctx, messages,
-		llms.WithModel(string(shared.GPT4oMini)),
+		llms.WithModel(string(shared.GPT41Nano)),
 		llms.WithTemperature(0.3),
 		llms.WithMaxTokens(20),
 	)
@@ -210,14 +210,9 @@ Title:`, firstMessage)
 	return title, nil
 }
 
-func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model, agent *shared.AgentConfig, messages []llms.MessageContent, toolsList []tools.Tool, toolsMap map[string]tools.Tool, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent), reasoningEventFunc func(*shared.ReasoningEvent)) error {
+func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model, agent *shared.AgentConfig, messages []llms.MessageContent, toolsList []tools.Tool, toolsMap map[string]tools.Tool, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent)) error {
 	conversationMessages := messages
 	maxIterations := 15
-
-	// Add reasoning instruction to system prompt if tools are available
-	if len(toolsList) > 0 && reasoningEventFunc != nil {
-		conversationMessages = s.addReasoningInstruction(conversationMessages)
-	}
 
 	for iteration := range maxIterations {
 		opts := []llms.CallOption{
@@ -246,11 +241,6 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 		}
 
 		choice := content.Choices[0]
-
-		// Extract and stream reasoning if present
-		if reasoningEventFunc != nil {
-			s.extractAndStreamReasoning(choice.Content, iteration, reasoningEventFunc)
-		}
 
 		// Check if there are tool calls to execute
 		if len(choice.ToolCalls) > 0 {
@@ -420,53 +410,4 @@ func (s *LLMService) convertToLLMSTools(toolsList []tools.Tool) []llms.Tool {
 		}
 	}
 	return llmsTools
-}
-
-// addReasoningInstruction adds reasoning instruction to the system prompt
-func (s *LLMService) addReasoningInstruction(messages []llms.MessageContent) []llms.MessageContent {
-	if len(messages) == 0 {
-		return messages
-	}
-
-	// Find the system message and enhance it
-	for i, msg := range messages {
-		if msg.Role == llms.ChatMessageTypeSystem {
-			for j, part := range msg.Parts {
-				if textPart, ok := part.(llms.TextContent); ok {
-					enhanced := textPart.Text + "\n\nWhen using tools, please think step by step. Start your response with <reasoning> tags to explain your thought process:\n" +
-						"- What you're trying to accomplish\n" +
-						"- Why you're choosing specific tools\n" +
-						"- What you expect from each tool call\n" +
-						"- How you'll use the results\n" +
-						"Use </reasoning> to end your reasoning section before making tool calls."
-					messages[i].Parts[j] = llms.TextContent{Text: enhanced}
-				}
-			}
-			break
-		}
-	}
-	return messages
-}
-
-// extractAndStreamReasoning extracts reasoning from LLM response and streams it
-func (s *LLMService) extractAndStreamReasoning(content string, iteration int, reasoningEventFunc func(*shared.ReasoningEvent)) {
-	// Look for reasoning tags in the content
-	reasoningStart := strings.Index(content, "<reasoning>")
-	reasoningEnd := strings.Index(content, "</reasoning>")
-
-	if reasoningStart != -1 && reasoningEnd != -1 && reasoningEnd > reasoningStart {
-		reasoningContent := content[reasoningStart+11 : reasoningEnd] // +11 for "<reasoning>"
-		reasoningContent = strings.TrimSpace(reasoningContent)
-
-		if reasoningContent != "" {
-			// Send reasoning event
-			reasoningEventFunc(&shared.ReasoningEvent{
-				Type:      "reasoning_step",
-				Category:  "planning",
-				Content:   reasoningContent,
-				Iteration: iteration,
-				Timestamp: time.Now().Unix(),
-			})
-		}
-	}
 }

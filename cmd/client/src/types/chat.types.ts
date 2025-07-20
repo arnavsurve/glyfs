@@ -30,7 +30,7 @@ export interface ChatStreamRequest {
 }
 
 export interface ChatStreamEvent {
-  type: 'token' | 'done' | 'error' | 'metadata' | 'tool_event' | 'reasoning_event';
+  type: 'token' | 'done' | 'error' | 'metadata' | 'tool_event';
   content: string;
   data?: any;
 }
@@ -46,15 +46,6 @@ export interface ToolCallEvent {
   batch_complete?: boolean; // Frontend-only flag to track when tool batch is complete
 }
 
-export interface ReasoningEvent {
-  type: 'reasoning_start' | 'reasoning_step' | 'reasoning_conclusion';
-  category: 'planning' | 'analysis' | 'error_recovery' | 'decision';
-  content: string;
-  iteration: number;
-  timestamp: number;
-  tool_context?: string;
-  error_context?: string;
-}
 
 export interface ChatState {
   currentSession: ChatSession | null;

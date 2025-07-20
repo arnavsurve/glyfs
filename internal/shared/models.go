@@ -178,13 +178,3 @@ type ToolCallEvent struct {
 	Duration  int64          `json:"duration_ms,omitempty"`
 }
 
-// LLM reasoning related types
-type ReasoningEvent struct {
-	Type         string `json:"type"`                    // "reasoning_start", "reasoning_step", "reasoning_conclusion"
-	Category     string `json:"category"`                // "planning", "analysis", "error_recovery", "decision"
-	Content      string `json:"content"`                 // The reasoning text
-	Iteration    int    `json:"iteration"`               // Current iteration number
-	Timestamp    int64  `json:"timestamp"`               // Unix timestamp
-	ToolContext  string `json:"tool_context,omitempty"`  // Related tool call context
-	ErrorContext string `json:"error_context,omitempty"` // Previous error context if applicable
-}
