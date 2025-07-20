@@ -134,7 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error('Background token refresh failed:', error);
         // Force logout on refresh failure to prevent broken auth state
-        dispatch({ type: 'AUTH_LOGOUT' });
+        dispatch({ type: 'LOGOUT' });
         clearInterval(refreshInterval);
       }
     }, 12 * 60 * 1000); // Refresh every 12 minutes

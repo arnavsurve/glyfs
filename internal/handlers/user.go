@@ -16,8 +16,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret string
-var refreshTokenMutex sync.Mutex
+var (
+	jwtSecret         string
+	refreshTokenMutex sync.Mutex
+)
 
 func InitJWTSecret() {
 	jwtSecret = os.Getenv("JWT_SECRET")
@@ -197,19 +199,53 @@ func (h *Handler) HandleRefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "user not found")
 	}
 
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "database error")
+	}
+
+	// Revoke the current refresh token
+	if err := tx.Model(&refreshToken).Update("is_revoked", true).Error; err != nil {
+		tx.Rollback()
+		log.Printf("Failed to revoke current refresh token: id=%d, err=%v", refreshToken.ID, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to revoke token")
+	}
+
 	newAccessToken, err := generateJWT(user.ID, user.Email)
 	if err != nil {
+		tx.Rollback()
 		log.Printf("JWT generation failed: user_id=%d, err=%v", user.ID, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
 
-	newRefreshToken, err := h.createRefreshToken(user.ID)
+	// Generate new refresh token
+	newRefreshTokenString, err := generateRefreshToken()
 	if err != nil {
-		log.Printf("Refresh token creation failed: user_id=%d, err=%v", user.ID, err)
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
-	setAuthCookies(c, newAccessToken, newRefreshToken)
+	// Create new refresh token
+	newRefreshTokenRecord := shared.RefreshToken{
+		UserID:    user.ID,
+		Token:     newRefreshTokenString,
+		ExpiresAt: time.Now().Add(refreshTokenExpiry),
+		IsRevoked: false,
+	}
+
+	if err := tx.Create(&newRefreshTokenRecord).Error; err != nil {
+		tx.Rollback()
+		log.Printf("Failed to create refresh token for user %d: %v", user.ID, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create refresh token")
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		log.Printf("Failed to commit refresh token transaction: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "transaction failed")
+	}
+
+	setAuthCookies(c, newAccessToken, newRefreshTokenString)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"message": "tokens refreshed successfully",
@@ -259,7 +295,7 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 	if tx.Error != nil {
 		return "", tx.Error
 	}
-	
+
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -290,6 +326,29 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		log.Printf("Failed to commit refresh token transaction for user %d: %v", userID, err)
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func (h *Handler) createRefreshTokenWithoutRevokingAll(userID uint) (string, error) {
+	// Generate token first to fail fast if there's an issue
+	tokenString, err := generateRefreshToken()
+	if err != nil {
+		return "", err
+	}
+
+	// Create new refresh token without revoking existing ones
+	refreshToken := shared.RefreshToken{
+		UserID:    userID,
+		Token:     tokenString,
+		ExpiresAt: time.Now().Add(refreshTokenExpiry),
+		IsRevoked: false,
+	}
+
+	if err := h.DB.Create(&refreshToken).Error; err != nil {
+		log.Printf("Failed to create refresh token for user %d: %v", userID, err)
 		return "", err
 	}
 
