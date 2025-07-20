@@ -339,29 +339,29 @@ func (h *Handler) CleanupExpiredTokens() error {
 	// 2. Revoked (marked as revoked)
 	// 3. Very old (created more than 30 days ago as a safety measure)
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
-	
+
 	result := h.DB.Where(
 		"expires_at < ? OR is_revoked = ? OR created_at < ?",
 		time.Now(), true, thirtyDaysAgo,
 	).Delete(&shared.RefreshToken{})
-	
+
 	if result.Error != nil {
 		log.Printf("Failed to cleanup expired tokens: %v", result.Error)
 		return result.Error
 	}
-	
+
 	log.Printf("Cleaned up %d expired/revoked refresh tokens", result.RowsAffected)
-	
+
 	// Also cleanup revoked JWT tokens that have expired
 	result = h.DB.Where("expires_at < ?", time.Now()).Delete(&shared.RevokedToken{})
-	
+
 	if result.Error != nil {
 		log.Printf("Failed to cleanup expired revoked tokens: %v", result.Error)
 		return result.Error
 	}
-	
-	log.Printf("Cleaned up %d expired revoked JWT tokens", result.RowsAffected)
-	
+
+	log.Printf("Cleaned up %d expired/revoked JWT tokens", result.RowsAffected)
+
 	return nil
 }
 
@@ -369,19 +369,15 @@ func (h *Handler) CleanupExpiredTokens() error {
 func (h *Handler) StartTokenCleanupWorker(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				if err := h.CleanupExpiredTokens(); err != nil {
-					log.Printf("Token cleanup worker error: %v", err)
-				}
+		for range ticker.C {
+			if err := h.CleanupExpiredTokens(); err != nil {
+				log.Printf("Token cleanup worker error: %v", err)
 			}
 		}
 	}()
-	
+
 	log.Printf("Started token cleanup worker with interval: %v", interval)
 }
-
 
 func setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	accessCookie := &http.Cookie{
