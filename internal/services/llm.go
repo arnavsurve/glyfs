@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -54,7 +55,7 @@ func (s *LLMService) GenerateResponse(ctx context.Context, agent *shared.AgentCo
 		agentTools, err := s.mcpManager.GetAgentTools(ctx, agent.ID)
 		if err != nil {
 			// Log error but continue without tools
-			fmt.Printf("Warning: Failed to get agent tools: %v\n", err)
+			log.Printf("Warning: Failed to get agent tools: %v\n", err)
 		} else {
 			toolsList = agentTools
 		}
@@ -126,7 +127,7 @@ func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.A
 		agentTools, err := s.mcpManager.GetAgentTools(ctx, agent.ID)
 		if err != nil {
 			// Log error but continue without tools
-			fmt.Printf("Warning: Failed to get agent tools: %v\n", err)
+			log.Printf("Warning: Failed to get agent tools: %v\n", err)
 		} else {
 			toolsList = agentTools
 			// Create a map for quick tool lookup
