@@ -128,13 +128,27 @@ export function ChatPage({}: ChatPageProps) {
     }
   };
 
+  // Filter out tool_start messages from historical sessions to match live chat UX
+  const filterHistoricalMessages = (messages: ChatMessage[]) => {
+    return messages.filter(msg => {
+      if (msg.role !== "tool") return true;
+      
+      try {
+        const toolEvent = JSON.parse(msg.metadata || "{}");
+        return toolEvent.type !== "tool_start";
+      } catch {
+        return true; // Keep if metadata parsing fails
+      }
+    });
+  };
+
   const loadSession = async (sessionId: string) => {
     if (!selectedAgent) return;
 
     try {
       const session = await chatApi.getChatSession(selectedAgent.id, sessionId);
       setCurrentSession(session);
-      setMessages(session.messages || []);
+      setMessages(filterHistoricalMessages(session.messages || []));
     } catch (error) {
       console.error("Failed to load session:", error);
     }
