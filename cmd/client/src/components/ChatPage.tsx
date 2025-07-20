@@ -8,18 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import {
-  Send,
-  MessageSquare,
-  Bot,
-  Trash2,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Wrench,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { Send, MessageSquare, Bot, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -40,126 +29,6 @@ import { ReasoningDisplay } from "./ReasoningDisplay";
 
 interface ChatPageProps {}
 
-// Component to display tool messages with expanded details
-function ToolMessageDisplay({ message }: { message: ChatMessage }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  let toolEvent: ToolCallEvent | null = null;
-  try {
-    if (message.metadata) {
-      toolEvent = JSON.parse(message.metadata);
-    }
-  } catch (e) {
-    // Invalid JSON, ignore
-  }
-
-  if (!toolEvent) return null;
-
-  const getStatusIcon = () => {
-    switch (toolEvent.type) {
-      case "tool_start":
-        return <Clock className="w-4 h-4 text-blue-500 animate-pulse" />;
-      case "tool_result":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case "tool_error":
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <Wrench className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusText = () => {
-    switch (toolEvent.type) {
-      case "tool_start":
-        return "Running...";
-      case "tool_result":
-        return "Completed";
-      case "tool_error":
-        return "Failed";
-      default:
-        return "Unknown";
-    }
-  };
-
-  const formatArguments = (args?: Record<string, any>) => {
-    if (!args || Object.keys(args).length === 0) return "No arguments";
-    return JSON.stringify(args, null, 2);
-  };
-
-  const hasDetails = toolEvent.arguments || toolEvent.result || toolEvent.error;
-
-  return (
-    <div className="border border-border rounded-lg bg-muted/20 overflow-hidden">
-      <div
-        className={`flex items-center justify-between p-3 ${hasDetails ? "cursor-pointer hover:bg-muted/40" : ""}`}
-        onClick={hasDetails ? () => setIsExpanded(!isExpanded) : undefined}
-      >
-        <div className="flex items-center space-x-3">
-          {getStatusIcon()}
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-medium text-sm">{toolEvent.tool_name}</span>
-              <span className="text-xs text-muted-foreground">
-                {getStatusText()}
-              </span>
-              {toolEvent.duration_ms && (
-                <span className="text-xs text-muted-foreground">
-                  ({toolEvent.duration_ms}ms)
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {hasDetails && (
-          <div className="flex items-center space-x-2">
-            {isExpanded ? (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            )}
-          </div>
-        )}
-      </div>
-
-      {isExpanded && hasDetails && (
-        <div className="border-t border-border bg-muted/10 p-3 space-y-3">
-          {toolEvent.arguments && (
-            <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">
-                Arguments
-              </h4>
-              <pre className="text-xs bg-background p-2 rounded border overflow-x-auto">
-                {formatArguments(toolEvent.arguments)}
-              </pre>
-            </div>
-          )}
-
-          {toolEvent.result && (
-            <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">
-                Result
-              </h4>
-              <div className="text-xs bg-background p-2 rounded border">
-                {toolEvent.result}
-              </div>
-            </div>
-          )}
-
-          {toolEvent.error && (
-            <div>
-              <h4 className="text-xs font-medium text-red-600 mb-1">Error</h4>
-              <div className="text-xs bg-red-50 border border-red-200 p-2 rounded text-red-700">
-                {toolEvent.error}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function ChatPage({}: ChatPageProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -172,9 +41,6 @@ export function ChatPage({}: ChatPageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
-  const [currentToolCalls, setCurrentToolCalls] = useState<
-    Record<string, ToolCallEvent>
-  >({});
   const [currentReasoningEvents, setCurrentReasoningEvents] = useState<
     ReasoningEvent[]
   >([]);
@@ -194,14 +60,13 @@ export function ChatPage({}: ChatPageProps) {
       setSessions([]);
       setCurrentSession(null);
       setMessages([]);
-      setCurrentToolCalls({}); // Clear tool calls when no agent selected
     }
   }, [selectedAgent]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage, currentToolCalls, currentReasoningEvents]);
+  }, [messages, streamingMessage, currentReasoningEvents]);
 
   // Auto-focus input when component mounts or agent changes
   useEffect(() => {
@@ -270,7 +135,6 @@ export function ChatPage({}: ChatPageProps) {
       const session = await chatApi.getChatSession(selectedAgent.id, sessionId);
       setCurrentSession(session);
       setMessages(session.messages || []);
-      setCurrentToolCalls({}); // Clear tool calls when loading a session
     } catch (error) {
       console.error("Failed to load session:", error);
     }
@@ -279,7 +143,6 @@ export function ChatPage({}: ChatPageProps) {
   const startNewSession = () => {
     setCurrentSession(null);
     setMessages([]);
-    setCurrentToolCalls({}); // Clear tool calls when starting new session
   };
 
   const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
@@ -325,7 +188,6 @@ export function ChatPage({}: ChatPageProps) {
     setIsStreaming(true);
     setStreamingMessage("");
     setCurrentReasoningEvents([]);
-    setCurrentToolCalls({}); // Clear tool calls when starting new message
 
     // Re-focus input after a brief delay to ensure it's ready
     setTimeout(() => {
@@ -381,7 +243,6 @@ export function ChatPage({}: ChatPageProps) {
               setStreamingMessage("");
               setCurrentReasoningEvents([]);
               setIsStreaming(false);
-              setCurrentToolCalls({}); // Clear tool calls - they're now in messages
               loadSessions();
               // Re-focus input after response is complete
               setTimeout(() => {
@@ -398,41 +259,40 @@ export function ChatPage({}: ChatPageProps) {
               if (event.data) {
                 const toolEvent = event.data as ToolCallEvent;
                 if (toolEvent.type === "tool_batch_complete") {
-                  // Mark all current tool calls as batch complete (for thinking indicator logic)
-                  setCurrentToolCalls((prev) => {
-                    const updated = { ...prev };
-                    Object.keys(updated).forEach((key) => {
-                      updated[key] = { ...updated[key], batch_complete: true };
-                    });
-                    return updated;
-                  });
+                  // Skip batch complete events - they're just signals
+                  return;
                 } else if (toolEvent.call_id) {
-                  // Add tool messages to the message list for completed tools
-                  if (toolEvent.type === "tool_result" || toolEvent.type === "tool_error") {
+                  if (toolEvent.type === "tool_start") {
+                    // Add a new message for tool start
                     const toolMessage: ChatMessage = {
-                      id: `tool-${toolEvent.call_id}-${Date.now()}`,
-                      session_id: currentSession?.id || event.data?.session_id || "",
+                      id: `tool-${toolEvent.call_id}`,
+                      session_id:
+                        currentSession?.id || event.data?.session_id || "",
                       role: "tool",
-                      content: toolEvent.type === "tool_result" 
-                        ? `Tool completed: ${toolEvent.tool_name}`
-                        : `Tool failed: ${toolEvent.tool_name}`,
+                      content: `Executing tool: ${toolEvent.tool_name}`,
                       metadata: JSON.stringify(toolEvent),
                       created_at: new Date().toISOString(),
                     };
                     setMessages((prev) => [...prev, toolMessage]);
-                    
-                    // Remove from currentToolCalls since it's now in messages
-                    setCurrentToolCalls((prev) => {
-                      const updated = { ...prev };
-                      delete updated[toolEvent.call_id!];
-                      return updated;
-                    });
-                  } else {
-                    // Only add to currentToolCalls if it's not a completion event
-                    setCurrentToolCalls((prev) => ({
-                      ...prev,
-                      [toolEvent.call_id!]: toolEvent,
-                    }));
+                  } else if (
+                    toolEvent.type === "tool_result" ||
+                    toolEvent.type === "tool_error"
+                  ) {
+                    // Update the existing tool message
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === `tool-${toolEvent.call_id}`
+                          ? {
+                              ...msg,
+                              content:
+                                toolEvent.type === "tool_result"
+                                  ? `Tool completed: ${toolEvent.tool_name}`
+                                  : `Tool failed: ${toolEvent.tool_name}`,
+                              metadata: JSON.stringify(toolEvent),
+                            }
+                          : msg,
+                      ),
+                    );
                   }
                 }
               }
@@ -458,7 +318,6 @@ export function ChatPage({}: ChatPageProps) {
 
               setIsStreaming(false);
               setStreamingMessage("");
-              setCurrentToolCalls({});
               setCurrentReasoningEvents([]);
               // Re-focus input even on error
               setTimeout(() => {
@@ -485,7 +344,6 @@ export function ChatPage({}: ChatPageProps) {
 
       setIsStreaming(false);
       setStreamingMessage("");
-      setCurrentToolCalls({});
       setCurrentReasoningEvents([]);
       // Re-focus input even on error
       setTimeout(() => {
@@ -608,7 +466,6 @@ export function ChatPage({}: ChatPageProps) {
                   // Reset chat state when switching agents
                   setCurrentSession(null);
                   setMessages([]);
-                  setCurrentToolCalls({});
                   setStreamingMessage("");
                   setCurrentReasoningEvents([]);
                   setIsStreaming(false);
@@ -746,7 +603,7 @@ export function ChatPage({}: ChatPageProps) {
                         }`}
                       >
                         {message.role === "tool" ? (
-                          <ToolMessageDisplay message={message} />
+                          <ToolCallDisplay message={message} />
                         ) : message.role === "assistant" ? (
                           <div className="markdown-content">
                             <ReactMarkdown
@@ -768,23 +625,10 @@ export function ChatPage({}: ChatPageProps) {
                     </div>
                   ))}
 
-                  {/* Tool Calls Display */}
-                  {Object.keys(currentToolCalls).length > 0 && (
-                    <div className="flex justify-start">
-                      <div className="max-w-[80%]">
-                        <ToolCallDisplay toolCalls={currentToolCalls} />
-                      </div>
-                    </div>
-                  )}
-
                   {/* Thinking Indicator */}
                   {isStreaming &&
                     currentReasoningEvents.length === 0 &&
-                    !streamingMessage &&
-                    (Object.keys(currentToolCalls).length === 0 ||
-                      Object.values(currentToolCalls).every(
-                        (tc) => tc.batch_complete,
-                      )) && (
+                    !streamingMessage && (
                       <div className="flex justify-start">
                         <div className="max-w-[80%] p-3 rounded-lg bg-card border">
                           <div className="flex items-center space-x-2">
