@@ -46,15 +46,15 @@ func main() {
 		Skipper: func(c echo.Context) bool {
 			// Skip CSRF for all auth endpoints to match frontend behavior
 			return strings.HasPrefix(c.Path(), "/api/auth/") ||
-				   strings.HasPrefix(c.Path(), "/api/agents/") && (strings.HasSuffix(c.Path(), "/invoke") || strings.HasSuffix(c.Path(), "/invoke/stream"))
+				strings.HasPrefix(c.Path(), "/api/agents/") && (strings.HasSuffix(c.Path(), "/invoke") || strings.HasSuffix(c.Path(), "/invoke/stream"))
 		},
 	}))
 
 	db := db.SetupDB()
-	
+
 	// Initialize MCP Connection Manager
 	mcpManager := services.NewMCPConnectionManager(db)
-	
+
 	h := handlers.Handler{
 		DB:         db,
 		MCPManager: mcpManager,
@@ -164,6 +164,11 @@ func main() {
 	// Catch-all route for React Router
 	if _, err := os.Stat(staticPath); err == nil {
 		e.GET("/*", func(c echo.Context) error {
+			// Prevent caching of the HTML to ensure React Router gets fresh URLs
+			c.Response().Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			c.Response().Header().Set("Pragma", "no-cache")
+			c.Response().Header().Set("Expires", "0")
+
 			return c.File(filepath.Join(staticPath, "index.html"))
 		})
 	}
