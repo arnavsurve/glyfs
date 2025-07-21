@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Bot,
-  Settings,
   Code,
   Copy,
   Check,
@@ -67,9 +66,9 @@ export function AgentDetailView() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "configuration" | "tools" | "api"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "tools" | "api">(
+    "overview",
+  );
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const [editForm, setEditForm] = useState<UpdateAgentRequest>({});
@@ -226,9 +225,7 @@ export function AgentDetailView() {
   };
 
   // Tab persistence
-  const setActiveTabWithPersistence = (
-    tab: "overview" | "configuration" | "tools" | "api",
-  ) => {
+  const setActiveTabWithPersistence = (tab: "overview" | "tools" | "api") => {
     setActiveTab(tab);
     setSearchParams(
       (prev) => {
@@ -294,12 +291,8 @@ export function AgentDetailView() {
 
   // Sync activeTab with URL changes
   useEffect(() => {
-    const tab = searchParams.get("tab") as
-      | "overview"
-      | "configuration"
-      | "tools"
-      | "api";
-    const validTab = ["overview", "configuration", "tools", "api"].includes(tab)
+    const tab = searchParams.get("tab") as "overview" | "tools" | "api";
+    const validTab = ["overview", "tools", "api"].includes(tab)
       ? tab
       : "overview";
     setActiveTab(validTab);
@@ -347,9 +340,9 @@ export function AgentDetailView() {
   const availableModels = MODELS[selectedProvider] || [];
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <div className="border-b bg-card px-6 py-4">
+    <div className="flex flex-col bg-background min-h-screen">
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-10 border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
@@ -431,7 +424,6 @@ export function AgentDetailView() {
         <div className="flex space-x-6 mt-6">
           {[
             { id: "overview", label: "Overview", icon: Bot },
-            { id: "configuration", label: "Configuration", icon: Settings },
             { id: "tools", label: "Tools", icon: Wrench },
             { id: "api", label: "API & Integration", icon: Code },
           ].map(({ id, label, icon: Icon }) => (
@@ -452,81 +444,281 @@ export function AgentDetailView() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          {error && (
-            <div className="mb-6 p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
-          )}
+      <div className="flex-1">
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto">
+            {error && (
+              <div className="mb-6 p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
 
-          {/* Overview Tab */}
-          {activeTab === "overview" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                  <CardDescription>
-                    Core details and identity of your agent
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="agent-name">Agent Name</Label>
-                    <Input
-                      id="agent-name"
-                      value={editForm.name || ""}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="system-prompt">System Prompt</Label>
-                    <Textarea
-                      id="system-prompt"
-                      value={editForm.system_prompt || ""}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({
-                          ...prev,
-                          system_prompt: e.target.value,
-                        }))
-                      }
-                      className="mt-1 min-h-[120px]"
-                      placeholder="Define your agent's personality, expertise, and behavior..."
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Agent Details</CardTitle>
-                  <CardDescription>
-                    Technical information and identifiers
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Overview Tab */}
+            {activeTab === "overview" && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>
+                      Core details and identity of your agent
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div>
-                      <Label>Agent ID</Label>
+                      <Label htmlFor="agent-name">Agent Name</Label>
+                      <Input
+                        id="agent-name"
+                        value={editForm.name || ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="system-prompt">System Prompt</Label>
+                      <Textarea
+                        id="system-prompt"
+                        value={editForm.system_prompt || ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            system_prompt: e.target.value,
+                          }))
+                        }
+                        className="mt-1 min-h-[120px]"
+                        placeholder="Define your agent's personality, expertise, and behavior..."
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Model Configuration</CardTitle>
+                    <CardDescription>
+                      AI model and provider settings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Provider</Label>
+                        <Select
+                          value={editForm.provider || agent.provider}
+                          onValueChange={handleProviderChange}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={PROVIDERS.ANTHROPIC}>
+                              Anthropic
+                            </SelectItem>
+                            <SelectItem value={PROVIDERS.OPENAI}>
+                              OpenAI
+                            </SelectItem>
+                            <SelectItem value={PROVIDERS.GOOGLE} disabled>
+                              Google (Coming Soon)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Model</Label>
+                        <Select
+                          value={editForm.model || agent.llm_model}
+                          onValueChange={(value: string) =>
+                            setEditForm((prev) => ({ ...prev, model: value }))
+                          }
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableModels.map((model) => (
+                              <SelectItem key={model.value} value={model.value}>
+                                {model.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Response Parameters</CardTitle>
+                    <CardDescription>
+                      Control how your agent generates responses
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="max-tokens">Max Tokens</Label>
+                        <Input
+                          id="max-tokens"
+                          type="number"
+                          min="1"
+                          max="8192"
+                          value={editForm.max_tokens || agent.max_tokens}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              max_tokens: parseInt(e.target.value) || 2048,
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Maximum response length (1-8192)
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="temperature">Temperature</Label>
+                        <Input
+                          id="temperature"
+                          type="number"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          value={editForm.temperature || agent.temperature}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              temperature: parseFloat(e.target.value) || 0.7,
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Creativity level (0.0-2.0)
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Agent Details</CardTitle>
+                    <CardDescription>
+                      Technical information and identifiers
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Agent ID</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Input
+                            value={agent.id}
+                            readOnly
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(agent.id, "id")}
+                          >
+                            {copiedField === "id" ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>Provider</Label>
+                        <Input
+                          value={getProviderDisplayName(agent.provider)}
+                          readOnly
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Created</Label>
+                        <Input
+                          value={new Date(agent.created_at).toLocaleString()}
+                          readOnly
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Last Updated</Label>
+                        <Input
+                          value={new Date(agent.updated_at).toLocaleString()}
+                          readOnly
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Tools Tab */}
+            {activeTab === "tools" && id && <AgentToolsTab agentId={id} />}
+
+            {/* API Tab */}
+            {activeTab === "api" && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center space-x-2">
+                        <Globe className="w-5 h-5" />
+                        <span>Invoke API</span>
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          window.open("/docs/invoke-api", "_blank")
+                        }
+                        className="flex items-center space-x-1 hover:text-foreground"
+                      >
+                        <span className="text-xs">Documentation</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      HTTP endpoint for single request/response interactions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Invoke URL</Label>
                       <div className="flex items-center space-x-2 mt-1">
                         <Input
-                          value={agent.id}
+                          value={getApiUrl()}
                           readOnly
                           className="font-mono text-xs"
                         />
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(agent.id, "id")}
+                          onClick={() =>
+                            copyToClipboard(getApiUrl(), "invoke-url")
+                          }
                         >
-                          {copiedField === "id" ? (
+                          {copiedField === "invoke-url" ? (
                             <Check className="w-4 h-4 text-green-500" />
                           ) : (
                             <Copy className="w-4 h-4" />
@@ -535,214 +727,12 @@ export function AgentDetailView() {
                       </div>
                     </div>
 
-                    <div>
-                      <Label>Provider</Label>
-                      <Input
-                        value={getProviderDisplayName(agent.provider)}
-                        readOnly
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Created</Label>
-                      <Input
-                        value={new Date(agent.created_at).toLocaleString()}
-                        readOnly
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Last Updated</Label>
-                      <Input
-                        value={new Date(agent.updated_at).toLocaleString()}
-                        readOnly
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Configuration Tab */}
-          {activeTab === "configuration" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Model Configuration</CardTitle>
-                  <CardDescription>
-                    AI model and provider settings
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Provider</Label>
-                      <Select
-                        value={editForm.provider || agent.provider}
-                        onValueChange={handleProviderChange}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={PROVIDERS.ANTHROPIC}>
-                            Anthropic
-                          </SelectItem>
-                          <SelectItem value={PROVIDERS.OPENAI}>
-                            OpenAI
-                          </SelectItem>
-                          <SelectItem value={PROVIDERS.GOOGLE} disabled>
-                            Google (Coming Soon)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Model</Label>
-                      <Select
-                        value={editForm.model || agent.llm_model}
-                        onValueChange={(value: string) =>
-                          setEditForm((prev) => ({ ...prev, model: value }))
-                        }
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableModels.map((model) => (
-                            <SelectItem key={model.value} value={model.value}>
-                              {model.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Response Parameters</CardTitle>
-                  <CardDescription>
-                    Control how your agent generates responses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="max-tokens">Max Tokens</Label>
-                      <Input
-                        id="max-tokens"
-                        type="number"
-                        min="1"
-                        max="8192"
-                        value={editForm.max_tokens || agent.max_tokens}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            max_tokens: parseInt(e.target.value) || 2048,
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Maximum response length (1-8192)
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="temperature">Temperature</Label>
-                      <Input
-                        id="temperature"
-                        type="number"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        value={editForm.temperature || agent.temperature}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            temperature: parseFloat(e.target.value) || 0.7,
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Creativity level (0.0-2.0)
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Tools Tab */}
-          {activeTab === "tools" && id && <AgentToolsTab agentId={id} />}
-
-          {/* API Tab */}
-          {activeTab === "api" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center space-x-2">
-                      <Globe className="w-5 h-5" />
-                      <span>Invoke API</span>
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open("/docs/invoke-api", "_blank")}
-                      className="flex items-center space-x-1 hover:text-foreground"
-                    >
-                      <span className="text-xs">Documentation</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <CardDescription>
-                    HTTP endpoint for single request/response interactions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Invoke URL</Label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Input
-                        value={getApiUrl()}
-                        readOnly
-                        className="font-mono text-xs"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          copyToClipboard(getApiUrl(), "invoke-url")
-                        }
-                      >
-                        {copiedField === "invoke-url" ? (
-                          <Check className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <h4 className="text-sm font-medium mb-2">
-                      Example Request
-                    </h4>
-                    <pre className="text-xs text-muted-foreground overflow-x-auto">
-                      {`curl -X POST "${getApiUrl()}" \\
+                    <div className="p-4 bg-muted/50 rounded-lg border">
+                      <h4 className="text-sm font-medium mb-2">
+                        Example Request
+                      </h4>
+                      <pre className="text-xs text-muted-foreground overflow-x-auto">
+                        {`curl -X POST "${getApiUrl()}" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -758,73 +748,73 @@ export function AgentDetailView() {
       }
     ]
   }'`}
-                    </pre>
-                  </div>
+                      </pre>
+                    </div>
 
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <p className="text-xs text-blue-800 dark:text-blue-200">
-                      Perfect for simple Q&A, batch processing, and when you
-                      need the complete response in a single request.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-800 dark:text-blue-200">
+                        For simple Q&A, batch processing, and when you need the
+                        complete response in a single request.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center space-x-2">
-                      <Globe className="w-5 h-5" />
-                      <span>Streaming API</span>
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        window.open("/docs/streaming-api", "_blank")
-                      }
-                      className="flex items-center space-x-1 hover:text-foreground"
-                    >
-                      <span className="text-xs">Documentation</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <CardDescription>
-                    Server-Sent Events endpoint for real-time streaming
-                    responses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Streaming URL</Label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Input
-                        value={getStreamApiUrl()}
-                        readOnly
-                        className="font-mono text-xs"
-                      />
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center space-x-2">
+                        <Globe className="w-5 h-5" />
+                        <span>Streaming API</span>
+                      </CardTitle>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          copyToClipboard(getStreamApiUrl(), "stream-url")
+                          window.open("/docs/streaming-api", "_blank")
                         }
+                        className="flex items-center space-x-1 hover:text-foreground"
                       >
-                        {copiedField === "stream-url" ? (
-                          <Check className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
+                        <span className="text-xs">Documentation</span>
+                        <ExternalLink className="w-3 h-3" />
                       </Button>
                     </div>
-                  </div>
+                    <CardDescription>
+                      Server-Sent Events endpoint for real-time streaming
+                      responses
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Streaming URL</Label>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Input
+                          value={getStreamApiUrl()}
+                          readOnly
+                          className="font-mono text-xs"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            copyToClipboard(getStreamApiUrl(), "stream-url")
+                          }
+                        >
+                          {copiedField === "stream-url" ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <h4 className="text-sm font-medium mb-2">
-                      Example Request
-                    </h4>
-                    <pre className="text-xs text-muted-foreground overflow-x-auto">
-                      {`curl -N "${getStreamApiUrl()}" \\
+                    <div className="p-4 bg-muted/50 rounded-lg border">
+                      <h4 className="text-sm font-medium mb-2">
+                        Example Request
+                      </h4>
+                      <pre className="text-xs text-muted-foreground overflow-x-auto">
+                        {`curl -N "${getStreamApiUrl()}" \\
   -X POST \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
@@ -832,226 +822,229 @@ export function AgentDetailView() {
     "message": "Tell me a story",
     "history": []
   }'`}
-                    </pre>
-                  </div>
+                      </pre>
+                    </div>
 
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <h4 className="text-sm font-medium mb-2">
-                      Example Response (Server-Sent Events)
-                    </h4>
-                    <pre className="text-xs text-muted-foreground overflow-x-auto">
-                      {`data: {"type":"metadata","content":"","data":{"agent_id":"${id}"}}
+                    <div className="p-4 bg-muted/50 rounded-lg border">
+                      <h4 className="text-sm font-medium mb-2">
+                        Example Response (Server-Sent Events)
+                      </h4>
+                      <pre className="text-xs text-muted-foreground overflow-x-auto">
+                        {`data: {"type":"metadata","content":"","data":{"agent_id":"${id}"}}
 data: {"type":"token","content":"Once","data":null}
 data: {"type":"token","content":" upon","data":null}
 data: {"type":"token","content":" a","data":null}
 data: {"type":"done","content":"","data":{"response":"Once upon a time...","usage":{"total_tokens":25}}}`}
-                    </pre>
-                  </div>
-
-                  <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <p className="text-xs text-green-800 dark:text-green-200">
-                      Ideal for interactive chat interfaces, real-time content
-                      generation, and providing immediate user feedback during
-                      response generation.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Key className="w-5 h-5" />
-                    <span>API Keys</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Manage API keys for programmatic access to your agent
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      Create API keys to invoke your agent programmatically
-                    </p>
-                    <Button
-                      onClick={() => setShowCreateKeyModal(true)}
-                      size="sm"
-                    >
-                      <Key className="w-4 h-4 mr-2" />
-                      Generate New Key
-                    </Button>
-                  </div>
-
-                  {isLoadingKeys ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </pre>
                     </div>
-                  ) : apiKeys.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Key className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                      <p>No API keys created yet</p>
-                      <p className="text-xs">
-                        Generate your first API key to get started
+
+                    <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <p className="text-xs text-green-800 dark:text-green-200">
+                        For interactive chat interfaces, real-time content
+                        generation, and providing immediate user feedback during
+                        response generation.
                       </p>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {apiKeys.map((key) => (
-                        <div
-                          key={key.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="text-sm font-medium">
-                                {key.name}
-                              </h4>
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                                Active
-                              </span>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Created{" "}
-                              {new Date(key.created_at).toLocaleDateString()}
-                              {key.last_used && (
-                                <span className="ml-2">
-                                  • Last used{" "}
-                                  {new Date(key.last_used).toLocaleDateString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Revoke API Key
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to revoke "{key.name}"?
-                                  This action cannot be undone and any
-                                  applications using this key will stop working.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteAPIKey(key.id, key.name)
-                                  }
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Revoke Key
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      ))}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Key className="w-5 h-5" />
+                      <span>API Keys</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Manage API keys for programmatic access to your agent
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between mb-8">
+                      <Button
+                        onClick={() => setShowCreateKeyModal(true)}
+                        size="sm"
+                      >
+                        <Key className="w-4 h-4 mr-2" />
+                        Generate New Key
+                      </Button>
                     </div>
-                  )}
 
-                  {/* Create API Key Modal */}
-                  <AlertDialog
-                    open={showCreateKeyModal}
-                    onOpenChange={setShowCreateKeyModal}
-                  >
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Create New API Key</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Give your API key a descriptive name to help you
-                          identify its purpose.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="py-4">
-                        <Label htmlFor="key-name">Key Name</Label>
-                        <Input
-                          id="key-name"
-                          value={newKeyName}
-                          onChange={(e) => setNewKeyName(e.target.value)}
-                          placeholder="e.g., Production API, Mobile App"
-                          className="mt-2"
-                        />
+                    {isLoadingKeys ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                       </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleCreateAPIKey}
-                          disabled={!newKeyName.trim() || isCreatingKey}
-                        >
-                          {isCreatingKey ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Creating...
-                            </>
-                          ) : (
-                            <>
-                              <Key className="w-4 h-4 mr-2" />
-                              Create Key
-                            </>
-                          )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    ) : apiKeys.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Key className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                        <p>No API keys created yet</p>
+                        <p className="text-xs">
+                          Generate your first API key to get started
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {apiKeys.map((key) => (
+                          <div
+                            key={key.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="text-sm font-medium">
+                                  {key.name}
+                                </h4>
+                                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                                  Active
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Created{" "}
+                                {new Date(key.created_at).toLocaleDateString()}
+                                {key.last_used && (
+                                  <span className="ml-2">
+                                    • Last used{" "}
+                                    {new Date(
+                                      key.last_used,
+                                    ).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Revoke API Key
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to revoke "{key.name}
+                                    "? This action cannot be undone and any
+                                    applications using this key will stop
+                                    working.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleDeleteAPIKey(key.id, key.name)
+                                    }
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Revoke Key
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                  {/* Show newly created key */}
-                  {newlyCreatedKey && (
+                    {/* Create API Key Modal */}
                     <AlertDialog
-                      open={!!newlyCreatedKey}
-                      onOpenChange={() => setNewlyCreatedKey(null)}
+                      open={showCreateKeyModal}
+                      onOpenChange={setShowCreateKeyModal}
                     >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>API Key Created</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            Create New API Key
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Save this API key now. You won't be able to see it
-                            again.
+                            Give your API key a descriptive name to help you
+                            identify its purpose.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <div className="py-4">
-                          <Label>Your API Key</Label>
-                          <div className="flex items-center space-x-2 mt-2">
-                            <Input
-                              value={newlyCreatedKey}
-                              readOnly
-                              className="font-mono text-sm"
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(newlyCreatedKey, "API key")
-                              }
-                            >
-                              {copiedField === "API key" ? (
-                                <Check className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
+                          <Label htmlFor="key-name">Key Name</Label>
+                          <Input
+                            id="key-name"
+                            value={newKeyName}
+                            onChange={(e) => setNewKeyName(e.target.value)}
+                            placeholder="e.g., Production API, Mobile App"
+                            className="mt-2"
+                          />
                         </div>
                         <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => setNewlyCreatedKey(null)}
+                            onClick={handleCreateAPIKey}
+                            disabled={!newKeyName.trim() || isCreatingKey}
                           >
-                            I've saved my key
+                            {isCreatingKey ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating...
+                              </>
+                            ) : (
+                              <>
+                                <Key className="w-4 h-4 mr-2" />
+                                Create Key
+                              </>
+                            )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+
+                    {/* Show newly created key */}
+                    {newlyCreatedKey && (
+                      <AlertDialog
+                        open={!!newlyCreatedKey}
+                        onOpenChange={() => setNewlyCreatedKey(null)}
+                      >
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>API Key Created</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Save this API key now. You won't be able to see it
+                              again.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <div className="py-4">
+                            <Label>Your API Key</Label>
+                            <div className="flex items-center space-x-2 mt-2">
+                              <Input
+                                value={newlyCreatedKey}
+                                readOnly
+                                className="font-mono text-sm"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(newlyCreatedKey, "API key")
+                                }
+                              >
+                                {copiedField === "API key" ? (
+                                  <Check className="w-4 h-4 text-green-500" />
+                                ) : (
+                                  <Copy className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogAction
+                              onClick={() => setNewlyCreatedKey(null)}
+                            >
+                              I've saved my key
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
