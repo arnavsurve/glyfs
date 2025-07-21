@@ -298,8 +298,21 @@ export function AgentDetailView() {
     const validTab = ["overview", "tools", "api"].includes(tab)
       ? tab
       : "overview";
+
     setActiveTab(validTab);
-  }, [searchParams]);
+
+    // If we defaulted to "overview" because of missing/invalid URL param, update URL
+    if (!tab || !["overview", "tools", "api"].includes(tab)) {
+      setSearchParams(
+        (prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set("tab", "overview");
+          return newParams;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, setSearchParams]);
 
   // Fetch API keys when tab changes to API
   useEffect(() => {
@@ -312,12 +325,12 @@ export function AgentDetailView() {
   useEffect(() => {
     // Find the scrollable container - Layout's main element with overflow-auto
     const findScrollContainer = () => {
-      const mainElement = document.querySelector('main.overflow-auto');
+      const mainElement = document.querySelector("main.overflow-auto");
       if (mainElement) {
         scrollContainerRef.current = mainElement as HTMLElement;
       }
     };
-    
+
     findScrollContainer();
   }, []);
 
