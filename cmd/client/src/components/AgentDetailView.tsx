@@ -13,6 +13,7 @@ import {
   Globe,
   Trash2,
   Wrench,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -203,6 +204,8 @@ export function AgentDetailView() {
   };
 
   const getApiUrl = () => `${window.location.origin}/api/agents/${id}/invoke`;
+  const getStreamApiUrl = () =>
+    `${window.location.origin}/api/agents/${id}/invoke/stream`;
 
   const getModelDisplayName = () => {
     if (!agent) return "";
@@ -690,12 +693,23 @@ export function AgentDetailView() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Globe className="w-5 h-5" />
-                    <span>API Endpoint</span>
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center space-x-2">
+                      <Globe className="w-5 h-5" />
+                      <span>Invoke API</span>
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open("/docs/invoke-api", "_blank")}
+                      className="flex items-center space-x-1 hover:text-foreground"
+                    >
+                      <span className="text-xs">Documentation</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
                   <CardDescription>
-                    HTTP endpoint for invoking your agent
+                    HTTP endpoint for single request/response interactions
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -710,9 +724,11 @@ export function AgentDetailView() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => copyToClipboard(getApiUrl(), "url")}
+                        onClick={() =>
+                          copyToClipboard(getApiUrl(), "invoke-url")
+                        }
                       >
-                        {copiedField === "url" ? (
+                        {copiedField === "invoke-url" ? (
                           <Check className="w-4 h-4 text-green-500" />
                         ) : (
                           <Copy className="w-4 h-4" />
@@ -730,9 +746,114 @@ export function AgentDetailView() {
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
-    "message": "Hello, agent!"
+    "message": "Hello, agent!",
+    "history": [
+      {
+        "role": "user",
+        "content": "Previous message"
+      },
+      {
+        "role": "assistant",
+        "content": "Previous response"
+      }
+    ]
   }'`}
                     </pre>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      Perfect for simple Q&A, batch processing, and when you
+                      need the complete response in a single request.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center space-x-2">
+                      <Globe className="w-5 h-5" />
+                      <span>Streaming API</span>
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open("/docs/streaming-api", "_blank")
+                      }
+                      className="flex items-center space-x-1 hover:text-foreground"
+                    >
+                      <span className="text-xs">Documentation</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <CardDescription>
+                    Server-Sent Events endpoint for real-time streaming
+                    responses
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Streaming URL</Label>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input
+                        value={getStreamApiUrl()}
+                        readOnly
+                        className="font-mono text-xs"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          copyToClipboard(getStreamApiUrl(), "stream-url")
+                        }
+                      >
+                        {copiedField === "stream-url" ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <h4 className="text-sm font-medium mb-2">
+                      Example Request
+                    </h4>
+                    <pre className="text-xs text-muted-foreground overflow-x-auto">
+                      {`curl -N "${getStreamApiUrl()}" \\
+  -X POST \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -d '{
+    "message": "Tell me a story",
+    "history": []
+  }'`}
+                    </pre>
+                  </div>
+
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <h4 className="text-sm font-medium mb-2">
+                      Example Response (Server-Sent Events)
+                    </h4>
+                    <pre className="text-xs text-muted-foreground overflow-x-auto">
+                      {`data: {"type":"metadata","content":"","data":{"agent_id":"${id}"}}
+data: {"type":"token","content":"Once","data":null}
+data: {"type":"token","content":" upon","data":null}
+data: {"type":"token","content":" a","data":null}
+data: {"type":"done","content":"","data":{"response":"Once upon a time...","usage":{"total_tokens":25}}}`}
+                    </pre>
+                  </div>
+
+                  <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-xs text-green-800 dark:text-green-200">
+                      Ideal for interactive chat interfaces, real-time content
+                      generation, and providing immediate user feedback during
+                      response generation.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
