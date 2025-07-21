@@ -46,7 +46,7 @@ func main() {
 		Skipper: func(c echo.Context) bool {
 			// Skip CSRF for all auth endpoints to match frontend behavior
 			return strings.HasPrefix(c.Path(), "/api/auth/") ||
-				   strings.HasPrefix(c.Path(), "/api/agents/") && strings.HasSuffix(c.Path(), "/invoke")
+				   strings.HasPrefix(c.Path(), "/api/agents/") && (strings.HasSuffix(c.Path(), "/invoke") || strings.HasSuffix(c.Path(), "/invoke/stream"))
 		},
 	}))
 
@@ -153,9 +153,12 @@ func main() {
 	mcpHandler := handlers.NewMCPHandler(db, mcpManager)
 	mcpHandler.RegisterMCPRoutes(protected)
 
-	// Public API key authenticated route
+	// Public API key authenticated routes
 	api.POST("/agents/:agentId/invoke", h.APIKeyMiddleware(func(c echo.Context) error {
 		return h.HandleAgentInference(c)
+	}))
+	api.POST("/agents/:agentId/invoke/stream", h.APIKeyMiddleware(func(c echo.Context) error {
+		return h.HandleAgentInferenceStream(c)
 	}))
 
 	// Catch-all route for React Router

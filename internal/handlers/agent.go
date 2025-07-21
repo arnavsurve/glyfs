@@ -150,6 +150,89 @@ func (h *Handler) HandleAgentInference(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
+	agent, ok := c.Get("agent").(*shared.AgentConfig)
+	if !ok {
+		return echo.NewHTTPError(http.StatusInternalServerError, "agent context not found")
+	}
+
+	var req shared.AgentInferenceRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+	}
+
+	if req.Message == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
+	}
+
+	// Convert AgentInferenceRequest to ChatStreamRequest format
+	var contextMessages []shared.ChatContextMessage
+	for i, msg := range req.History {
+		contextMessages = append(contextMessages, shared.ChatContextMessage{
+			ID:        fmt.Sprintf("history_%d", i),
+			Role:      msg.Role,
+			Content:   msg.Content,
+			CreatedAt: "",
+		})
+	}
+
+	streamReq := &shared.ChatStreamRequest{
+		Message: req.Message,
+		Context: contextMessages,
+	}
+
+	// Set headers for SSE
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+	c.Response().Header().Set("Access-Control-Allow-Headers", "Cache-Control")
+
+	// Send initial metadata event
+	h.sendStreamEvent(c, "metadata", "", map[string]any{
+		"agent_id": agent.ID,
+	})
+
+	// Stream the response
+	llmService := services.NewLLMService(h.MCPManager)
+	fullResponse := ""
+	var finalUsage *shared.Usage
+
+	streamFunc := func(chunk string) {
+		fullResponse += chunk
+		h.sendStreamEvent(c, "token", chunk, nil)
+		c.Response().Flush()
+	}
+
+	toolEventFunc := func(event *shared.ToolCallEvent) {
+		// Send tool events directly
+		h.sendStreamEvent(c, "tool_event", "", event)
+		c.Response().Flush()
+	}
+
+	err := llmService.GenerateResponseStream(c.Request().Context(), agent, streamReq, streamFunc, toolEventFunc)
+	if err != nil {
+		h.sendStreamEvent(c, "error", fmt.Sprintf("Failed to generate response: %v", err), nil)
+		return nil
+	}
+
+	// Generate final usage statistics (estimate for now)
+	finalUsage = &shared.Usage{
+		PromptTokens:     len(req.Message) / 4,   // Rough estimate
+		CompletionTokens: len(fullResponse) / 4,  // Rough estimate
+		TotalTokens:      (len(req.Message) + len(fullResponse)) / 4,
+	}
+
+	// Send completion event with usage
+	h.sendStreamEvent(c, "done", "", map[string]any{
+		"response": fullResponse,
+		"usage":    finalUsage,
+	})
+
+	return nil
+}
+
+
 func (h *Handler) HandleUpdateAgent(c echo.Context) error {
 	agentIdStr := c.Param("agentId")
 	if agentIdStr == "" {
