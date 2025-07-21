@@ -1,4 +1,11 @@
-import { Wrench, Clock, CheckCircle, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Wrench,
+  Clock,
+  CheckCircle,
+  XCircle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useState } from "react";
 import type { ChatMessage, ToolCallEvent } from "../types/chat.types";
 
@@ -8,7 +15,7 @@ interface ToolCallDisplayProps {
 
 export function ToolCallDisplay({ message }: ToolCallDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   let toolEvent: ToolCallEvent | null = null;
   try {
     if (message.metadata) {
@@ -17,7 +24,7 @@ export function ToolCallDisplay({ message }: ToolCallDisplayProps) {
   } catch (e) {
     // Invalid JSON, ignore
   }
-  
+
   if (!toolEvent) return null;
 
   const getStatusIcon = (event: ToolCallEvent) => {
@@ -56,7 +63,7 @@ export function ToolCallDisplay({ message }: ToolCallDisplayProps) {
   return (
     <div className="border border-border rounded-lg bg-muted/20 overflow-hidden">
       <div
-        className={`flex items-center justify-between p-3 ${hasDetails ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+        className={`flex items-center justify-between p-3 ${hasDetails ? "cursor-pointer hover:bg-muted/40" : ""}`}
         onClick={hasDetails ? () => setIsExpanded(!isExpanded) : undefined}
       >
         <div className="flex items-center space-x-3">
@@ -75,7 +82,7 @@ export function ToolCallDisplay({ message }: ToolCallDisplayProps) {
             </div>
           </div>
         </div>
-        
+
         {hasDetails && (
           <div className="flex items-center space-x-2">
             {isExpanded ? (
@@ -86,27 +93,31 @@ export function ToolCallDisplay({ message }: ToolCallDisplayProps) {
           </div>
         )}
       </div>
-      
+
       {isExpanded && hasDetails && (
         <div className="border-t border-border bg-muted/10 p-3 space-y-3">
           {toolEvent.arguments && (
             <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">Arguments</h4>
+              <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                Arguments
+              </h4>
               <pre className="text-xs bg-background p-2 rounded border overflow-x-auto">
                 {formatArguments(toolEvent.arguments)}
               </pre>
             </div>
           )}
-          
+
           {toolEvent.result && (
             <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">Result</h4>
+              <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                Result
+              </h4>
               <div className="text-xs bg-background p-2 rounded border">
                 {toolEvent.result}
               </div>
             </div>
           )}
-          
+
           {toolEvent.error && (
             <div>
               <h4 className="text-xs font-medium text-red-600 mb-1">Error</h4>
@@ -120,3 +131,4 @@ export function ToolCallDisplay({ message }: ToolCallDisplayProps) {
     </div>
   );
 }
+
