@@ -36,7 +36,7 @@ export const chatApi = {
 
   // Alternative: Create streaming connection via fetch with streaming response
   streamChat: async (agentId: string, request: ChatStreamRequest, onEvent: (event: ChatStreamEvent) => void): Promise<void> => {
-    const makeStreamRequest = async (retryCount: number = 0): Promise<Response> => {
+    const makeStreamRequest = async (): Promise<Response> => {
       // Get CSRF token
       const csrfToken = document.cookie
         .split('; ')
@@ -58,18 +58,9 @@ export const chatApi = {
         body: JSON.stringify(request),
       });
 
-      // Handle authentication errors
-      if (response.status === 401 && retryCount === 0) {
-        try {
-          // Import authApi dynamically to avoid circular dependency
-          const { authApi } = await import('./auth.api');
-          await authApi.refreshToken();
-          console.log('Token refreshed, retrying stream request');
-          return makeStreamRequest(retryCount + 1);
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-          throw new Error('Authentication failed - please log in again');
-        }
+      // Handle authentication errors - let AuthContext handle refresh centrally
+      if (response.status === 401) {
+        throw new Error('Authentication failed - please log in again');
       }
 
       if (!response.ok) {
