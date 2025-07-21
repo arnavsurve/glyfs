@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type {
   AuthState,
@@ -95,6 +95,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const refreshInProgress = useRef(false);
 
   // Check auth status from server on mount since we can't access httpOnly cookies
   useEffect(() => {
@@ -135,7 +136,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const refreshInterval = setInterval(
       async () => {
+        // Skip if a refresh is already in progress
+        if (refreshInProgress.current) {
+          console.log("Skipping background refresh - already in progress");
+          return;
+        }
+
         try {
+          refreshInProgress.current = true;
           await authApi.refreshToken();
           console.log("Background token refresh successful");
         } catch (error) {
@@ -143,6 +151,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Force logout on refresh failure to prevent broken auth state
           dispatch({ type: "LOGOUT" });
           clearInterval(refreshInterval);
+        } finally {
+          refreshInProgress.current = false;
         }
       },
       12 * 60 * 1000,
@@ -210,12 +220,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: "CLEAR_ERROR" });
   };
 
+  const refreshToken = async (): Promise<void> => {
+    // Skip if a refresh is already in progress
+    if (refreshInProgress.current) {
+      console.log("Refresh already in progress, skipping");
+      return;
+    }
+
+    try {
+      refreshInProgress.current = true;
+      await authApi.refreshToken();
+      console.log("Manual token refresh successful");
+    } catch (error) {
+      console.error("Manual token refresh failed:", error);
+      dispatch({ type: "LOGOUT" });
+      throw error;
+    } finally {
+      refreshInProgress.current = false;
+    }
+  };
+
   const contextValue: AuthContextType = {
     ...state,
     login,
     signup,
     logout,
     clearError,
+    refreshToken,
   };
 
   return (

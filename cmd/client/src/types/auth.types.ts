@@ -31,6 +31,7 @@ export interface AuthContextType extends AuthState {
   signup: (credentials: SignupCredentials) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  refreshToken: () => Promise<void>;
 }
 
 export interface ApiError {
