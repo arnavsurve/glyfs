@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -80,6 +80,9 @@ export function AgentDetailView() {
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+
+  // Ref for scroll container
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     async function fetchAgent() {
@@ -304,6 +307,29 @@ export function AgentDetailView() {
       fetchAPIKeys();
     }
   }, [activeTab, id]);
+
+  // Find and store reference to the scrollable container (Layout's main element)
+  useEffect(() => {
+    // Find the scrollable container - Layout's main element with overflow-auto
+    const findScrollContainer = () => {
+      const mainElement = document.querySelector('main.overflow-auto');
+      if (mainElement) {
+        scrollContainerRef.current = mainElement as HTMLElement;
+      }
+    };
+    
+    findScrollContainer();
+  }, []);
+
+  // Reset scroll position when tab changes
+  useLayoutEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    } else {
+      // Fallback to window scroll if main element not found
+      window.scrollTo(0, 0);
+    }
+  }, [activeTab]);
 
   if (isLoading) {
     return (
