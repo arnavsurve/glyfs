@@ -132,3 +132,15 @@ type Usage struct {
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
 }
+
+type UserSettingsResponse struct {
+	AnthropicAPIKey string `json:"anthropic_api_key"` // Masked
+	OpenAIAPIKey    string `json:"openai_api_key"`    // Masked
+	GeminiAPIKey    string `json:"gemini_api_key"`    // Masked
+}
+
+type UpdateUserSettingsRequest struct {
+	AnthropicAPIKey *string `json:"anthropic_api_key,omitempty"`
+	OpenAIAPIKey    *string `json:"openai_api_key,omitempty"`
+	GeminiAPIKey    *string `json:"gemini_api_key,omitempty"`
+}

@@ -27,6 +27,15 @@ type User struct {
 	PasswordHash []byte `gorm:"type:bytea;not null" json:"-"` // Never serialize password hash
 }
 
+type UserSettings struct {
+	gorm.Model
+	UserID            uint   `gorm:"uniqueIndex;not null" json:"user_id"`
+	User              User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
+	AnthropicAPIKey   string `gorm:"type:text" json:"-"` // Encrypted, never serialize
+	OpenAIAPIKey      string `gorm:"type:text" json:"-"` // Encrypted, never serialize  
+	GeminiAPIKey      string `gorm:"type:text" json:"-"` // Encrypted, never serialize
+}
+
 type AgentAPIKey struct {
 	gorm.Model
 	AgentID  uuid.UUID  `gorm:"type:uuid;not null;index" json:"agent_id"`

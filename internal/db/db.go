@@ -22,6 +22,7 @@ func SetupDB() *gorm.DB {
 		&shared.AgentConfig{},
 		&shared.AgentAPIKey{},
 		&shared.User{},
+		&shared.UserSettings{},
 		&shared.RefreshToken{},
 		&shared.RevokedToken{},
 		&shared.ChatSession{},
