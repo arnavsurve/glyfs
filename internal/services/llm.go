@@ -26,23 +26,36 @@ func NewLLMService(mcpManager *MCPConnectionManager) *LLMService {
 	}
 }
 
-func (s *LLMService) CreateLLM(provider string) (llms.Model, error) {
+func (s *LLMService) CreateLLM(provider string, apiKey string) (llms.Model, error) {
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key required for provider %s", provider)
+	}
+
 	switch provider {
 	case string(shared.Anthropic):
 		return anthropic.New(
-			anthropic.WithToken(os.Getenv("ANTHROPIC_API_KEY")),
+			anthropic.WithToken(apiKey),
 		)
 	case string(shared.OpenAI):
 		return openai.New(
-			openai.WithToken(os.Getenv("OPENAI_API_KEY")),
+			openai.WithToken(apiKey),
 		)
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
 }
 
-func (s *LLMService) GenerateResponse(ctx context.Context, agent *shared.AgentConfig, req *shared.AgentInferenceRequest) (*shared.AgentInferenceResponse, error) {
-	llm, err := s.CreateLLM(agent.Provider)
+// CreateLLMForTitleGeneration creates an LLM client using server API key for title generation
+func (s *LLMService) CreateLLMForTitleGeneration() (llms.Model, error) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("server OpenAI API key not configured")
+	}
+	return openai.New(openai.WithToken(apiKey))
+}
+
+func (s *LLMService) GenerateResponse(ctx context.Context, agent *shared.AgentConfig, req *shared.AgentInferenceRequest, apiKey string) (*shared.AgentInferenceResponse, error) {
+	llm, err := s.CreateLLM(agent.Provider, apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating LLM client: %w", err)
 	}
@@ -112,8 +125,8 @@ func (s *LLMService) buildMessages(systemPrompt string, history []shared.Message
 	return messages
 }
 
-func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.AgentConfig, req *shared.ChatStreamRequest, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent)) error {
-	llm, err := s.CreateLLM(agent.Provider)
+func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.AgentConfig, req *shared.ChatStreamRequest, apiKey string, streamFunc func(string), toolEventFunc func(*shared.ToolCallEvent)) error {
+	llm, err := s.CreateLLM(agent.Provider, apiKey)
 	if err != nil {
 		return fmt.Errorf("creating LLM client: %w", err)
 	}
@@ -166,7 +179,7 @@ func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []sha
 }
 
 func (s *LLMService) GenerateChatTitle(ctx context.Context, firstMessage string) (string, error) {
-	llm, err := s.CreateLLM("openai")
+	llm, err := s.CreateLLMForTitleGeneration()
 	if err != nil {
 		return "", fmt.Errorf("creating LLM client: %w", err)
 	}
