@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bot, Loader2, ArrowLeft, Sparkles } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Bot, Loader2, ArrowLeft, Sparkles, AlertCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -61,7 +61,8 @@ export function CreateAgentForm() {
         state: { message: `Agent "${formData.name}" created successfully!` },
       });
     } catch (err: any) {
-      setError(err.message || "Failed to create agent");
+      const errorMessage = err.response?.data?.message || err.message || "Failed to create agent";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +115,20 @@ export function CreateAgentForm() {
               {/* Error Display */}
               {error && (
                 <div className="p-4 border border-destructive/20 bg-destructive/5 rounded-lg">
-                  <p className="text-sm text-destructive">{error}</p>
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm text-destructive">{error}</p>
+                      {error.includes("API key") && (
+                        <Link
+                          to="/settings"
+                          className="text-sm text-primary hover:underline mt-1 inline-block"
+                        >
+                          Go to Settings to configure API keys →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
