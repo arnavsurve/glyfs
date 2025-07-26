@@ -54,12 +54,12 @@ const (
 )
 
 type CreateAgentRequest struct {
-	Name         string            `json:"name"`
-	Provider     InferenceProvider `json:"provider"`
-	Model        string            `json:"model"`
-	SystemPrompt string            `json:"system_prompt"`
-	MaxTokens    int               `json:"max_tokens"`
-	Temperature  float64           `json:"temperature"`
+	Name         string             `json:"name"`
+	Provider     InferenceProvider  `json:"provider"`
+	Model        string             `json:"model"`
+	SystemPrompt *string            `json:"system_prompt,omitempty"`
+	MaxTokens    int                `json:"max_tokens"`
+	Temperature  float64            `json:"temperature"`
 }
 
 func (r *CreateAgentRequest) IsValidModel() bool {

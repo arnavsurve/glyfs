@@ -53,12 +53,17 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 		}
 	}()
 
+	systemPrompt := ""
+	if req.SystemPrompt != nil {
+		systemPrompt = *req.SystemPrompt
+	}
+
 	agent := shared.AgentConfig{
 		UserID:       userID,
 		Name:         req.Name,
 		Provider:     string(req.Provider),
 		LLMModel:     req.Model,
-		SystemPrompt: req.SystemPrompt,
+		SystemPrompt: systemPrompt,
 		MaxTokens:    req.MaxTokens,
 		Temperature:  req.Temperature,
 	}
