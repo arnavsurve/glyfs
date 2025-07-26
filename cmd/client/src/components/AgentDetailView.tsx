@@ -628,7 +628,7 @@ export function AgentDetailView() {
                           id="temperature"
                           type="number"
                           min="0"
-                          max="2"
+                          max="1"
                           step="0.1"
                           value={editForm.temperature || agent.temperature}
                           onChange={(e) =>
@@ -640,7 +640,7 @@ export function AgentDetailView() {
                           className="mt-1"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Creativity level (0.0-2.0)
+                          Response entropy (0.0-1.0)
                         </p>
                       </div>
                     </div>
