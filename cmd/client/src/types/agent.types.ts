@@ -14,7 +14,7 @@ export interface CreateAgentRequest {
   name: string;
   provider: "anthropic" | "openai" | "google";
   model: string;
-  system_prompt: string;
+  system_prompt?: string;
   max_tokens: number;
   temperature: number;
 }

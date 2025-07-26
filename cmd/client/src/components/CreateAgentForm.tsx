@@ -56,7 +56,21 @@ export function CreateAgentForm() {
     setError(null);
 
     try {
-      await agentsApi.createAgent(formData);
+      // Prepare the request, omitting system_prompt if empty
+      const requestData: CreateAgentRequest = {
+        name: formData.name,
+        provider: formData.provider,
+        model: formData.model,
+        max_tokens: formData.max_tokens,
+        temperature: formData.temperature,
+      };
+      
+      // Only include system_prompt if it's not empty
+      if (formData.system_prompt && formData.system_prompt.trim()) {
+        requestData.system_prompt = formData.system_prompt.trim();
+      }
+
+      await agentsApi.createAgent(requestData);
       navigate("/agents", {
         state: { message: `Agent "${formData.name}" created successfully!` },
       });
@@ -159,11 +173,11 @@ export function CreateAgentForm() {
                     htmlFor="system_prompt"
                     className="text-sm font-medium"
                   >
-                    System Prompt *
+                    System Prompt
                   </Label>
                   <Textarea
                     id="system_prompt"
-                    placeholder="You are a helpful AI assistant. Your role is to..."
+                    placeholder="You are a helpful AI assistant. Your role is to... (optional)"
                     value={formData.system_prompt}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -171,11 +185,10 @@ export function CreateAgentForm() {
                         system_prompt: e.target.value,
                       }))
                     }
-                    required
                     className="mt-1 min-h-[120px]"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Define your agent's personality, expertise, and behavior
+                    Optional: Define your agent's personality, expertise, and behavior. Leave empty to use model defaults.
                   </p>
                 </div>
               </div>
