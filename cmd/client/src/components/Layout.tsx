@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Bot, 
+import React, { useState } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Bot,
   MessageSquare,
-  LogOut, 
-  Menu, 
-  X 
-} from 'lucide-react';
-import { Button } from './ui/button';
-import { useAuth } from '../auth/AuthContext';
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { useAuth } from "../auth/AuthContext";
 
 interface SidebarItem {
   id: string;
@@ -20,22 +20,22 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   {
-    id: 'dashboard',
-    label: 'Dashboard',
+    id: "dashboard",
+    label: "Dashboard",
     icon: LayoutDashboard,
-    path: '/dashboard',
+    path: "/dashboard",
   },
   {
-    id: 'agents',
-    label: 'Agents',
+    id: "agents",
+    label: "Agents",
     icon: Bot,
-    path: '/agents',
+    path: "/agents",
   },
   {
-    id: 'chat',
-    label: 'Chat',
+    id: "chat",
+    label: "Chat",
     icon: MessageSquare,
-    path: '/chat',
+    path: "/chat",
   },
 ];
 
@@ -48,9 +48,9 @@ export function Layout() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -59,7 +59,9 @@ export function Layout() {
   };
 
   const isActiveRoute = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
   };
 
   return (
@@ -70,17 +72,17 @@ export function Layout() {
           {/* Logo/Title */}
           <div className="flex items-center space-x-2">
             <Bot className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">AgentPlane</h1>
+            <h1 className="text-2xl font-bold">Agentplane</h1>
           </div>
 
           {/* User Config */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
+                {user?.email?.charAt(0).toUpperCase() || "U"}
               </div>
               <span className="text-sm font-medium">
-                {user?.email || 'User'}
+                {user?.email || "User"}
               </span>
             </div>
             <Button
@@ -99,7 +101,9 @@ export function Layout() {
       {/* Content Area - Sidebar + Main */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className={`${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 bg-card border-r border-border flex flex-col`}>
+        <div
+          className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300 bg-card border-r border-border flex flex-col`}
+        >
           {/* Sidebar Toggle */}
           <div className="flex items-center justify-center p-4 border-b border-border">
             <Button
@@ -108,7 +112,11 @@ export function Layout() {
               onClick={toggleSidebar}
               className="p-2"
             >
-              {isCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              {isCollapsed ? (
+                <Menu className="w-4 h-4" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
             </Button>
           </div>
 
@@ -118,15 +126,15 @@ export function Layout() {
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = isActiveRoute(item.path);
-                
+
                 return (
                   <button
                     key={item.id}
                     onClick={() => navigate(item.path)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
                     }`}
                     title={isCollapsed ? item.label : undefined}
                   >
@@ -147,3 +155,4 @@ export function Layout() {
     </div>
   );
 }
+
