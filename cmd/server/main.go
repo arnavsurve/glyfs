@@ -55,9 +55,16 @@ func main() {
 	// Initialize MCP Connection Manager
 	mcpManager := services.NewMCPConnectionManager(db)
 
+	// Initialize Settings Handler
+	settingsHandler, err := handlers.NewSettingsHandler(db)
+	if err != nil {
+		log.Fatal("Failed to initialize settings handler:", err)
+	}
+
 	h := handlers.Handler{
-		DB:         db,
-		MCPManager: mcpManager,
+		DB:              db,
+		MCPManager:      mcpManager,
+		SettingsHandler: settingsHandler,
 	}
 
 	// Start token cleanup worker - runs every hour
@@ -152,6 +159,14 @@ func main() {
 	// MCP Server management routes
 	mcpHandler := handlers.NewMCPHandler(db, mcpManager)
 	mcpHandler.RegisterMCPRoutes(protected)
+
+	// User settings routes
+	protected.GET("/user/settings", func(c echo.Context) error {
+		return settingsHandler.GetUserSettings(c)
+	})
+	protected.PUT("/user/settings", func(c echo.Context) error {
+		return settingsHandler.UpdateUserSettings(c)
+	})
 
 	// Public API key authenticated routes
 	api.POST("/agents/:agentId/invoke", h.APIKeyMiddleware(func(c echo.Context) error {

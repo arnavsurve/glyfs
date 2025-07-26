@@ -34,6 +34,15 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "provider is required")
 	}
 
+	// Check if user has API key for the provider
+	hasKey, err := h.SettingsHandler.CheckAPIKeyForProvider(userID, string(req.Provider))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check API key configuration")
+	}
+	if !hasKey {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Please configure your %s API key in Settings before creating an agent", req.Provider))
+	}
+
 	tx := h.DB.Begin()
 	if tx.Error != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to start transaction")
@@ -115,9 +124,20 @@ func (h *Handler) HandleAgentInferenceInternal(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
 	}
 
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	// Get user's API key for the provider
+	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(userID, agent.Provider)
+	if err != nil || apiKey == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Please configure your %s API key in Settings", agent.Provider))
+	}
+
 	llmService := services.NewLLMService(h.MCPManager)
 
-	response, err := llmService.GenerateResponse(c.Request().Context(), &agent, &req)
+	response, err := llmService.GenerateResponse(c.Request().Context(), &agent, &req, apiKey)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate response: %v", err))
 	}
@@ -140,9 +160,21 @@ func (h *Handler) HandleAgentInference(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
 	}
 
+	// For public API, we need to get the agent owner's API key
+	var user shared.User
+	if err := h.DB.Where("id = ?", agent.UserID).First(&user).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get agent owner")
+	}
+
+	// Get agent owner's API key for the provider
+	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(agent.UserID, agent.Provider)
+	if err != nil || apiKey == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Agent owner has not configured %s API key", agent.Provider))
+	}
+
 	llmService := services.NewLLMService(h.MCPManager)
 
-	response, err := llmService.GenerateResponse(c.Request().Context(), agent, &req)
+	response, err := llmService.GenerateResponse(c.Request().Context(), agent, &req, apiKey)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate response: %v", err))
 	}
@@ -193,6 +225,20 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 		"agent_id": agent.ID,
 	})
 
+	// For public API, we need to get the agent owner's API key
+	var user shared.User
+	if err := h.DB.Where("id = ?", agent.UserID).First(&user).Error; err != nil {
+		h.sendStreamEvent(c, "error", "Failed to get agent owner", nil)
+		return nil
+	}
+
+	// Get agent owner's API key for the provider
+	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(agent.UserID, agent.Provider)
+	if err != nil || apiKey == "" {
+		h.sendStreamEvent(c, "error", fmt.Sprintf("Agent owner has not configured %s API key", agent.Provider), nil)
+		return nil
+	}
+
 	// Stream the response
 	llmService := services.NewLLMService(h.MCPManager)
 	fullResponse := ""
@@ -210,7 +256,7 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 		c.Response().Flush()
 	}
 
-	err := llmService.GenerateResponseStream(c.Request().Context(), agent, streamReq, streamFunc, toolEventFunc)
+	err = llmService.GenerateResponseStream(c.Request().Context(), agent, streamReq, apiKey, streamFunc, toolEventFunc)
 	if err != nil {
 		h.sendStreamEvent(c, "error", fmt.Sprintf("Failed to generate response: %v", err), nil)
 		return nil

@@ -6,6 +6,7 @@ import (
 )
 
 type Handler struct {
-	DB         *gorm.DB
-	MCPManager *services.MCPConnectionManager
+	DB               *gorm.DB
+	MCPManager       *services.MCPConnectionManager
+	SettingsHandler  *SettingsHandler
 }

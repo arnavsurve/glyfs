@@ -113,6 +113,13 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create assistant message")
 	}
 
+	// Get user's API key for the provider
+	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(userID, agent.Provider)
+	if err != nil || apiKey == "" {
+		h.sendStreamEvent(c, "error", fmt.Sprintf("Please configure your %s API key in Settings", agent.Provider), nil)
+		return nil
+	}
+
 	// Stream the response
 	llmService := services.NewLLMService(h.MCPManager)
 	fullResponse := ""
@@ -169,7 +176,7 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		c.Response().Flush()
 	}
 
-	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, streamFunc, toolEventFunc)
+	err = llmService.GenerateResponseStream(c.Request().Context(), &agent, &req, apiKey, streamFunc, toolEventFunc)
 	if err != nil {
 		h.sendStreamEvent(c, "error", fmt.Sprintf("Failed to generate response: %v", err), nil)
 		return nil
