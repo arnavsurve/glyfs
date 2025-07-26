@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Bot,
   MessageSquare,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -36,6 +37,12 @@ const sidebarItems: SidebarItem[] = [
     label: "Chat",
     icon: MessageSquare,
     path: "/chat",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    path: "/settings",
   },
 ];
 
