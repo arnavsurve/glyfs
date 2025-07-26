@@ -86,6 +86,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
   const addHeader = () => {
     if (headerKey.trim() && headerValue.trim()) {
+      // Save current header to the form
       setCreateForm((prev) => ({
         ...prev,
         config: {
@@ -102,6 +103,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         setSensitiveHeaders((prev) => [...prev, headerKey.trim()]);
       }
 
+      // Clear fields to add another header
       setHeaderKey("");
       setHeaderValue("");
       setIsHeaderSensitive(false);
@@ -163,6 +165,17 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     try {
       setIsCreating(true);
 
+      // Auto-include current header key/value if they have values
+      const finalHeaders = { ...createForm.config.headers };
+      const finalSensitiveHeaders = [...sensitiveHeaders];
+      
+      if (headerKey.trim() && headerValue.trim()) {
+        finalHeaders[headerKey.trim()] = headerValue.trim();
+        if (isHeaderSensitive) {
+          finalSensitiveHeaders.push(headerKey.trim());
+        }
+      }
+
       // Set URL in config to match server_url, preserving headers
       const serverData = {
         ...createForm,
@@ -170,9 +183,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
           ...createForm.config,
           url: createForm.server_url,
           server_type: createForm.server_type,
+          headers: finalHeaders,
         },
         sensitive_url: isUrlSensitive,
-        sensitive_headers: sensitiveHeaders,
+        sensitive_headers: finalSensitiveHeaders,
       };
 
       await mcpApi.createServer(serverData);
@@ -607,8 +621,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
             <div>
               <Label>HTTP Headers (Optional)</Label>
               <p className="text-sm text-muted-foreground mb-3">
-                Add authentication or custom headers. For GitHub, use
-                Authorization: Bearer YOUR_TOKEN
+                Add authentication or custom headers. Headers will be automatically included when creating the server. Use the + button to add multiple headers.
               </p>
 
               {/* Existing Headers */}
