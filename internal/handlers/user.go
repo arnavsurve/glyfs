@@ -173,10 +173,27 @@ func (h *Handler) HandleMe(c echo.Context) error {
 	userID := c.Get("user_id").(uint)
 	email := c.Get("email").(string)
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"user_id":    userID,
-		"user_email": email,
-	})
+	// Fetch full user info to include OAuth details
+	var user shared.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user details")
+	}
+
+	response := map[string]any{
+		"user_id":       userID,
+		"user_email":    email,
+		"auth_provider": user.AuthProvider,
+	}
+
+	// Include optional fields if they exist
+	if user.DisplayName != nil {
+		response["display_name"] = *user.DisplayName
+	}
+	if user.AvatarURL != nil {
+		response["avatar_url"] = *user.AvatarURL
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) HandleRefreshToken(c echo.Context) error {

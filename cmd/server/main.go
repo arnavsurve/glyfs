@@ -61,14 +61,27 @@ func main() {
 		log.Fatal("Failed to initialize settings handler:", err)
 	}
 
+	// Get JWT secret
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable not set")
+	}
+
 	h := handlers.Handler{
 		DB:              db,
 		MCPManager:      mcpManager,
 		SettingsHandler: settingsHandler,
 	}
 
+	// Initialize OAuth Handler (needs reference to main handler)
+	oauthHandler := handlers.NewOAuthHandler(db, jwtSecret, &h)
+	h.OAuthHandler = oauthHandler
+
 	// Start token cleanup worker - runs every hour
 	h.StartTokenCleanupWorker(1 * time.Hour)
+
+	// Start OAuth state cleanup worker
+	go oauthHandler.CleanupExpiredStates()
 
 	// Serve static files from React build
 	staticPath := filepath.Join("cmd", "client", "dist")
@@ -98,6 +111,18 @@ func main() {
 	}))
 	auth.POST("/refresh", func(c echo.Context) error {
 		return h.HandleRefreshToken(c)
+	})
+
+	// OAuth endpoints
+	oauth := auth.Group("/oauth")
+	oauth.GET("/github", func(c echo.Context) error {
+		return h.OAuthHandler.HandleGitHubLogin(c)
+	})
+	oauth.GET("/github/callback", func(c echo.Context) error {
+		return h.OAuthHandler.HandleGitHubCallback(c)
+	})
+	oauth.GET("/providers", func(c echo.Context) error {
+		return h.OAuthHandler.HandleAuthProviders(c)
 	})
 
 	// Admin endpoint for manual token cleanup (protected)
