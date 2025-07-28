@@ -121,6 +121,12 @@ func main() {
 	oauth.GET("/github/callback", func(c echo.Context) error {
 		return h.OAuthHandler.HandleGitHubCallback(c)
 	})
+	oauth.GET("/google", func(c echo.Context) error {
+		return h.OAuthHandler.HandleGoogleLogin(c)
+	})
+	oauth.GET("/google/callback", func(c echo.Context) error {
+		return h.OAuthHandler.HandleGoogleCallback(c)
+	})
 	oauth.GET("/providers", func(c echo.Context) error {
 		return h.OAuthHandler.HandleAuthProviders(c)
 	})
