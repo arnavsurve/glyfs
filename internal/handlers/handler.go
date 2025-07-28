@@ -9,4 +9,5 @@ type Handler struct {
 	DB               *gorm.DB
 	MCPManager       *services.MCPConnectionManager
 	SettingsHandler  *SettingsHandler
+	OAuthHandler     *OAuthHandler
 }

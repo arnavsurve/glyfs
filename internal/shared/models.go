@@ -23,8 +23,12 @@ type AgentConfig struct {
 
 type User struct {
 	gorm.Model
-	Email        string `gorm:"type:text;not null;unique" json:"email"`
-	PasswordHash []byte `gorm:"type:bytea;not null" json:"-"` // Never serialize password hash
+	Email        string  `gorm:"type:text;not null;unique" json:"email"`
+	PasswordHash []byte  `gorm:"type:bytea" json:"-"` // Never serialize password hash - nullable for OAuth users
+	AuthProvider string  `gorm:"type:text;default:'local'" json:"auth_provider"`
+	OAuthID      *string `gorm:"type:text" json:"-"` // OAuth provider user ID
+	AvatarURL    *string `gorm:"type:text" json:"avatar_url"`
+	DisplayName  *string `gorm:"type:text" json:"display_name"`
 }
 
 type UserSettings struct {
@@ -57,6 +61,15 @@ type RevokedToken struct {
 	gorm.Model
 	Signature string    `gorm:"type:text;not null;unique;index" json:"signature"`
 	ExpiresAt time.Time `gorm:"not null" json:"expires_at"`
+}
+
+type OAuthState struct {
+	ID          uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	State       string         `gorm:"type:text;not null;unique;index" json:"state"`
+	RedirectURI string         `gorm:"type:text" json:"redirect_uri"`
+	CreatedAt   time.Time      `json:"created_at"`
+	ExpiresAt   time.Time      `gorm:"not null" json:"expires_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
 type ChatSession struct {
