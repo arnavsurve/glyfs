@@ -54,8 +54,8 @@ export function AgentCard({ agent }: AgentCardProps) {
   };
 
   return (
-    <Card 
-      className="overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/20" 
+    <Card
+      className="overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/20"
       onClick={handleCardClick}
     >
       <CardContent className="p-4">
@@ -64,7 +64,7 @@ export function AgentCard({ agent }: AgentCardProps) {
           <h3 className="text-lg font-semibold">{agent.name}</h3>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
-        
+
         {/* Model info */}
         <p className="text-sm text-muted-foreground mb-3">
           {getProviderDisplayName(agent.provider)} • {getModelDisplayName()}
@@ -72,13 +72,11 @@ export function AgentCard({ agent }: AgentCardProps) {
 
         {/* System prompt preview */}
         <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-          {agent.system_prompt ? 
-            (agent.system_prompt.length > 50 ? 
-              `${agent.system_prompt.substring(0, 50)}...` : 
-              agent.system_prompt
-            ) : 
-            'No system prompt defined'
-          }
+          {agent.system_prompt
+            ? agent.system_prompt.length > 50
+              ? `${agent.system_prompt.substring(0, 50)}...`
+              : agent.system_prompt
+            : ""}
         </p>
 
         {/* Invoke URL */}
