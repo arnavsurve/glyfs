@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
+	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
@@ -46,7 +47,13 @@ func NewOAuthHandler(db *gorm.DB, jwtSecret string, handler *Handler) *OAuthHand
 			Scopes:       []string{"read:user", "user:email"},
 			Endpoint:     github.Endpoint,
 		},
-		// Google config will be added later
+		GoogleConfig: &oauth2.Config{
+			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+			RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+			Scopes:       []string{"openid", "profile", "email"},
+			Endpoint:     google.Endpoint,
+		},
 	}
 }
 
@@ -198,6 +205,137 @@ func (h *OAuthHandler) HandleGitHubCallback(c echo.Context) error {
 	return c.Redirect(http.StatusTemporaryRedirect, oauthState.RedirectURI)
 }
 
+func (h *OAuthHandler) HandleGoogleLogin(c echo.Context) error {
+	// Generate state token
+	state, err := generateState()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate state")
+	}
+
+	// Store state in database
+	oauthState := &shared.OAuthState{
+		State:       state,
+		RedirectURI: h.FrontendURL + "/dashboard",
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(10 * time.Minute),
+	}
+
+	if err := h.DB.Create(oauthState).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store OAuth state")
+	}
+
+	// Redirect to Google
+	authURL := h.GoogleConfig.AuthCodeURL(state)
+	return c.Redirect(http.StatusTemporaryRedirect, authURL)
+}
+
+func (h *OAuthHandler) HandleGoogleCallback(c echo.Context) error {
+	// Parse callback parameters
+	code := c.QueryParam("code")
+	state := c.QueryParam("state")
+	errorParam := c.QueryParam("error")
+
+	// Handle OAuth errors
+	if errorParam != "" {
+		errorDesc := c.QueryParam("error_description")
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=%s&description=%s", h.FrontendURL, errorParam, errorDesc))
+	}
+
+	// Validate state
+	var oauthState shared.OAuthState
+	err := h.DB.Where("state = ? AND expires_at > ?", state, time.Now()).First(&oauthState).Error
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=invalid_state", h.FrontendURL))
+	}
+
+	// Delete used state
+	h.DB.Delete(&oauthState)
+
+	// Exchange code for token
+	token, err := h.GoogleConfig.Exchange(context.Background(), code)
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=token_exchange_failed", h.FrontendURL))
+	}
+
+	// Get user info from Google
+	client := h.GoogleConfig.Client(context.Background(), token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=google_api_error", h.FrontendURL))
+	}
+	defer resp.Body.Close()
+
+	var googleUser shared.GoogleUser
+	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=google_api_error", h.FrontendURL))
+	}
+
+	// Ensure we have an email
+	if googleUser.Email == "" || !googleUser.VerifiedEmail {
+		log.Printf("Google user has no verified email: %+v\n", googleUser)
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=no_email", h.FrontendURL))
+	}
+	log.Printf("Google OAuth successful for user: %s (%s)\n", googleUser.Email, googleUser.Name)
+
+	// Create or update user
+	user, err := h.findOrCreateGoogleUser(&googleUser)
+	if err != nil {
+		log.Printf("OAuth user creation failed: %v\n", err)
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=user_creation_failed", h.FrontendURL))
+	}
+	log.Printf("OAuth user created/found: %s (ID: %d)\n", user.Email, user.ID)
+
+	// Generate JWT tokens
+	accessToken, err := generateJWT(user.ID, user.Email)
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=token_generation_failed", h.FrontendURL))
+	}
+
+	refreshToken, err := h.Handler.createRefreshToken(user.ID)
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect,
+			fmt.Sprintf("%s/login?error=token_generation_failed", h.FrontendURL))
+	}
+
+	// Set cookies manually since setAuthCookies is in user.go
+	log.Printf("Setting OAuth cookies for user: %s\n", user.Email)
+
+	accessCookie := &http.Cookie{
+		Name:     "auth_token",
+		Value:    accessToken,
+		Path:     "/",
+		MaxAge:   int(15 * 60), // 15 minutes in seconds
+		HttpOnly: true,
+		Secure:   false, // Set to true in production
+		SameSite: http.SameSiteLaxMode,
+	}
+	c.SetCookie(accessCookie)
+	log.Printf("Set access token cookie\n")
+
+	refreshCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   int(7 * 24 * 60 * 60), // 7 days in seconds
+		HttpOnly: true,
+		Secure:   false, // Set to true in production
+		SameSite: http.SameSiteLaxMode,
+	}
+	c.SetCookie(refreshCookie)
+	log.Printf("Set refresh token cookie\n")
+
+	// Redirect to frontend
+	return c.Redirect(http.StatusTemporaryRedirect, oauthState.RedirectURI)
+}
+
 func (h *OAuthHandler) findOrCreateOAuthUser(githubUser *shared.GitHubUser) (*shared.User, error) {
 	var user shared.User
 	oauthID := fmt.Sprintf("%d", githubUser.ID)
@@ -229,6 +367,52 @@ func (h *OAuthHandler) findOrCreateOAuthUser(githubUser *shared.GitHubUser) (*sh
 		OAuthID:      &oauthID,
 		DisplayName:  &githubUser.Name,
 		AvatarURL:    &githubUser.AvatarURL,
+	}
+
+	// Set a random password hash for OAuth users (never used but satisfies any constraints)
+	randomPass := make([]byte, 32)
+	rand.Read(randomPass)
+	hashedPassword, _ := bcrypt.GenerateFromPassword(randomPass, bcrypt.DefaultCost)
+	user.PasswordHash = hashedPassword
+
+	return &user, h.DB.Create(&user).Error
+}
+
+func (h *OAuthHandler) findOrCreateGoogleUser(googleUser *shared.GoogleUser) (*shared.User, error) {
+	var user shared.User
+	oauthID := googleUser.ID
+
+	// Try to find existing OAuth user
+	err := h.DB.Where("auth_provider = ? AND oauth_id = ?", string(shared.OAuthProviderGoogle), oauthID).First(&user).Error
+	if err == nil {
+		// Update user info
+		user.DisplayName = &googleUser.Name
+		user.AvatarURL = &googleUser.Picture
+		return &user, h.DB.Save(&user).Error
+	}
+
+	// Try to find existing user by email (for linking)
+	err = h.DB.Where("email = ?", googleUser.Email).First(&user).Error
+	if err == nil {
+		// User exists with this email, check if it's a local account
+		if user.AuthProvider == shared.AuthProviderLocal {
+			// For MVP, auto-link the account but update the auth provider
+			user.AuthProvider = string(shared.OAuthProviderGoogle)
+			user.OAuthID = &oauthID
+			user.DisplayName = &googleUser.Name
+			user.AvatarURL = &googleUser.Picture
+			return &user, h.DB.Save(&user).Error
+		}
+		return &user, nil
+	}
+
+	// Create new user
+	user = shared.User{
+		Email:        googleUser.Email,
+		AuthProvider: string(shared.OAuthProviderGoogle),
+		OAuthID:      &oauthID,
+		DisplayName:  &googleUser.Name,
+		AvatarURL:    &googleUser.Picture,
 	}
 
 	// Set a random password hash for OAuth users (never used but satisfies any constraints)
