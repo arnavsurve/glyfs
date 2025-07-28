@@ -1,6 +1,9 @@
 export interface User {
   id: number;
   email: string;
+  auth_provider?: string;
+  display_name?: string;
+  avatar_url?: string;
 }
 
 export interface LoginCredentials {
@@ -17,6 +20,9 @@ export interface AuthResponse {
   message: string;
   user_id: number;
   user_email: string;
+  auth_provider?: string;
+  display_name?: string;
+  avatar_url?: string;
 }
 
 export interface AuthState {
@@ -38,3 +44,17 @@ export interface ApiError {
   message: string;
   status?: number;
 }
+
+export interface AuthProvider {
+  id: string;
+  name: string;
+  display_name: string;
+  icon_url?: string;
+  connected: boolean;
+}
+
+export interface AuthProvidersResponse {
+  providers: AuthProvider[];
+}
+
+export type OAuthProvider = 'github' | 'google';
