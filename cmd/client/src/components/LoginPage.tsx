@@ -14,22 +14,54 @@ import { Loader2, User } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import type { LoginCredentials } from "../types/auth.types";
+import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
 
 export function LoginPage() {
   const [formData, setFormData] = useState<LoginCredentials>({
     email: "",
     password: "",
   });
+  const [oauthError, setOauthError] = useState<string | null>(null);
   const { login, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check for OAuth error in query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const errorParam = params.get('error');
+    const errorDesc = params.get('description');
+    
+    if (errorParam) {
+      const errorMessages: Record<string, string> = {
+        'access_denied': 'Authorization was denied. Please try again.',
+        'invalid_state': 'Security validation failed. Please try again.',
+        'github_api_error': 'Unable to connect to GitHub. Please try again later.',
+        'google_api_error': 'Unable to connect to Google. Please try again later.',
+        'no_email': 'No email address found. Please ensure your account has a verified email.',
+        'email_already_exists': 'An account with this email already exists. Please log in with your password.',
+        'user_creation_failed': 'Failed to create account. Please try again.',
+        'token_generation_failed': 'Authentication failed. Please try again.',
+        'token_exchange_failed': 'Authentication failed. Please try again.'
+      };
+      
+      setOauthError(errorMessages[errorParam] || errorDesc || 'Authentication failed. Please try again.');
+      
+      // Clean up URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [location]);
 
   // Clear any previous errors when user starts typing
   useEffect(() => {
     if (error) {
       clearError();
     }
-  }, [formData.email, formData.password, error, clearError]);
+    if (oauthError) {
+      setOauthError(null);
+    }
+  }, [formData.email, formData.password, error, clearError, oauthError]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -68,6 +100,12 @@ export function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* OAuth Buttons */}
+            <OAuthButtons mode="login" />
+            
+            {/* Divider */}
+            <OAuthDivider />
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -94,9 +132,9 @@ export function LoginPage() {
                 />
               </div>
 
-              {error && (
+              {(error || oauthError) && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{error || oauthError}</AlertDescription>
                 </Alert>
               )}
 
