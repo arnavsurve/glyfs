@@ -12,8 +12,8 @@ type AgentConfig struct {
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	UserID       uint           `gorm:"not null;uniqueIndex:idx_user_agent_name" json:"user_id"`
-	Name         string         `gorm:"type:text;not null;uniqueIndex:idx_user_agent_name" json:"name"`
+	UserID       uint           `gorm:"not null" json:"user_id"`
+	Name         string         `gorm:"type:text;not null" json:"name"`
 	Provider     string         `gorm:"type:text;not null" json:"provider"`
 	LLMModel     string         `gorm:"type:text;not null" json:"llm_model"`
 	SystemPrompt string         `gorm:"type:text" json:"system_prompt"`

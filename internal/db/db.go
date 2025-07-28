@@ -31,5 +31,19 @@ func SetupDB() *gorm.DB {
 		&shared.AgentMCPServer{},
 	)
 
+	// Create partial unique index for agent names (only for non-deleted agents)
+	if err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agent_name_active 
+		ON agent_configs(user_id, name) 
+		WHERE deleted_at IS NULL
+	`).Error; err != nil {
+		log.Printf("Warning: Failed to create partial unique index: %v", err)
+	}
+
+	// Drop the old unique index if it exists
+	if err := db.Exec(`DROP INDEX IF EXISTS idx_user_agent_name`).Error; err != nil {
+		log.Printf("Warning: Failed to drop old unique index: %v", err)
+	}
+
 	return db
 }

@@ -69,8 +69,8 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 	}
 	if err := tx.Create(&agent).Error; err != nil {
 		tx.Rollback()
-		if strings.Contains(err.Error(), "idx_user_agent_name") || strings.Contains(err.Error(), "duplicate") {
-			return echo.NewHTTPError(http.StatusConflict, "Agent name already exists")
+		if strings.Contains(err.Error(), "idx_user_agent_name_active") || strings.Contains(err.Error(), "duplicate") {
+			return echo.NewHTTPError(http.StatusConflict, "An active agent with this name already exists")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create agent")
 	}
@@ -339,8 +339,8 @@ func (h *Handler) HandleUpdateAgent(c echo.Context) error {
 	}
 
 	if err := h.DB.Model(&agent).Updates(updates).Error; err != nil {
-		if strings.Contains(err.Error(), "idx_user_agent_name") || strings.Contains(err.Error(), "duplicate") {
-			return echo.NewHTTPError(http.StatusConflict, "Agent name already exists")
+		if strings.Contains(err.Error(), "idx_user_agent_name_active") || strings.Contains(err.Error(), "duplicate") {
+			return echo.NewHTTPError(http.StatusConflict, "An active agent with this name already exists")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update agent")
 	}
