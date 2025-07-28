@@ -85,12 +85,27 @@ export function Layout() {
           {/* User Config */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
-                {user?.email?.charAt(0).toUpperCase() || "U"}
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt="User avatar"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
+                  {(user?.display_name || user?.email)?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">
+                  {user?.display_name || user?.email || "User"}
+                </span>
+                {user?.display_name && (
+                  <span className="text-xs text-muted-foreground">
+                    {user.email}
+                  </span>
+                )}
               </div>
-              <span className="text-sm font-medium">
-                {user?.email || "User"}
-              </span>
             </div>
             <Button
               variant="outline"

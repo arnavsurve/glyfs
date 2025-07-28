@@ -55,7 +55,10 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       };
     case "LOGOUT":
       return {
-        ...initialState,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false, // Don't show loading spinner after logout
+        error: null,
       };
     case "CLEAR_ERROR":
       return {
@@ -110,6 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const user: User = {
             id: data.user_id,
             email: data.user_email,
+            auth_provider: data.auth_provider,
+            display_name: data.display_name,
+            avatar_url: data.avatar_url,
           };
           dispatch({
             type: "AUTH_SUCCESS",
@@ -170,6 +176,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const user: User = {
         id: data.user_id,
         email: data.user_email,
+        auth_provider: data.auth_provider,
+        display_name: data.display_name,
+        avatar_url: data.avatar_url,
       };
 
       dispatch({
@@ -193,6 +202,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const user: User = {
         id: data.user_id,
         email: data.user_email,
+        auth_provider: data.auth_provider,
+        display_name: data.display_name,
+        avatar_url: data.avatar_url,
       };
 
       dispatch({
