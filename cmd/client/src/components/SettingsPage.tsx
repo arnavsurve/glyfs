@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { settingsApi } from '../api/settings.api';
 import type { UserSettings, UpdateUserSettingsRequest } from '../types/settings.types';
 import { toast } from 'sonner';
+import { LinkedAccounts } from './LinkedAccounts';
 
 export function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -253,6 +254,11 @@ export function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Linked Accounts Section */}
+        <div className="mt-8">
+          <LinkedAccounts />
+        </div>
 
         {/* Info Section */}
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
