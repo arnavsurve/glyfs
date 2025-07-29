@@ -64,7 +64,6 @@ func (h *OAuthHandler) HandleGitHubLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate state")
 	}
 
-	// Store state in database
 	oauthState := &shared.OAuthState{
 		State:       state,
 		RedirectURI: h.FrontendURL + "/dashboard",
@@ -489,4 +488,3 @@ func (h *OAuthHandler) CleanupExpiredStates() {
 		h.DB.Where("expires_at < ?", time.Now()).Delete(&shared.OAuthState{})
 	}
 }
-
