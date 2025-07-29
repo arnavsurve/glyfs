@@ -34,6 +34,11 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "provider is required")
 	}
 
+	// Check agent limit based on user tier
+	if err := h.CheckAgentLimit(c); err != nil {
+		return err
+	}
+
 	// Check if user has API key for the provider
 	hasKey, err := h.SettingsHandler.CheckAPIKeyForProvider(userID, string(req.Provider))
 	if err != nil {
@@ -362,9 +367,26 @@ func (h *Handler) HandleGetAgents(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve agents")
 	}
 
+	// Get user to check their tier
+	var user shared.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user information")
+	}
+
+	// Get tier configuration
+	tierConfig, exists := shared.TierConfigs[user.Tier]
+	if !exists {
+		tierConfig = shared.TierConfigs["free"]
+	}
+
 	return c.JSON(http.StatusOK, map[string]any{
 		"agents": agents,
 		"count":  len(agents),
+		"tier": map[string]any{
+			"name":        user.Tier,
+			"agent_limit": tierConfig.AgentLimit,
+			"agents_used": len(agents),
+		},
 	})
 }
 
@@ -470,4 +492,41 @@ func generateAPIKey() (string, error) {
 		return "", fmt.Errorf("generating bytes for agent API key: %w", err)
 	}
 	return "apk_" + base64.URLEncoding.EncodeToString(randomBytes), nil
+}
+
+// CheckAgentLimit verifies if the user can create more agents based on their tier
+func (h *Handler) CheckAgentLimit(c echo.Context) error {
+	userID, ok := c.Get("user_id").(uint)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
+	}
+
+	// Get user to check their tier
+	var user shared.User
+	if err := h.DB.First(&user, userID).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user information")
+	}
+
+	// Get tier configuration
+	tierConfig, exists := shared.TierConfigs[user.Tier]
+	if !exists {
+		// Default to free tier if tier is not recognized
+		tierConfig = shared.TierConfigs["free"]
+	}
+
+	// Count active agents for the user (excluding soft deleted)
+	var agentCount int64
+	if err := h.DB.Model(&shared.AgentConfig{}).Where("user_id = ?", userID).Count(&agentCount).Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count agents")
+	}
+
+	// Check if limit is exceeded
+	if int(agentCount) >= tierConfig.AgentLimit {
+		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf(
+			"Agent limit reached. Your %s tier allows %d agents. Please upgrade to create more agents.",
+			user.Tier, tierConfig.AgentLimit,
+		))
+	}
+
+	return nil
 }

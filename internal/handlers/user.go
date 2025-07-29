@@ -179,10 +179,25 @@ func (h *Handler) HandleMe(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user details")
 	}
 
+	// Get tier configuration
+	tierConfig, exists := shared.TierConfigs[user.Tier]
+	if !exists {
+		tierConfig = shared.TierConfigs["free"]
+	}
+
+	// Count active agents for the user
+	var agentCount int64
+	h.DB.Model(&shared.AgentConfig{}).Where("user_id = ?", userID).Count(&agentCount)
+
 	response := map[string]any{
 		"user_id":       userID,
 		"user_email":    email,
 		"auth_provider": user.AuthProvider,
+		"tier":          user.Tier,
+		"tier_limits": map[string]any{
+			"agent_limit": tierConfig.AgentLimit,
+			"agents_used": int(agentCount),
+		},
 	}
 
 	// Include optional fields if they exist
