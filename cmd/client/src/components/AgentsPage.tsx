@@ -3,16 +3,22 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Bot, Plus, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { agentsApi } from "../api/agents.api";
-import type { Agent } from "../types/agent.types";
+import type { Agent, AgentsResponse } from "../types/agent.types";
 import { AgentCard } from "./AgentCard";
 import { transformAgentsData } from "../utils/agent.utils";
+import { AgentLimitIndicator } from "./AgentLimitIndicator";
+import { UpgradePrompt } from "./UpgradePrompt";
+import { useAuth } from "../auth/AuthContext";
 
 export function AgentsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tierInfo, setTierInfo] = useState<AgentsResponse['tier']>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   useEffect(() => {
     async function fetchAgents() {
@@ -25,6 +31,7 @@ export function AgentsPage() {
         const transformedAgents = transformAgentsData(response.agents);
 
         setAgents(transformedAgents);
+        setTierInfo(response.tier);
       } catch (err: any) {
         console.error("Failed to fetch agents:", err);
         setError(err.message || "Failed to load agents");
@@ -35,6 +42,17 @@ export function AgentsPage() {
 
     fetchAgents();
   }, [location.key]); // Re-fetch when navigation occurs
+
+  const handleCreateClick = () => {
+    const agentLimit = tierInfo?.agent_limit ?? user?.tier_limits?.agent_limit ?? 3;
+    const agentsUsed = tierInfo?.agents_used ?? agents.length;
+    
+    if (agentsUsed >= agentLimit) {
+      setShowUpgradePrompt(true);
+    } else {
+      navigate("/agents/create");
+    }
+  };
 
   return (
     <div className="p-6">
@@ -50,13 +68,24 @@ export function AgentsPage() {
               Manage your AI agents and their configurations.
             </p>
           </div>
-          <Button
-            className="flex items-center space-x-2"
-            onClick={() => navigate("/agents/create")}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Agent</span>
-          </Button>
+          <div className="flex items-center gap-4">
+            {/* Agent Limit Indicator */}
+            <div className="w-48">
+              <AgentLimitIndicator
+                agentsUsed={tierInfo?.agents_used ?? agents.length}
+                agentLimit={tierInfo?.agent_limit}
+                onUpgradeClick={() => setShowUpgradePrompt(true)}
+              />
+            </div>
+            <Button
+              className="flex items-center space-x-2"
+              onClick={handleCreateClick}
+              disabled={isLoading}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Agent</span>
+            </Button>
+          </div>
         </div>
 
         {/* Success Message (if redirected from create) */}
@@ -95,7 +124,7 @@ export function AgentsPage() {
                 Create your first agent to get started.
               </p>
               <Button
-                onClick={() => navigate("/agents/create")}
+                onClick={handleCreateClick}
                 className="flex items-center space-x-2 mx-auto"
               >
                 <Plus className="w-4 h-4" />
@@ -111,6 +140,12 @@ export function AgentsPage() {
             ))}
           </div>
         )}
+
+        {/* Upgrade Prompt Dialog */}
+        <UpgradePrompt
+          open={showUpgradePrompt}
+          onOpenChange={setShowUpgradePrompt}
+        />
       </div>
     </div>
   );
