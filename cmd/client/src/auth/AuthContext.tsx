@@ -116,6 +116,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             auth_provider: data.auth_provider,
             display_name: data.display_name,
             avatar_url: data.avatar_url,
+            tier: (data.tier as 'free' | 'pro') || 'free',
+            tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
           };
           dispatch({
             type: "AUTH_SUCCESS",
@@ -179,6 +181,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         auth_provider: data.auth_provider,
         display_name: data.display_name,
         avatar_url: data.avatar_url,
+        tier: (data.tier as 'free' | 'pro') || 'free',
+        tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
       };
 
       dispatch({
@@ -205,6 +209,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         auth_provider: data.auth_provider,
         display_name: data.display_name,
         avatar_url: data.avatar_url,
+        tier: (data.tier as 'free' | 'pro') || 'free',
+        tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
       };
 
       dispatch({

@@ -10,6 +10,16 @@ export interface Agent {
   updated_at: string;
 }
 
+export interface AgentsResponse {
+  agents: Agent[];
+  count: number;
+  tier?: {
+    name: string;
+    agent_limit: number;
+    agents_used: number;
+  };
+}
+
 export interface CreateAgentRequest {
   name: string;
   provider: "anthropic" | "openai" | "google";

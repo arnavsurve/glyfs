@@ -4,6 +4,11 @@ export interface User {
   auth_provider?: string;
   display_name?: string;
   avatar_url?: string;
+  tier: 'free' | 'pro';
+  tier_limits: {
+    agent_limit: number;
+    agents_used: number;
+  };
 }
 
 export interface LoginCredentials {
@@ -23,6 +28,11 @@ export interface AuthResponse {
   auth_provider?: string;
   display_name?: string;
   avatar_url?: string;
+  tier?: string;
+  tier_limits?: {
+    agent_limit: number;
+    agents_used: number;
+  };
 }
 
 export interface AuthState {

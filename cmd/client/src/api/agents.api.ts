@@ -1,10 +1,5 @@
 import { apiClient } from './client';
-import type { Agent, CreateAgentRequest, UpdateAgentRequest, AgentInferenceRequest, AgentInferenceResponse } from '../types/agent.types';
-
-export interface GetAgentsResponse {
-  agents: Agent[];
-  count: number;
-}
+import type { Agent, CreateAgentRequest, UpdateAgentRequest, AgentInferenceRequest, AgentInferenceResponse, AgentsResponse } from '../types/agent.types';
 
 export interface CreateAgentResponse {
   message: string;
@@ -35,8 +30,8 @@ export interface CreateAPIKeyResponse {
 }
 
 export const agentsApi = {
-  getAgents: async (): Promise<GetAgentsResponse> => {
-    const response = await apiClient.get<GetAgentsResponse>('/agents');
+  getAgents: async (): Promise<AgentsResponse> => {
+    const response = await apiClient.get<AgentsResponse>('/agents');
     return response.data;
   },
 
