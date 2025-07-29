@@ -23,21 +23,23 @@ type AgentConfig struct {
 
 type User struct {
 	gorm.Model
-	Email        string  `gorm:"type:text;not null;unique" json:"email"`
-	PasswordHash []byte  `gorm:"type:bytea" json:"-"` // Never serialize password hash - nullable for OAuth users
-	AuthProvider string  `gorm:"type:text;default:'local'" json:"auth_provider"`
-	OAuthID      *string `gorm:"type:text" json:"-"` // OAuth provider user ID
-	AvatarURL    *string `gorm:"type:text" json:"avatar_url"`
-	DisplayName  *string `gorm:"type:text" json:"display_name"`
+	Email         string     `gorm:"type:text;not null;unique" json:"email"`
+	PasswordHash  []byte     `gorm:"type:bytea" json:"-"` // Never serialize password hash - nullable for OAuth users
+	AuthProvider  string     `gorm:"type:text;default:'local'" json:"auth_provider"`
+	OAuthID       *string    `gorm:"type:text" json:"-"` // OAuth provider user ID
+	AvatarURL     *string    `gorm:"type:text" json:"avatar_url"`
+	DisplayName   *string    `gorm:"type:text" json:"display_name"`
+	Tier          string     `gorm:"type:text;default:'free'" json:"tier"`
+	TierUpdatedAt *time.Time `json:"tier_updated_at,omitempty"`
 }
 
 type UserSettings struct {
 	gorm.Model
-	UserID            uint   `gorm:"uniqueIndex;not null" json:"user_id"`
-	User              User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
-	AnthropicAPIKey   string `gorm:"type:text" json:"-"` // Encrypted, never serialize
-	OpenAIAPIKey      string `gorm:"type:text" json:"-"` // Encrypted, never serialize  
-	GeminiAPIKey      string `gorm:"type:text" json:"-"` // Encrypted, never serialize
+	UserID          uint   `gorm:"uniqueIndex;not null" json:"user_id"`
+	User            User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
+	AnthropicAPIKey string `gorm:"type:text" json:"-"` // Encrypted, never serialize
+	OpenAIAPIKey    string `gorm:"type:text" json:"-"` // Encrypted, never serialize
+	GeminiAPIKey    string `gorm:"type:text" json:"-"` // Encrypted, never serialize
 }
 
 type AgentAPIKey struct {
@@ -199,4 +201,3 @@ type ToolCallEvent struct {
 	Error     string         `json:"error,omitempty"`
 	Duration  int64          `json:"duration_ms,omitempty"`
 }
-
