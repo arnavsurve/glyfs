@@ -5,8 +5,6 @@ import {
   Loader2,
   Check,
   X,
-  Globe,
-  Zap,
   Trash2,
   TestTube,
   ToggleLeft,
@@ -168,7 +166,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       // Auto-include current header key/value if they have values
       const finalHeaders = { ...createForm.config.headers };
       const finalSensitiveHeaders = [...sensitiveHeaders];
-      
+
       if (headerKey.trim() && headerValue.trim()) {
         finalHeaders[headerKey.trim()] = headerValue.trim();
         if (isHeaderSensitive) {
@@ -287,6 +285,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     return agentServers.find((as) => as.server_id === serverId);
   };
 
+  const truncateUrl = (url: string, maxLength: number = 50): string => {
+    if (url.length <= maxLength) return url;
+    return url.substring(0, maxLength) + "...";
+  };
 
   if (isLoading) {
     return (
@@ -310,7 +312,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                 <Wrench className="w-5 h-5" />
                 <span>Agent Tools</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="mt-2">
                 Connect your agent to MCP (Model Context Protocol) servers to
                 provide unlimited tools and capabilities
               </CardDescription>
@@ -367,12 +369,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          {server.server_type === "sse" ? (
-                            <Zap className="w-4 h-4 text-primary" />
-                          ) : (
-                            <Globe className="w-4 h-4 text-primary" />
-                          )}
+                        <div className="px-2 py-0.5 bg-primary/10 rounded-lg">
+                          <span className="text-xs font-medium text-primary uppercase">
+                            {server.server_type}
+                          </span>
                         </div>
                         <div>
                           <h3 className="font-medium">{server.name}</h3>
@@ -382,13 +382,13 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <span className="flex items-center">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <span
+                          className="flex items-center"
+                          title={server.server_url}
+                        >
                           <ExternalLink className="w-3 h-3 mr-1" />
-                          {server.server_url}
-                        </span>
-                        <span className="uppercase font-medium">
-                          {server.server_type}
+                          {truncateUrl(server.server_url)}
                         </span>
                       </div>
 
@@ -621,7 +621,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
             <div>
               <Label>HTTP Headers (Optional)</Label>
               <p className="text-sm text-muted-foreground mb-3">
-                Add authentication or custom headers. Headers will be automatically included when creating the server. Use the + button to add multiple headers.
+                Add authentication or custom headers. Headers will be
+                automatically included when creating the server. Use the +
+                button to add multiple headers.
               </p>
 
               {/* Existing Headers */}
