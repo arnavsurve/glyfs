@@ -90,7 +90,7 @@ func (h *Handler) HandleSignup(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
-	setAuthCookies(c, accessToken, refreshToken)
+	SetAuthCookies(c, accessToken, refreshToken)
 
 	return c.JSON(http.StatusCreated, map[string]any{
 		"message":    "User created successfully",
@@ -132,7 +132,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
-	setAuthCookies(c, accessToken, refreshToken)
+	SetAuthCookies(c, accessToken, refreshToken)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"message":    "Login successful",
@@ -277,7 +277,7 @@ func (h *Handler) HandleRefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "transaction failed")
 	}
 
-	setAuthCookies(c, newAccessToken, newRefreshTokenString)
+	SetAuthCookies(c, newAccessToken, newRefreshTokenString)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"message": "tokens refreshed successfully",
@@ -411,7 +411,8 @@ func (h *Handler) StartTokenCleanupWorker(interval time.Duration) {
 	log.Printf("Started token cleanup worker with interval: %v", interval)
 }
 
-func setAuthCookies(c echo.Context, accessToken, refreshToken string) {
+// SetAuthCookies sets authentication cookies for access and refresh tokens
+func SetAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	accessCookie := &http.Cookie{
 		Name:     "auth_token",
 		Value:    accessToken,

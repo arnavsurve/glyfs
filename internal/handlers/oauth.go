@@ -173,32 +173,9 @@ func (h *OAuthHandler) HandleGitHubCallback(c echo.Context) error {
 			fmt.Sprintf("%s/login?error=token_generation_failed", h.FrontendURL))
 	}
 
-	// Set cookies manually since setAuthCookies is in user.go
+	// Set auth cookies using shared function
 	log.Printf("Setting OAuth cookies for user: %s\n", user.Email)
-
-	accessCookie := &http.Cookie{
-		Name:     "auth_token",
-		Value:    accessToken,
-		Path:     "/",
-		MaxAge:   int(15 * 60), // 15 minutes in seconds
-		HttpOnly: true,
-		Secure:   false, // Set to true in production
-		SameSite: http.SameSiteLaxMode,
-	}
-	c.SetCookie(accessCookie)
-	log.Printf("Set access token cookie\n")
-
-	refreshCookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Path:     "/",
-		MaxAge:   int(7 * 24 * 60 * 60), // 7 days in seconds
-		HttpOnly: true,
-		Secure:   false, // Set to true in production
-		SameSite: http.SameSiteLaxMode,
-	}
-	c.SetCookie(refreshCookie)
-	log.Printf("Set refresh token cookie\n")
+	SetAuthCookies(c, accessToken, refreshToken)
 
 	// Redirect to frontend
 	return c.Redirect(http.StatusTemporaryRedirect, oauthState.RedirectURI)
@@ -304,32 +281,9 @@ func (h *OAuthHandler) HandleGoogleCallback(c echo.Context) error {
 			fmt.Sprintf("%s/login?error=token_generation_failed", h.FrontendURL))
 	}
 
-	// Set cookies manually since setAuthCookies is in user.go
+	// Set auth cookies using shared function
 	log.Printf("Setting OAuth cookies for user: %s\n", user.Email)
-
-	accessCookie := &http.Cookie{
-		Name:     "auth_token",
-		Value:    accessToken,
-		Path:     "/",
-		MaxAge:   int(15 * 60), // 15 minutes in seconds
-		HttpOnly: true,
-		Secure:   false, // Set to true in production
-		SameSite: http.SameSiteLaxMode,
-	}
-	c.SetCookie(accessCookie)
-	log.Printf("Set access token cookie\n")
-
-	refreshCookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Path:     "/",
-		MaxAge:   int(7 * 24 * 60 * 60), // 7 days in seconds
-		HttpOnly: true,
-		Secure:   false, // Set to true in production
-		SameSite: http.SameSiteLaxMode,
-	}
-	c.SetCookie(refreshCookie)
-	log.Printf("Set refresh token cookie\n")
+	SetAuthCookies(c, accessToken, refreshToken)
 
 	// Redirect to frontend
 	return c.Redirect(http.StatusTemporaryRedirect, oauthState.RedirectURI)
