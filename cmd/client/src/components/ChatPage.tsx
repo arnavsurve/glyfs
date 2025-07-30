@@ -488,7 +488,12 @@ export function ChatPage({}: ChatPageProps) {
                   <SelectItem key={agent.id} value={agent.id}>
                     <div className="flex items-center space-x-2">
                       <Bot className="w-4 h-4" />
-                      <span>{agent.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <span>{agent.name}</span>
+                        <span className="text-muted-foreground text-sm">
+                          {agent.llm_model}
+                        </span>
+                      </div>
                     </div>
                   </SelectItem>
                 ))}
