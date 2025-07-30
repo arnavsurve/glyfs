@@ -4,7 +4,6 @@ import type { Agent, CreateAgentRequest, UpdateAgentRequest, AgentInferenceReque
 export interface CreateAgentResponse {
   message: string;
   agent_id: string;
-  api_key: string;
 }
 
 export interface UpdateAgentResponse {

@@ -569,7 +569,8 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                   id="url-sensitive"
                   checked={isUrlSensitive}
                   onChange={(e) => setIsUrlSensitive(e.target.checked)}
-                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  className="w-4 h-4 rounded border-gray-300 text-primary accent-primary dark:border-gray-600 dark:focus:ring-offset-background cursor-pointer"
+                  style={{ colorScheme: "dark" }}
                 />
                 <Label htmlFor="url-sensitive" className="text-sm">
                   🔒 URL contains sensitive data (API keys, tokens, etc.)
@@ -703,10 +704,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                     id="header-sensitive"
                     checked={isHeaderSensitive}
                     onChange={(e) => setIsHeaderSensitive(e.target.checked)}
-                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    className="w-4 h-4 rounded border-gray-300 text-primary accent-primary dark:border-gray-600 dark:focus:ring-offset-background cursor-pointer"
+                    style={{ colorScheme: "dark" }}
                   />
                   <Label htmlFor="header-sensitive" className="text-sm">
-                    🔒 This header contains sensitive data (will be encrypted)
+                    🔒 Header contains sensitive data (will be encrypted)
                   </Label>
                 </div>
               </div>

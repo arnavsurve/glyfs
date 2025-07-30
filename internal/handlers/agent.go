@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
@@ -80,24 +78,6 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create agent")
 	}
 
-	apiKey, err := generateAPIKey()
-	if err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate agent API key")
-	}
-
-	keyHash := sha256.Sum256([]byte(apiKey))
-	agentAPIKey := shared.AgentAPIKey{
-		AgentID:  agent.ID,
-		Key:      hex.EncodeToString(keyHash[:]),
-		Name:     "Default Key",
-		IsActive: true,
-	}
-	if err := tx.Create(&agentAPIKey).Error; err != nil {
-		tx.Rollback()
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create agent API key")
-	}
-
 	if err := tx.Commit().Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to commit transaction")
 	}
@@ -105,7 +85,6 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 	return c.JSON(http.StatusCreated, map[string]any{
 		"message":  "Agent created successfully",
 		"agent_id": agent.ID,
-		"api_key":  apiKey,
 	})
 }
 
@@ -274,8 +253,8 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 
 	// Generate final usage statistics (estimate for now)
 	finalUsage = &shared.Usage{
-		PromptTokens:     len(req.Message) / 4,   // Rough estimate
-		CompletionTokens: len(fullResponse) / 4,  // Rough estimate
+		PromptTokens:     len(req.Message) / 4,  // Rough estimate
+		CompletionTokens: len(fullResponse) / 4, // Rough estimate
 		TotalTokens:      (len(req.Message) + len(fullResponse)) / 4,
 	}
 
@@ -287,7 +266,6 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 
 	return nil
 }
-
 
 func (h *Handler) HandleUpdateAgent(c echo.Context) error {
 	agentIdStr := c.Param("agentId")
