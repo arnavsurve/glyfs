@@ -19,6 +19,8 @@ import (
 
 func main() {
 	e := echo.New()
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
 	err := godotenv.Load()
 	if err != nil {
@@ -190,6 +192,10 @@ func main() {
 	// MCP Server management routes
 	mcpHandler := handlers.NewMCPHandler(db, mcpManager)
 	mcpHandler.RegisterMCPRoutes(protected)
+
+	// Usage tracking routes
+	usageHandler := handlers.NewUsageHandler(db)
+	usageHandler.RegisterUsageRoutes(protected)
 
 	// User settings routes
 	protected.GET("/user/settings", func(c echo.Context) error {
