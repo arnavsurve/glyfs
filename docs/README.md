@@ -1,16 +1,16 @@
-# AgentPlane API Documentation
+# Glyfs API Documentation
 
-Welcome to the AgentPlane API documentation. This guide will help you integrate with AgentPlane's powerful AI agent platform programmatically.
+Welcome to the Glyfs API documentation. This guide will help you integrate with Glyfs' powerful AI glyf platform programmatically.
 
 ## Quick Start
 
-1. **Create an Agent** - Set up your AI agent through the web interface
-2. **Generate API Key** - Create an API key for your agent
-3. **Make API Calls** - Use the API key to interact with your agent
+1. **Create a Glyf** - Set up your AI glyf through the web interface
+2. **Generate API Key** - Create an API key for your glyf
+3. **Make API Calls** - Use the API key to interact with your glyf
 
 ## API Overview
 
-AgentPlane provides two main API endpoints for interacting with your agents:
+Glyfs provides two main API endpoints for interacting with your glyfs:
 
 - **[Invoke API](./invoke-api.md)** - Get complete responses in a single request
 - **[Streaming API](./streaming-api.md)** - Get real-time streaming responses
@@ -25,10 +25,10 @@ Authorization: Bearer apk_your_api_key_here
 
 ## Base URL
 
-All API endpoints are relative to your AgentPlane instance:
+All API endpoints are relative to your Glyfs instance:
 
 ```
-https://your-agentplane-instance.com/api
+https://your-glyfs-instance.com/api
 ```
 
 ## Rate Limits
@@ -49,7 +49,7 @@ Common status codes:
 - `200` - Success
 - `400` - Bad Request (invalid parameters)
 - `401` - Unauthorized (invalid API key)
-- `404` - Not Found (agent doesn't exist)
+- `404` - Not Found (glyf doesn't exist)
 - `500` - Internal Server Error
 
 ## Support
@@ -64,4 +64,4 @@ For API support, please:
 - [Invoke API](./invoke-api.md) - Single request/response API
 - [Streaming API](./streaming-api.md) - Real-time streaming API
 - [Examples](./examples.md) - Code examples in multiple languages
-- [Tools & MCP](./tools.md) - Working with agent tools and MCP servers
+- [Tools & MCP](./tools.md) - Working with glyf tools and MCP servers
