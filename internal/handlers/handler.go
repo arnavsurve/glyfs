@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"gorm.io/gorm"
-	"github.com/arnavsurve/agentplane/internal/services"
+	"github.com/arnavsurve/glyfs/internal/services"
 )
 
 type Handler struct {

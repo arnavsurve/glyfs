@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/shared"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/anthropic"
 	"github.com/tmc/langchaingo/llms/openai"

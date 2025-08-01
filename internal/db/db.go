@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/shared"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

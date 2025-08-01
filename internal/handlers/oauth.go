@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/shared"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"

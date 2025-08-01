@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/shared"
 	"github.com/google/uuid"
 	"github.com/i2y/langchaingo-mcp-adapter"
 	"github.com/mark3labs/mcp-go/client"

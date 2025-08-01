@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/arnavsurve/agentplane/internal/services"
-	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/services"
+	"github.com/arnavsurve/glyfs/internal/shared"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
