@@ -1,4 +1,4 @@
-module github.com/arnavsurve/agentplane
+module github.com/arnavsurve/glyfs
 
 go 1.24.2
 
