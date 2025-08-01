@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/arnavsurve/agentplane/internal/db"
-	"github.com/arnavsurve/agentplane/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/db"
+	"github.com/arnavsurve/glyfs/internal/shared"
 	"github.com/joho/godotenv"
 )
 
