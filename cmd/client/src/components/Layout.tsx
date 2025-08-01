@@ -79,7 +79,7 @@ export function Layout() {
           {/* Logo/Title */}
           <div className="flex items-center space-x-2">
             <Bot className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">Agentplane</h1>
+            <h1 className="text-2xl font-bold">Glyfs</h1>
           </div>
 
           {/* User Config */}

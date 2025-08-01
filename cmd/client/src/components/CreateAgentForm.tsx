@@ -106,7 +106,7 @@ export function CreateAgentForm() {
             <div>
               <h1 className="text-3xl font-bold">Create New Agent</h1>
               <p className="text-muted-foreground">
-                Configure your AI agent with custom settings and behavior
+                Configure your agent with custom settings and behavior
               </p>
             </div>
           </div>
