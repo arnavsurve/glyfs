@@ -145,9 +145,7 @@ export function RecentAgentsWidget() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Bot className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium mb-2">
-                No agent conversations yet
-              </p>
+              <p className="text-sm font-medium mb-2">No conversations yet</p>
               <p className="text-sm text-muted-foreground mb-4">
                 Create an agent to start chatting
               </p>

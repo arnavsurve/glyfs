@@ -320,4 +320,3 @@ export function UsageGraphWidget() {
     </Card>
   );
 }
-
