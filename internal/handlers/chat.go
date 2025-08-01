@@ -187,6 +187,34 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	assistantMessage.CreatedAt = time.Now() // Set timestamp to when response finishes
 	h.DB.Save(&assistantMessage)
 
+	// Track usage metrics
+	usage := &shared.Usage{
+		PromptTokens:     len(req.Message) / 4,  // Rough estimate
+		CompletionTokens: len(fullResponse) / 4, // Rough estimate
+		TotalTokens:      (len(req.Message) + len(fullResponse)) / 4,
+	}
+	
+	usageMetric := shared.UsageMetric{
+		UserID:           userID,
+		AgentID:          agent.ID,
+		SessionID:        &session.ID,
+		MessageID:        &assistantMessage.ID,
+		Provider:         agent.Provider,
+		Model:            agent.LLMModel,
+		PromptTokens:     usage.PromptTokens,
+		CompletionTokens: usage.CompletionTokens,
+		TotalTokens:      usage.TotalTokens,
+	}
+	
+	if err := h.DB.Create(&usageMetric).Error; err != nil {
+		// Still send the completion event since the response was successful
+		h.sendStreamEvent(c, "done", "", map[string]any{
+			"message_id": assistantMessage.ID,
+			"content":    fullResponse,
+		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save usage metrics")
+	}
+
 	// Generate title for new sessions
 	log.Printf("Session title before generation: '%s'\n", session.Title)
 	if session.Title == "New Chat" {
