@@ -30,6 +30,7 @@ func SetupDB() *gorm.DB {
 		&shared.ChatMessage{},
 		&shared.MCPServer{},
 		&shared.AgentMCPServer{},
+		&shared.UsageMetric{},
 	)
 
 	// Create partial unique index for agent names (only for non-deleted agents)

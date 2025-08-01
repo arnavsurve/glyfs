@@ -191,6 +191,28 @@ type AgentMCPServerResponse struct {
 	Enabled    bool      `json:"enabled"`
 }
 
+// Usage tracking types
+type UsageMetric struct {
+	ID               uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt        time.Time `json:"created_at"`
+	UserID           uint      `gorm:"not null;index" json:"user_id"`
+	AgentID          uuid.UUID `gorm:"type:uuid;not null;index" json:"agent_id"`
+	SessionID        *uuid.UUID `gorm:"type:uuid;index" json:"session_id,omitempty"`
+	MessageID        *uuid.UUID `gorm:"type:uuid;index" json:"message_id,omitempty"`
+	Provider         string    `gorm:"type:text;not null" json:"provider"`
+	Model            string    `gorm:"type:text;not null" json:"model"`
+	PromptTokens     int       `gorm:"not null" json:"prompt_tokens"`
+	CompletionTokens int       `gorm:"not null" json:"completion_tokens"`
+	TotalTokens      int       `gorm:"not null" json:"total_tokens"`
+	CostEstimate     *float64  `json:"cost_estimate,omitempty"` // Future use
+
+	// Relationships
+	User    User        `gorm:"foreignKey:UserID;references:ID" json:"user"`
+	Agent   AgentConfig `gorm:"foreignKey:AgentID;references:ID" json:"agent"`
+	Session *ChatSession `gorm:"foreignKey:SessionID;references:ID" json:"session,omitempty"`
+	Message *ChatMessage `gorm:"foreignKey:MessageID;references:ID" json:"message,omitempty"`
+}
+
 // Tool calling related types
 type ToolCallEvent struct {
 	Type      string         `json:"type"` // "tool_start", "tool_result", "tool_error", "tool_batch_complete"
