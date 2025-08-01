@@ -312,7 +312,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                 <Wrench className="w-5 h-5" />
                 <span>Agent Tools</span>
               </CardTitle>
-              <CardDescription className="mt-2">
+              <CardDescription className="mt-4">
                 Connect your agent to MCP (Model Context Protocol) servers to
                 provide unlimited tools and capabilities
               </CardDescription>

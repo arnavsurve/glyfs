@@ -464,7 +464,7 @@ export function AgentDetailView() {
           {[
             { id: "overview", label: "Overview", icon: Bot },
             { id: "tools", label: "Tools", icon: Wrench },
-            { id: "api", label: "API & Integration", icon: Code },
+            { id: "api", label: "API", icon: Code },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}

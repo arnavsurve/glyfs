@@ -202,9 +202,7 @@ export function UsageGraphWidget() {
               <TrendingUp className="w-5 h-5" />
               Usage Statistics
             </CardTitle>
-            <CardDescription>
-              Track your LLM invocations and token usage
-            </CardDescription>
+            <CardDescription>Your usage at a glance</CardDescription>
           </div>
           <div className="flex gap-2">
             <Select

@@ -139,9 +139,7 @@ export function RecentAgentsWidget() {
             <MessageSquare className="w-5 h-5" />
             Recent Chats
           </CardTitle>
-          <CardDescription>
-            Quick access to your recently used agents
-          </CardDescription>
+          <CardDescription>Quick access to your recent agents</CardDescription>
         </CardHeader>
         <CardContent className="overflow-y-auto flex flex-col">
           <div className="flex-1 flex items-center justify-center">
@@ -185,9 +183,7 @@ export function RecentAgentsWidget() {
           <MessageSquare className="w-5 h-5" />
           Recent Chats
         </CardTitle>
-        <CardDescription>
-          Quick access to your recently invoked agents
-        </CardDescription>
+        <CardDescription>Quick access to your recent agents</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col h-full">
         <div className="space-y-2">
