@@ -1,5 +1,6 @@
-import { LayoutDashboard, TrendingUp, Activity, Users } from 'lucide-react';
-import { RecentAgentsWidget } from './RecentAgentsWidget';
+import { LayoutDashboard } from "lucide-react";
+import { RecentAgentsWidget } from "./RecentAgentsWidget";
+import { UsageGraphWidget } from "./UsageGraphWidget";
 
 export function DashboardPage() {
   return (
@@ -17,52 +18,19 @@ export function DashboardPage() {
         </div>
 
         {/* Dashboard Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {/* Recent Agents Widget */}
-          <div className="lg:col-span-1 xl:col-span-1">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[300px_1fr]">
+          {/* Recent Agents Widget - fixed width */}
+          <div>
             <RecentAgentsWidget />
           </div>
 
-          {/* Placeholder for Usage Stats */}
-          <div className="md:col-span-1">
-            <div className="h-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center">
-              <TrendingUp className="w-8 h-8 text-muted-foreground mb-2" />
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Usage Stats
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coming soon
-              </p>
-            </div>
-          </div>
-
-          {/* Placeholder for Activity Feed */}
-          <div className="md:col-span-1">
-            <div className="h-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center">
-              <Activity className="w-8 h-8 text-muted-foreground mb-2" />
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Activity Feed
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coming soon
-              </p>
-            </div>
-          </div>
-
-          {/* Placeholder for Team Overview */}
-          <div className="md:col-span-1">
-            <div className="h-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center">
-              <Users className="w-8 h-8 text-muted-foreground mb-2" />
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Team Overview
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coming soon
-              </p>
-            </div>
+          {/* Usage Statistics Widget - takes remaining space */}
+          <div>
+            <UsageGraphWidget />
           </div>
         </div>
       </div>
     </div>
   );
 }
+

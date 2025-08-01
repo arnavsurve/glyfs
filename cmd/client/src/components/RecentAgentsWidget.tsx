@@ -79,7 +79,7 @@ export function RecentAgentsWidget() {
           if (!a.lastActivity || !b.lastActivity) return 0;
           return b.lastActivity.getTime() - a.lastActivity.getTime();
         })
-        .slice(0, 3); // Show top 3 recent agents
+        .slice(0, 5); // Show top 5 recent agents
 
       setAgents(recentAgents);
     } catch (err: any) {
@@ -115,14 +115,14 @@ export function RecentAgentsWidget() {
 
   if (isLoading) {
     return (
-      <Card className="w-full">
+      <Card className="h-full max-h-[800px] overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
             Recent Chats
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-y-auto">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
@@ -133,7 +133,7 @@ export function RecentAgentsWidget() {
 
   if (error || agents.length === 0) {
     return (
-      <Card className="w-full">
+      <Card className="h-full max-h-[800px] overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
@@ -143,38 +143,35 @@ export function RecentAgentsWidget() {
             Quick access to your recently used agents
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {/* Empty state with fixed height matching 3 agent items */}
-            <div className="h-[228px] overflow-y-auto flex items-center justify-center">
-              <div className="text-center">
-                <Bot className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm font-medium mb-2">
-                  No agent conversations yet
-                </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Create an agent to start chatting
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/agents")}
-                >
-                  Create your first agent
-                </Button>
-              </div>
-            </div>
-            <div className="pt-2 border-t">
+        <CardContent className="overflow-y-auto flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Bot className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-medium mb-2">
+                No agent conversations yet
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Create an agent to start chatting
+              </p>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="w-full"
                 onClick={() => navigate("/agents")}
               >
-                View all agents
-                <ArrowRight className="w-4 h-4 ml-2" />
+                Create your first agent
               </Button>
             </div>
+          </div>
+          <div className="pt-2 border-t mt-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => navigate("/agents")}
+            >
+              View all agents
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -182,7 +179,7 @@ export function RecentAgentsWidget() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="h-full max-h-[800px]">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <MessageSquare className="w-5 h-5" />
@@ -192,8 +189,8 @@ export function RecentAgentsWidget() {
           Quick access to your recently invoked agents
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="space-y-2 h-[228px] overflow-y-auto">
+      <CardContent className="flex flex-col h-full">
+        <div className="space-y-2">
           {agents.map((agent) => (
             <div
               key={agent.id}
@@ -225,7 +222,7 @@ export function RecentAgentsWidget() {
           ))}
         </div>
 
-        <div className="pt-2 border-t">
+        <div className="pt-4">
           <Button
             variant="ghost"
             size="sm"
@@ -240,4 +237,3 @@ export function RecentAgentsWidget() {
     </Card>
   );
 }
-
