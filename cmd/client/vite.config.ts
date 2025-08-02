@@ -56,10 +56,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/signup': 'http://localhost:8080',
-      '/login': 'http://localhost:8080',
-      '/health': 'http://localhost:8080',
-      '/agent': 'http://localhost:8080',
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 })
