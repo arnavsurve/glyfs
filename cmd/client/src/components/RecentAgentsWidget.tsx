@@ -158,7 +158,7 @@ export function RecentAgentsWidget() {
               </Button>
             </div>
           </div>
-          <div className="pt-2 border-t mt-auto">
+          <div className="pt-2 mt-auto">
             <Button
               variant="ghost"
               size="sm"
