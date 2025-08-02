@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+localnotes/
+
+# Development files
+.env
+.env.local
+*.log
+tmp/
+
+# Node modules (will be installed fresh in container)
+cmd/client/node_modules/
+cmd/client/.npm
+cmd/client/.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.test.js
+*.spec.js
+
+# Build outputs (will be generated in container)
+cmd/client/dist/
+bin/
+
+# Database files (should be volume mounted)
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml

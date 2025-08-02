@@ -1,4 +1,19 @@
 services:
+  app:
+    build: .
+    container_name: glyfs_app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./.env:/app/.env:ro
+    environment:
+      - DATABASE_URL=postgres://glyfs:glyfs@db:5432/glyfs?sslmode=disable
+      - PORT=8080
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: pgvector/pgvector:pg16
     container_name: glyfs_db
