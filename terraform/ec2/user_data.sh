@@ -1,16 +1,25 @@
 #!/bin/bash
 
-yum update -y
+# Amazon Linux 2023 setup script
+# AL2023 uses dnf instead of yum and has some package differences
 
-yum install -y docker git
+# Update system
+dnf update -y
 
+# Install Docker (Docker is available in AL2023 repositories)
+dnf install -y docker git
+
+# Start and enable Docker
 systemctl start docker
 systemctl enable docker
 
+# Add ec2-user to docker group for passwordless docker commands
 usermod -a -G docker ec2-user
 
-yum install -y amazon-cloudwatch-agent
+# Install CloudWatch agent
+dnf install -y amazon-cloudwatch-agent
 
+# Configure CloudWatch agent
 cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
 {
   "metrics": {
@@ -54,9 +63,11 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
 }
 EOF
 
+# Start CloudWatch agent
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -a fetch-config \
   -m ec2 \
   -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 
-echo "User data script completed" >> /var/log/user-data.log
+# Log completion
+echo "Amazon Linux 2023 setup completed" >> /var/log/user-data.log

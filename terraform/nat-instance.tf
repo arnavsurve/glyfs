@@ -2,14 +2,14 @@
 # Provides outbound internet access for private subnets
 # Cost: ~$3.50/month vs $45/month for NAT Gateway
 
-# Data source to get latest Amazon Linux 2 AMI (we'll configure NAT ourselves)
+# Data source to get latest Amazon Linux 2023 AMI
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    values = ["al2023-ami-*-x86_64"]
   }
 
   filter {
@@ -79,9 +79,18 @@ resource "aws_instance" "nat" {
   # User data to configure NAT functionality
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    yum update -y
+    
+    # Amazon Linux 2023 uses dnf instead of yum
+    dnf update -y
+    
+    # Enable IP forwarding
     echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
     sysctl -p /etc/sysctl.conf
+    
+    # Install iptables service (not installed by default in AL2023)
+    dnf install -y iptables-services
+    systemctl enable iptables
+    systemctl start iptables
     
     # Configure iptables for NAT
     /sbin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
@@ -89,18 +98,17 @@ resource "aws_instance" "nat" {
     /sbin/iptables -A FORWARD -j ACCEPT
     
     # Save iptables rules
-    /sbin/service iptables save
+    /sbin/iptables-save > /etc/sysconfig/iptables
     
-    # Enable CloudWatch monitoring
-    yum install -y awslogs
-    systemctl start awslogsd
-    systemctl enable awslogsd
+    # Install and configure CloudWatch agent (AL2023 uses amazon-cloudwatch-agent)
+    dnf install -y amazon-cloudwatch-agent
+    systemctl enable amazon-cloudwatch-agent
     
     # Create health check endpoint
-    yum install -y httpd
+    dnf install -y httpd
     systemctl start httpd
     systemctl enable httpd
-    echo "NAT Instance Healthy" > /var/www/html/health
+    echo "NAT Instance Healthy - Amazon Linux 2023" > /var/www/html/health
     
     echo "NAT instance setup completed" >> /var/log/user-data.log
   EOF
