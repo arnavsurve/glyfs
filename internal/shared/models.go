@@ -26,7 +26,7 @@ type User struct {
 	Email         string     `gorm:"type:text;not null;unique" json:"email"`
 	PasswordHash  []byte     `gorm:"type:bytea" json:"-"` // Never serialize password hash - nullable for OAuth users
 	AuthProvider  string     `gorm:"type:text;default:'local'" json:"auth_provider"`
-	OAuthID       *string    `gorm:"type:text" json:"-"` // OAuth provider user ID
+	OAuthID       *string    `gorm:"type:text;column:oauth_id" json:"-"` // OAuth provider user ID
 	AvatarURL     *string    `gorm:"type:text" json:"avatar_url"`
 	DisplayName   *string    `gorm:"type:text" json:"display_name"`
 	Tier          string     `gorm:"type:text;default:'free'" json:"tier"`
@@ -193,22 +193,22 @@ type AgentMCPServerResponse struct {
 
 // Usage tracking types
 type UsageMetric struct {
-	ID               uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CreatedAt        time.Time `json:"created_at"`
-	UserID           uint      `gorm:"not null;index" json:"user_id"`
-	AgentID          uuid.UUID `gorm:"type:uuid;not null;index" json:"agent_id"`
+	ID               uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UserID           uint       `gorm:"not null;index" json:"user_id"`
+	AgentID          uuid.UUID  `gorm:"type:uuid;not null;index" json:"agent_id"`
 	SessionID        *uuid.UUID `gorm:"type:uuid;index" json:"session_id,omitempty"`
 	MessageID        *uuid.UUID `gorm:"type:uuid;index" json:"message_id,omitempty"`
-	Provider         string    `gorm:"type:text;not null" json:"provider"`
-	Model            string    `gorm:"type:text;not null" json:"model"`
-	PromptTokens     int       `gorm:"not null" json:"prompt_tokens"`
-	CompletionTokens int       `gorm:"not null" json:"completion_tokens"`
-	TotalTokens      int       `gorm:"not null" json:"total_tokens"`
-	CostEstimate     *float64  `json:"cost_estimate,omitempty"` // Future use
+	Provider         string     `gorm:"type:text;not null" json:"provider"`
+	Model            string     `gorm:"type:text;not null" json:"model"`
+	PromptTokens     int        `gorm:"not null" json:"prompt_tokens"`
+	CompletionTokens int        `gorm:"not null" json:"completion_tokens"`
+	TotalTokens      int        `gorm:"not null" json:"total_tokens"`
+	CostEstimate     *float64   `json:"cost_estimate,omitempty"` // Future use
 
 	// Relationships
-	User    User        `gorm:"foreignKey:UserID;references:ID" json:"user"`
-	Agent   AgentConfig `gorm:"foreignKey:AgentID;references:ID" json:"agent"`
+	User    User         `gorm:"foreignKey:UserID;references:ID" json:"user"`
+	Agent   AgentConfig  `gorm:"foreignKey:AgentID;references:ID" json:"agent"`
 	Session *ChatSession `gorm:"foreignKey:SessionID;references:ID" json:"session,omitempty"`
 	Message *ChatMessage `gorm:"foreignKey:MessageID;references:ID" json:"message,omitempty"`
 }
