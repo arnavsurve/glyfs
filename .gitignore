@@ -1,6 +1,8 @@
 tmp
 bin
 .env
+.env.production
+.env.local.override
 localnotes
 .claude
 *.pem
