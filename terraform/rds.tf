@@ -2,11 +2,11 @@
 # Database isolated in private subnets, accessible only via app servers
 
 resource "aws_db_subnet_group" "main" {
-  name       = "glyfs-db-subnet-${var.environment}"
+  name       = "glyfs-db-subnet-v2-${var.environment}"
   subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
 
   tags = {
-    Name        = "glyfs-db-subnet-${var.environment}"
+    Name        = "glyfs-db-subnet-v2-${var.environment}"
     Environment = var.environment
   }
 }
