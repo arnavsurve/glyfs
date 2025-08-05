@@ -78,8 +78,7 @@ export function Layout() {
         <div className="flex items-center justify-between">
           {/* Logo/Title */}
           <div className="flex items-center space-x-2">
-            <Bot className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">Glyfs</h1>
+            <h1 className="text-2xl font-semibold">Glyfs</h1>
           </div>
 
           {/* User Config */}
@@ -93,7 +92,9 @@ export function Layout() {
                 />
               ) : (
                 <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
-                  {(user?.display_name || user?.email)?.charAt(0).toUpperCase() || "U"}
+                  {(user?.display_name || user?.email)
+                    ?.charAt(0)
+                    .toUpperCase() || "U"}
                 </div>
               )}
               <div className="flex flex-col">
@@ -177,4 +178,3 @@ export function Layout() {
     </div>
   );
 }
-
