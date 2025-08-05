@@ -97,8 +97,8 @@ export function LinkedAccounts() {
           </div>
           
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="w-4 h-4 text-green-600" />
-            <span className="text-green-600 font-medium">
+            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-green-600 dark:text-green-400 font-medium">
               Currently signed in with {providerInfo.name}
             </span>
           </div>
@@ -136,8 +136,8 @@ export function LinkedAccounts() {
 
         {/* Info for OAuth users */}
         {authProvider !== 'local' && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
               <strong>OAuth Authentication:</strong> Your account is securely linked with {providerInfo.name}. 
               You can sign in quickly without remembering a password.
             </p>
@@ -146,8 +146,8 @@ export function LinkedAccounts() {
 
         {/* Info for local users */}
         {authProvider === 'local' && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800">
+          <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900 rounded-lg">
+            <p className="text-sm text-green-800 dark:text-green-300">
               <strong>Password Authentication:</strong> Your account uses traditional email and password authentication. 
               Consider linking with OAuth providers for faster sign-in.
             </p>
