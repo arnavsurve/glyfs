@@ -2,15 +2,16 @@ import { apiClient } from './client';
 import type { LoginCredentials, SignupCredentials, AuthResponse } from '../types/auth.types';
 
 export const authApi = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
-    return response.data;
-  },
+  // Regular auth methods commented out - OAuth only
+  // login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  //   const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+  //   return response.data;
+  // },
 
-  signup: async (credentials: SignupCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/signup', credentials);
-    return response.data;
-  },
+  // signup: async (credentials: SignupCredentials): Promise<AuthResponse> => {
+  //   const response = await apiClient.post<AuthResponse>('/auth/signup', credentials);
+  //   return response.data;
+  // },
 
   refreshToken: async (): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/refresh');

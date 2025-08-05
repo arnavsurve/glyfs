@@ -169,60 +169,74 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => clearInterval(refreshInterval);
   }, [state.isAuthenticated]);
 
+  // Regular auth login commented out - OAuth only
   const login = async (credentials: LoginCredentials): Promise<void> => {
-    try {
-      dispatch({ type: "AUTH_START" });
+    // OAuth only - regular login disabled
+    const errorMessage = "Please use OAuth providers (GitHub or Google) to sign in";
+    dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
+    throw new Error(errorMessage);
+    
+    // Original implementation:
+    // try {
+    //   dispatch({ type: "AUTH_START" });
 
-      const data = await authApi.login(credentials);
+    //   const data = await authApi.login(credentials);
 
-      const user: User = {
-        id: data.user_id,
-        email: data.user_email,
-        auth_provider: data.auth_provider,
-        display_name: data.display_name,
-        avatar_url: data.avatar_url,
-        tier: (data.tier as 'free' | 'pro') || 'free',
-        tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
-      };
+    //   const user: User = {
+    //     id: data.user_id,
+    //     email: data.user_email,
+    //     auth_provider: data.auth_provider,
+    //     display_name: data.display_name,
+    //     avatar_url: data.avatar_url,
+    //     tier: (data.tier as 'free' | 'pro') || 'free',
+    //     tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
+    //   };
 
-      dispatch({
-        type: "AUTH_SUCCESS",
-        payload: { user },
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Login failed";
-      dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
-      throw error;
-    }
+    //   dispatch({
+    //     type: "AUTH_SUCCESS",
+    //     payload: { user },
+    //   });
+    // } catch (error) {
+    //   const errorMessage =
+    //     error instanceof Error ? error.message : "Login failed";
+    //   dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
+    //   throw error;
+    // }
   };
 
+  // Regular auth signup commented out - OAuth only
   const signup = async (credentials: SignupCredentials): Promise<void> => {
-    try {
-      dispatch({ type: "AUTH_START" });
+    // OAuth only - regular signup disabled
+    const errorMessage = "Please use OAuth providers (GitHub or Google) to create an account";
+    dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
+    throw new Error(errorMessage);
+    
+    // Original implementation:
+    // try {
+    //   dispatch({ type: "AUTH_START" });
 
-      const data = await authApi.signup(credentials);
+    //   const data = await authApi.signup(credentials);
 
-      const user: User = {
-        id: data.user_id,
-        email: data.user_email,
-        auth_provider: data.auth_provider,
-        display_name: data.display_name,
-        avatar_url: data.avatar_url,
-        tier: (data.tier as 'free' | 'pro') || 'free',
-        tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
-      };
+    //   const user: User = {
+    //     id: data.user_id,
+    //     email: data.user_email,
+    //     auth_provider: data.auth_provider,
+    //     display_name: data.display_name,
+    //     avatar_url: data.avatar_url,
+    //     tier: (data.tier as 'free' | 'pro') || 'free',
+    //     tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
+    //   };
 
-      dispatch({
-        type: "AUTH_SUCCESS",
-        payload: { user },
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Signup failed";
-      dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
-      throw error;
-    }
+    //   dispatch({
+    //     type: "AUTH_SUCCESS",
+    //     payload: { user },
+    //   });
+    // } catch (error) {
+    //   const errorMessage =
+    //     error instanceof Error ? error.message : "Signup failed";
+    //   dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
+    //   throw error;
+    // }
   };
 
   const logout = async (): Promise<void> => {
