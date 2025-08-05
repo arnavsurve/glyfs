@@ -96,17 +96,17 @@ export function LoginPage() {
             </div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>
-              Enter your email below to sign in to your account
+              Sign in with your preferred OAuth provider
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* OAuth Buttons */}
             <OAuthButtons mode="login" />
             
-            {/* Divider */}
-            <OAuthDivider />
+            {/* Regular auth form commented out - OAuth only */}
+            {/* <OAuthDivider /> */}
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -142,12 +142,12 @@ export function LoginPage() {
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
-            </form>
+            </form> */}
 
             <div className="text-center space-y-2">
-              <Button variant="link" className="text-sm">
+              {/* <Button variant="link" className="text-sm">
                 Forgot your password?
-              </Button>
+              </Button> */}
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
                 <Link to="/signup" className="text-primary hover:underline cursor-pointer">

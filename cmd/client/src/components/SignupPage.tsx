@@ -160,17 +160,17 @@ export function SignupPage() {
             </div>
             <CardTitle className="text-2xl">Create an account</CardTitle>
             <CardDescription>
-              Enter your email and password to create your account
+              Sign up with your preferred OAuth provider
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* OAuth Buttons */}
             <OAuthButtons mode="signup" />
             
-            {/* Divider */}
-            <OAuthDivider />
+            {/* Regular auth form commented out - OAuth only */}
+            {/* <OAuthDivider /> */}
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -221,7 +221,7 @@ export function SignupPage() {
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
-            </form>
+            </form> */}
             
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
