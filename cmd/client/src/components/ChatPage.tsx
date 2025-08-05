@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Send, MessageSquare, Bot, Trash2 } from "lucide-react";
+import { Send, MessageSquare, Bot, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -40,6 +40,10 @@ export function ChatPage({}: ChatPageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem("chatSidebarCollapsed");
+    return saved ? JSON.parse(saved) : false;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -436,120 +440,160 @@ export function ChatPage({}: ChatPageProps) {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const newValue = !prev;
+      localStorage.setItem("chatSidebarCollapsed", JSON.stringify(newValue));
+      return newValue;
+    });
+  };
+
   return (
     <div className="flex h-full bg-background">
       {/* Sidebar */}
-      <div className="w-80 border-r border-border flex flex-col">
-        {/* Agent Selector */}
-        <div className="p-4 border-b border-border">
-          <label className="text-sm font-medium mb-2 block">Select Agent</label>
-          {isLoadingAgents ? (
-            <div className="flex items-center justify-center h-10 bg-muted rounded-md">
-              <span className="text-sm text-muted-foreground">
-                Loading agents...
-              </span>
-            </div>
-          ) : agents.length === 0 ? (
-            <div className="flex items-center justify-center h-10 bg-muted rounded-md">
-              <span className="text-sm text-muted-foreground">
-                No agents found
-              </span>
-            </div>
-          ) : (
-            <Select
-              value={selectedAgent?.id || ""}
-              onValueChange={(value) => {
-                const agent = agents.find((a) => a.id === value);
-                if (agent) {
-                  setSelectedAgent(agent);
-                  localStorage.setItem("selectedAgentId", agent.id);
-                  // Reset chat state when switching agents
-                  setCurrentSession(null);
-                  setMessages([]);
-                  setStreamingMessage("");
-                  setIsStreaming(false);
-                }
-              }}
+      <div className={`${isSidebarCollapsed ? "w-16" : "w-80"} transition-all duration-300 border-r border-border flex flex-col`}>
+        {isSidebarCollapsed ? (
+          /* Collapsed Sidebar - Only Toggle Button */
+          <div className="flex-1 flex items-start justify-center p-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSidebar}
+              className="p-2 h-8 w-8"
+              title="Expand sidebar"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Choose an agent">
-                  {selectedAgent ? (
-                    <div className="flex items-center space-x-2">
-                      <Bot className="w-4 h-4" />
-                      <span>{selectedAgent.name}</span>
-                    </div>
-                  ) : (
-                    "Choose an agent"
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {agents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    <div className="flex items-center space-x-2">
-                      <Bot className="w-4 h-4" />
-                      <div className="flex items-center space-x-2">
-                        <span>{agent.name}</span>
-                        <span className="text-muted-foreground text-sm">
-                          {agent.llm_model}
-                        </span>
-                      </div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {/* New Chat Button */}
-        <div className="p-4 border-b border-border">
-          <Button
-            onClick={startNewSession}
-            className="w-full"
-            variant="outline"
-          >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            New Chat
-          </Button>
-        </div>
-
-        {/* Sessions List */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <h3 className="text-sm font-medium mb-2">Recent Chats</h3>
-          <div className="space-y-2">
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                onClick={() => loadSession(session.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors relative group ${
-                  currentSession?.id === session.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card hover:bg-accent"
-                }`}
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          /* Expanded Sidebar - Full Content */
+          <>
+            {/* Sidebar Header with Toggle */}
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Chat</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSidebar}
+                className="p-2 h-8 w-8"
+                title="Collapse sidebar"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">
-                      {session.title}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {new Date(session.updated_at).toLocaleDateString()}
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Agent Selector */}
+            <div className="p-4 border-b border-border">
+              <label className="text-sm font-medium mb-2 block">Select Agent</label>
+              {isLoadingAgents ? (
+                <div className="flex items-center justify-center h-10 bg-muted rounded-md">
+                  <span className="text-sm text-muted-foreground">
+                    Loading agents...
+                  </span>
+                </div>
+              ) : agents.length === 0 ? (
+                <div className="flex items-center justify-center h-10 bg-muted rounded-md">
+                  <span className="text-sm text-muted-foreground">
+                    No agents found
+                  </span>
+                </div>
+              ) : (
+                <Select
+                  value={selectedAgent?.id || ""}
+                  onValueChange={(value) => {
+                    const agent = agents.find((a) => a.id === value);
+                    if (agent) {
+                      setSelectedAgent(agent);
+                      localStorage.setItem("selectedAgentId", agent.id);
+                      // Reset chat state when switching agents
+                      setCurrentSession(null);
+                      setMessages([]);
+                      setStreamingMessage("");
+                      setIsStreaming(false);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose an agent">
+                      {selectedAgent ? (
+                        <div className="flex items-center space-x-2">
+                          <Bot className="w-4 h-4" />
+                          <span>{selectedAgent.name}</span>
+                        </div>
+                      ) : (
+                        "Choose an agent"
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        <div className="flex items-center space-x-2">
+                          <Bot className="w-4 h-4" />
+                          <div className="flex items-center space-x-2">
+                            <span>{agent.name}</span>
+                            <span className="text-muted-foreground text-sm">
+                              {agent.llm_model}
+                            </span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* New Chat Button */}
+            <div className="p-4 border-b border-border">
+              <Button
+                onClick={startNewSession}
+                className="w-full"
+                variant="outline"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                New Chat
+              </Button>
+            </div>
+
+            {/* Sessions List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <h3 className="text-sm font-medium mb-2">Recent Chats</h3>
+              <div className="space-y-2">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    onClick={() => loadSession(session.id)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors relative group ${
+                      currentSession?.id === session.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card hover:bg-accent"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {session.title}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(session.updated_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => deleteSession(session.id, e)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => deleteSession(session.id, e)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Main Chat Area */}
