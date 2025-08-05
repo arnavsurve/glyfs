@@ -11,6 +11,18 @@ export interface MCPServer {
   updated_at: string;
 }
 
+export interface MCPServerDetail {
+  id: string;
+  name: string;
+  description: string;
+  server_url: string;
+  server_type: 'http' | 'sse';
+  config: MCPServerConfig;
+  last_seen?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MCPServerConfig {
   server_type: 'http' | 'sse';
   url: string;
@@ -58,9 +70,9 @@ export const mcpApi = {
     return response.data as { servers: MCPServer[] };
   },
 
-  async getServer(id: string): Promise<{ server: MCPServer }> {
+  async getServer(id: string): Promise<{ server: MCPServerDetail }> {
     const response = await apiClient.get(`/mcp/servers/${id}`);
-    return response.data as { server: MCPServer };
+    return response.data as { server: MCPServerDetail };
   },
 
   async createServer(data: CreateMCPServerRequest): Promise<{ server: MCPServer }> {
