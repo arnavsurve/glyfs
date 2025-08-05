@@ -102,12 +102,12 @@ func main() {
 	api := e.Group("/api")
 
 	auth := api.Group("/auth")
-	auth.POST("/signup", func(c echo.Context) error {
-		return h.HandleSignup(c)
-	})
-	auth.POST("/login", func(c echo.Context) error {
-		return h.HandleLogin(c)
-	})
+	// auth.POST("/signup", func(c echo.Context) error {
+	// 	return h.HandleSignup(c)
+	// })
+	// auth.POST("/login", func(c echo.Context) error {
+	// 	return h.HandleLogin(c)
+	// })
 	auth.POST("/logout", func(c echo.Context) error {
 		return h.HandleLogout(c)
 	})

@@ -13,7 +13,6 @@ import (
 	"github.com/arnavsurve/glyfs/internal/shared"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -39,107 +38,109 @@ const (
 	refreshTokenExpiry = 7 * 24 * time.Hour // 7 days
 )
 
-func (h *Handler) HandleSignup(c echo.Context) error {
-	var req shared.CreateUserRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
-	}
+// HandleSignup - Regular auth signup (commented out - OAuth only)
+// func (h *Handler) HandleSignup(c echo.Context) error {
+// 	var req shared.CreateUserRequest
+// 	if err := c.Bind(&req); err != nil {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+// 	}
 
-	if req.Email == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "email is required")
-	}
+// 	if req.Email == "" {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "email is required")
+// 	}
 
-	if !isValidEmail(req.Email) {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid email format")
-	}
+// 	if !isValidEmail(req.Email) {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "invalid email format")
+// 	}
 
-	if req.Password == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
-	}
+// 	if req.Password == "" {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
+// 	}
 
-	if len(req.Password) < 8 {
-		return echo.NewHTTPError(http.StatusBadRequest, "password must be at least 8 characters")
-	}
+// 	if len(req.Password) < 8 {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "password must be at least 8 characters")
+// 	}
 
-	var existingUser shared.User
-	if err := h.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
-		return echo.NewHTTPError(http.StatusConflict, "user with this email already exists")
-	}
+// 	var existingUser shared.User
+// 	if err := h.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+// 		return echo.NewHTTPError(http.StatusConflict, "user with this email already exists")
+// 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to hash password")
-	}
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to hash password")
+// 	}
 
-	user := shared.User{
-		Email:        req.Email,
-		PasswordHash: hashedPassword,
-	}
+// 	user := shared.User{
+// 		Email:        req.Email,
+// 		PasswordHash: hashedPassword,
+// 	}
 
-	if err := h.DB.Create(&user).Error; err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create user")
-	}
+// 	if err := h.DB.Create(&user).Error; err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create user")
+// 	}
 
-	accessToken, err := generateJWT(user.ID, user.Email)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
-	}
+// 	accessToken, err := generateJWT(user.ID, user.Email)
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
+// 	}
 
-	refreshToken, err := h.createRefreshToken(user.ID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
-	}
+// 	refreshToken, err := h.createRefreshToken(user.ID)
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
+// 	}
 
-	SetAuthCookies(c, accessToken, refreshToken)
+// 	SetAuthCookies(c, accessToken, refreshToken)
 
-	return c.JSON(http.StatusCreated, map[string]any{
-		"message":    "User created successfully",
-		"user_id":    user.ID,
-		"user_email": user.Email,
-	})
-}
+// 	return c.JSON(http.StatusCreated, map[string]any{
+// 		"message":    "User created successfully",
+// 		"user_id":    user.ID,
+// 		"user_email": user.Email,
+// 	})
+// }
 
-func (h *Handler) HandleLogin(c echo.Context) error {
-	var req shared.LoginRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
-	}
+// HandleLogin - Regular auth login (commented out - OAuth only)
+// func (h *Handler) HandleLogin(c echo.Context) error {
+// 	var req shared.LoginRequest
+// 	if err := c.Bind(&req); err != nil {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+// 	}
 
-	if req.Email == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "email is required")
-	}
+// 	if req.Email == "" {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "email is required")
+// 	}
 
-	if req.Password == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
-	}
+// 	if req.Password == "" {
+// 		return echo.NewHTTPError(http.StatusBadRequest, "password is required")
+// 	}
 
-	var user shared.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
-	}
+// 	var user shared.User
+// 	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+// 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
+// 	}
 
-	if err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(req.Password)); err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
-	}
+// 	if err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(req.Password)); err != nil {
+// 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
+// 	}
 
-	accessToken, err := generateJWT(user.ID, user.Email)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
-	}
+// 	accessToken, err := generateJWT(user.ID, user.Email)
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
+// 	}
 
-	refreshToken, err := h.createRefreshToken(user.ID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
-	}
+// 	refreshToken, err := h.createRefreshToken(user.ID)
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
+// 	}
 
-	SetAuthCookies(c, accessToken, refreshToken)
+// 	SetAuthCookies(c, accessToken, refreshToken)
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"message":    "Login successful",
-		"user_id":    user.ID,
-		"user_email": user.Email,
-	})
-}
+// 	return c.JSON(http.StatusOK, map[string]any{
+// 		"message":    "Login successful",
+// 		"user_id":    user.ID,
+// 		"user_email": user.Email,
+// 	})
+// }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
 	// Revoke access token
