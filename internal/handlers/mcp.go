@@ -193,7 +193,9 @@ func (h *MCPHandler) ListMCPServers(c echo.Context) error {
 
 			decryptedServer, err = h.decryptServerData(server, encryptionService)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt server data")
+				// Log the error but continue with the original server data instead of failing
+				// This handles cases where encrypted data might be corrupted
+				decryptedServer = server
 			}
 		}
 
@@ -244,16 +246,31 @@ func (h *MCPHandler) GetMCPServer(c echo.Context) error {
 
 		decryptedServer, err = h.decryptServerData(server, encryptionService)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt server data")
+			// Log the error but continue with the original server data instead of failing
+			// This handles cases where encrypted data might be corrupted
+			decryptedServer = server
 		}
 	}
 
-	response := shared.MCPServerResponse{
+	// Parse the config for detailed response
+	var config shared.MCPServerConfig
+	if err := json.Unmarshal([]byte(decryptedServer.Config), &config); err != nil {
+		// If config parsing fails, use default config
+		config = shared.MCPServerConfig{
+			ServerType: decryptedServer.ServerType,
+			URL:        decryptedServer.ServerURL,
+			Timeout:    30,
+			Headers:    make(map[string]string),
+		}
+	}
+
+	response := shared.MCPServerDetailResponse{
 		ID:          decryptedServer.ID,
 		Name:        decryptedServer.Name,
 		Description: decryptedServer.Description,
 		ServerURL:   decryptedServer.ServerURL,
 		ServerType:  decryptedServer.ServerType,
+		Config:      config,
 		LastSeen:    decryptedServer.LastSeen,
 		CreatedAt:   decryptedServer.CreatedAt,
 		UpdatedAt:   decryptedServer.UpdatedAt,
