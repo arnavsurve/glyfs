@@ -185,6 +185,19 @@ type MCPServerResponse struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
+// Detailed response for individual server (includes config for editing)
+type MCPServerDetailResponse struct {
+	ID          uuid.UUID        `json:"id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	ServerURL   string           `json:"server_url"`
+	ServerType  string           `json:"server_type"`
+	Config      MCPServerConfig  `json:"config"`
+	LastSeen    *time.Time       `json:"last_seen,omitempty"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+}
+
 type AgentMCPServerResponse struct {
 	ServerID   uuid.UUID `json:"server_id"`
 	ServerName string    `json:"server_name"`
