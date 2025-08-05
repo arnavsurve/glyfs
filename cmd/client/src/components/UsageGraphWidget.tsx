@@ -194,7 +194,7 @@ export function UsageGraphWidget() {
   const chartData = getChartData();
 
   return (
-    <Card className="md:col-span-2 h-full max-h-[800px] overflow-hidden">
+    <Card className="md:col-span-2 h-full max-h-[800px] w-full min-w-0 overflow-hidden">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
@@ -235,7 +235,7 @@ export function UsageGraphWidget() {
       </CardHeader>
       <CardContent className="overflow-y-auto">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 min-w-0">
           <div className="p-3 rounded-lg bg-muted/50">
             <p className="text-xs text-muted-foreground">Total Invocations</p>
             <p className="text-lg font-semibold">

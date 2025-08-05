@@ -18,14 +18,14 @@ export function DashboardPage() {
         </div>
 
         {/* Dashboard Grid */}
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[300px_1fr]">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[300px_1fr] overflow-hidden">
           {/* Recent Agents Widget - fixed width */}
-          <div>
+          <div className="flex-shrink-0">
             <RecentAgentsWidget />
           </div>
 
           {/* Usage Statistics Widget - takes remaining space */}
-          <div>
+          <div className="min-w-0">
             <UsageGraphWidget />
           </div>
         </div>
