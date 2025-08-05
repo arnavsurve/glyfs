@@ -125,7 +125,7 @@ export function Layout() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300 bg-card border-r border-border flex flex-col`}
+          className={`${isCollapsed ? "w-16" : "w-52"} transition-all duration-300 bg-card border-r border-border flex flex-col`}
         >
           {/* Sidebar Toggle */}
           <div className="flex items-center justify-center p-4 border-b border-border">
