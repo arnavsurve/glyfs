@@ -137,12 +137,12 @@ func main() {
 	})
 
 	// Admin endpoint for manual token cleanup (protected)
-	api.POST("/admin/cleanup-tokens", h.JWTMiddleware(func(c echo.Context) error {
-		if err := h.CleanupExpiredTokens(); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to cleanup tokens")
-		}
-		return c.JSON(http.StatusOK, map[string]string{"message": "token cleanup completed"})
-	}))
+	// api.POST("/admin/cleanup-tokens", h.JWTMiddleware(func(c echo.Context) error {
+	// 	if err := h.CleanupExpiredTokens(); err != nil {
+	// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to cleanup tokens")
+	// 	}
+	// 	return c.JSON(http.StatusOK, map[string]string{"message": "token cleanup completed"})
+	// }))
 
 	protected := api.Group("")
 	protected.Use(h.JWTMiddleware)
