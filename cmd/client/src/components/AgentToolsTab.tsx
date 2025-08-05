@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Wrench,
   RefreshCw,
+  Edit,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -47,6 +48,7 @@ import type {
   MCPServer,
   AgentMCPServer,
   CreateMCPServerRequest,
+  UpdateMCPServerRequest,
 } from "../types/mcp.types";
 import { toast } from "sonner";
 
@@ -61,6 +63,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingServer, setEditingServer] = useState<MCPServer | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Create server form state
   const [createForm, setCreateForm] = useState<CreateMCPServerRequest>({
@@ -81,6 +88,14 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const [isHeaderSensitive, setIsHeaderSensitive] = useState(false);
   const [isUrlSensitive, setIsUrlSensitive] = useState(false);
   const [sensitiveHeaders, setSensitiveHeaders] = useState<string[]>([]);
+
+  // Edit server form state
+  const [editForm, setEditForm] = useState<UpdateMCPServerRequest>({});
+  const [editHeaderKey, setEditHeaderKey] = useState("");
+  const [editHeaderValue, setEditHeaderValue] = useState("");
+  const [isEditHeaderSensitive, setIsEditHeaderSensitive] = useState(false);
+  const [isEditUrlSensitive, setIsEditUrlSensitive] = useState(false);
+  const [editSensitiveHeaders, setEditSensitiveHeaders] = useState<string[]>([]);
 
   const addHeader = () => {
     if (headerKey.trim() && headerValue.trim()) {
@@ -123,6 +138,105 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
     // Remove from sensitive headers if present
     setSensitiveHeaders((prev) => prev.filter((h) => h !== key));
+  };
+
+  // Edit form helper functions
+  const addEditHeader = () => {
+    if (editHeaderKey.trim() && editHeaderValue.trim()) {
+      setEditForm((prev) => ({
+        ...prev,
+        config: {
+          server_type: prev.config?.server_type || "http",
+          url: prev.config?.url || "",
+          timeout: prev.config?.timeout || 30,
+          ...prev.config,
+          headers: {
+            ...prev.config?.headers,
+            [editHeaderKey.trim()]: editHeaderValue.trim(),
+          },
+        },
+      }));
+
+      if (isEditHeaderSensitive) {
+        setEditSensitiveHeaders((prev) => [...prev, editHeaderKey.trim()]);
+      }
+
+      setEditHeaderKey("");
+      setEditHeaderValue("");
+      setIsEditHeaderSensitive(false);
+    }
+  };
+
+  const removeEditHeader = (key: string) => {
+    setEditForm((prev) => {
+      const newHeaders = { ...prev.config?.headers };
+      delete newHeaders[key];
+      return {
+        ...prev,
+        config: {
+          server_type: prev.config?.server_type || "http",
+          url: prev.config?.url || "",
+          timeout: prev.config?.timeout || 30,
+          ...prev.config,
+          headers: newHeaders,
+        },
+      };
+    });
+
+    setEditSensitiveHeaders((prev) => prev.filter((h) => h !== key));
+  };
+
+  const openEditModal = async (server: MCPServer) => {
+    setEditingServer(server);
+    
+    // Get the server details including config to populate headers
+    try {
+      const serverDetails = await mcpApi.getServer(server.id);
+      const serverData = serverDetails.server;
+      
+      // Use the config data from the detailed response
+      const existingHeaders = serverData.config.headers || {};
+      const existingTimeout = serverData.config.timeout || 30;
+      
+      setEditForm({
+        name: serverData.name,
+        description: serverData.description,
+        server_url: serverData.server_url,
+        config: {
+          server_type: serverData.server_type,
+          url: serverData.server_url,
+          timeout: existingTimeout,
+          headers: existingHeaders,
+        },
+      });
+      
+      // Note: We don't know which headers are sensitive from the API response
+      // so we'll start with empty sensitive headers list
+      setEditSensitiveHeaders([]);
+      
+    } catch (error) {
+      console.error("Failed to fetch server details:", error);
+      toast.error("Failed to load server details");
+      // Fallback to basic server data
+      setEditForm({
+        name: server.name,
+        description: server.description,
+        server_url: server.server_url,
+        config: {
+          server_type: server.server_type,
+          url: server.server_url,
+          timeout: 30,
+          headers: {},
+        },
+      });
+      setEditSensitiveHeaders([]);
+    }
+    
+    setEditHeaderKey("");
+    setEditHeaderValue("");
+    setIsEditHeaderSensitive(false);
+    setIsEditUrlSensitive(false);
+    setShowEditModal(true);
   };
 
   const fetchData = async () => {
@@ -216,6 +330,56 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       toast.error("Failed to create MCP server");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleEditServer = async () => {
+    if (!editingServer) return;
+
+    try {
+      setIsUpdating(true);
+
+      // Auto-include current header key/value if they have values
+      const finalHeaders = { ...editForm.config?.headers };
+      const finalSensitiveHeaders = [...editSensitiveHeaders];
+
+      if (editHeaderKey.trim() && editHeaderValue.trim()) {
+        finalHeaders[editHeaderKey.trim()] = editHeaderValue.trim();
+        if (isEditHeaderSensitive) {
+          finalSensitiveHeaders.push(editHeaderKey.trim());
+        }
+      }
+
+      const updateData: UpdateMCPServerRequest = {
+        name: editForm.name,
+        description: editForm.description,
+        server_url: editForm.server_url,
+        config: {
+          server_type: editForm.config?.server_type || editingServer.server_type,
+          url: editForm.server_url || editingServer.server_url,
+          timeout: editForm.config?.timeout || 30,
+          headers: finalHeaders,
+        },
+      };
+
+      await mcpApi.updateServer(editingServer.id, updateData);
+
+      setShowEditModal(false);
+      setEditingServer(null);
+      setEditForm({});
+      setEditHeaderKey("");
+      setEditHeaderValue("");
+      setIsEditHeaderSensitive(false);
+      setIsEditUrlSensitive(false);
+      setEditSensitiveHeaders([]);
+      
+      await fetchData();
+      toast.success("MCP server updated successfully");
+    } catch (err: any) {
+      console.error("Failed to update MCP server:", err);
+      toast.error("Failed to update MCP server");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -456,6 +620,15 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                         }
                       >
                         <TestTube className="w-4 h-4" />
+                      </Button>
+
+                      {/* Edit Server */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal(server)}
+                      >
+                        <Edit className="w-4 h-4" />
                       </Button>
 
                       {/* Delete Server */}
@@ -732,6 +905,252 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                 <>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Server
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Server Modal */}
+      <AlertDialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit MCP Server</AlertDialogTitle>
+            <AlertDialogDescription>
+              Update your MCP server configuration and settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-server-name">Server Name</Label>
+                <Input
+                  id="edit-server-name"
+                  value={editForm.name || ""}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="My MCP Server"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-server-type">Server Type</Label>
+                <Select
+                  value={editForm.config?.server_type || editingServer?.server_type || "http"}
+                  onValueChange={(value: "http" | "sse") => {
+                    setEditForm((prev) => ({
+                      ...prev,
+                      config: { 
+                        ...prev.config,
+                        server_type: value,
+                        url: prev.config?.url || "",
+                        timeout: prev.config?.timeout || 30,
+                      },
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="http">HTTP</SelectItem>
+                    <SelectItem value="sse">
+                      SSE (Server-Sent Events)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-server-url">Server URL</Label>
+              <Input
+                id="edit-server-url"
+                value={editForm.server_url || ""}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    server_url: e.target.value,
+                  }))
+                }
+                placeholder="https://your-mcp-server.com/mcp"
+                className="mt-1"
+              />
+              <div className="flex items-center space-x-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="edit-url-sensitive"
+                  checked={isEditUrlSensitive}
+                  onChange={(e) => setIsEditUrlSensitive(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-primary accent-primary dark:border-gray-600 dark:focus:ring-offset-background cursor-pointer"
+                  style={{ colorScheme: "dark" }}
+                />
+                <Label htmlFor="edit-url-sensitive" className="text-sm">
+                  🔒 URL contains sensitive data (API keys, tokens, etc.)
+                </Label>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-server-description">Description (Optional)</Label>
+              <Textarea
+                id="edit-server-description"
+                value={editForm.description || ""}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="What tools and capabilities does this server provide?"
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-timeout">Timeout (seconds)</Label>
+                <Input
+                  id="edit-timeout"
+                  type="number"
+                  min="1"
+                  max="300"
+                  value={editForm.config?.timeout || 30}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        server_type: prev.config?.server_type || "http",
+                        url: prev.config?.url || "",
+                        timeout: parseInt(e.target.value) || 30,
+                      },
+                    }))
+                  }
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {/* Headers Section */}
+            <div>
+              <Label>HTTP Headers (Optional)</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Add authentication or custom headers. Headers will be
+                automatically included when updating the server. Use the +
+                button to add multiple headers.
+              </p>
+
+              {/* Existing Headers */}
+              {Object.entries(editForm.config?.headers || {}).length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {Object.entries(editForm.config?.headers || {}).map(
+                    ([key, value]) => {
+                      const isSensitive = editSensitiveHeaders.includes(key);
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center space-x-2 p-2 bg-muted rounded-lg"
+                        >
+                          <span className="text-sm font-medium flex items-center space-x-1">
+                            {isSensitive && <span className="text-xs">🔒</span>}
+                            <span>{key}:</span>
+                          </span>
+                          <span className="text-sm text-muted-foreground flex-1">
+                            {isSensitive ||
+                            key.toLowerCase().includes("auth") ||
+                            key.toLowerCase().includes("token")
+                              ? "*".repeat(Math.min(value.length, 20))
+                              : value}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeEditHeader(key)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
+              )}
+
+              {/* Add Header Form */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={editHeaderKey}
+                    onChange={(e) => setEditHeaderKey(e.target.value)}
+                    placeholder="Authorization"
+                  />
+                  <div className="flex space-x-2">
+                    <Input
+                      value={editHeaderValue}
+                      onChange={(e) => setEditHeaderValue(e.target.value)}
+                      placeholder="Bearer token123"
+                      type={
+                        editHeaderKey.toLowerCase().includes("auth") ||
+                        editHeaderKey.toLowerCase().includes("token") ||
+                        isEditHeaderSensitive
+                          ? "password"
+                          : "text"
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addEditHeader}
+                      disabled={!editHeaderKey.trim() || !editHeaderValue.trim()}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Sensitive header checkbox */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-header-sensitive"
+                    checked={isEditHeaderSensitive}
+                    onChange={(e) => setIsEditHeaderSensitive(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary accent-primary dark:border-gray-600 dark:focus:ring-offset-background cursor-pointer"
+                    style={{ colorScheme: "dark" }}
+                  />
+                  <Label htmlFor="edit-header-sensitive" className="text-sm">
+                    🔒 Header contains sensitive data (will be encrypted)
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEditServer}
+              disabled={
+                !editForm.name || !editForm.server_url || isUpdating
+              }
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Update Server
                 </>
               )}
             </AlertDialogAction>
