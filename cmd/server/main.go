@@ -12,6 +12,7 @@ import (
 	"github.com/arnavsurve/glyfs/internal/handlers"
 	"github.com/arnavsurve/glyfs/internal/services"
 	"github.com/arnavsurve/glyfs/internal/shared"
+	planmiddleware "github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -66,6 +67,9 @@ func main() {
 		log.Fatal("Failed to initialize settings handler:", err)
 	}
 
+	// Initialize Plan Middleware
+	planMiddleware := planmiddleware.NewPlanMiddleware(db)
+
 	// Get JWT secret
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -76,6 +80,7 @@ func main() {
 		DB:              db,
 		MCPManager:      mcpManager,
 		SettingsHandler: settingsHandler,
+		PlanMiddleware:  planMiddleware,
 	}
 
 	// Initialize OAuth Handler (needs reference to main handler)
@@ -193,7 +198,7 @@ func main() {
 	})
 
 	// MCP Server management routes
-	mcpHandler := handlers.NewMCPHandler(db, mcpManager)
+	mcpHandler := handlers.NewMCPHandler(db, mcpManager, planMiddleware)
 	mcpHandler.RegisterMCPRoutes(protected)
 
 	// Usage tracking routes
