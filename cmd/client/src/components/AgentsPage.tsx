@@ -50,7 +50,7 @@ export function AgentsPage() {
     if (agentsUsed >= agentLimit) {
       setShowUpgradePrompt(true);
     } else {
-      navigate("/agents/create");
+      navigate("/app/agents/create");
     }
   };
 

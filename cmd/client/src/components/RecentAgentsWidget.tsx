@@ -94,7 +94,7 @@ export function RecentAgentsWidget() {
     // Store the selected agent ID in localStorage
     localStorage.setItem("selectedAgentId", agent.id);
     // Navigate to chat
-    navigate("/chat");
+    navigate("/app/chat");
   };
 
   const formatRelativeTime = (date: Date | undefined): string => {
@@ -152,7 +152,7 @@ export function RecentAgentsWidget() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate("/agents")}
+                onClick={() => navigate("/app/agents")}
               >
                 Create your first agent
               </Button>
@@ -163,7 +163,7 @@ export function RecentAgentsWidget() {
               variant="ghost"
               size="sm"
               className="w-full"
-              onClick={() => navigate("/agents")}
+              onClick={() => navigate("/app/agents")}
             >
               View all agents
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -221,7 +221,7 @@ export function RecentAgentsWidget() {
             variant="ghost"
             size="sm"
             className="w-full"
-            onClick={() => navigate("/agents")}
+            onClick={() => navigate("/app/agents")}
           >
             View all agents
             <ArrowRight className="w-4 h-4 ml-2" />

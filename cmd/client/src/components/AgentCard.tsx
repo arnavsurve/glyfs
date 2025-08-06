@@ -50,7 +50,7 @@ export function AgentCard({ agent }: AgentCardProps) {
 
   // Handle card click to navigate to agent detail
   const handleCardClick = () => {
-    navigate(`/agents/${agent.id}`);
+    navigate(`/app/agents/${agent.id}`);
   };
 
   return (

@@ -25,31 +25,31 @@ const sidebarItems: SidebarItem[] = [
     id: "dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    path: "/dashboard",
+    path: "/app/dashboard",
   },
   {
     id: "agents",
     label: "Agents",
     icon: Bot,
-    path: "/agents",
+    path: "/app/agents",
   },
   {
     id: "chat",
     label: "Chat",
     icon: MessageSquare,
-    path: "/chat",
+    path: "/app/chat",
   },
   {
     id: "metrics",
     label: "Metrics",
     icon: BarChart3,
-    path: "/metrics",
+    path: "/app/metrics",
   },
   {
     id: "settings",
     label: "Settings",
     icon: Settings,
-    path: "/settings",
+    path: "/app/settings",
   },
 ];
 
@@ -62,7 +62,10 @@ export function Layout() {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/login");
+      // Small delay to ensure auth state has updated before navigation
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
     } catch (error) {
       console.error("Logout failed:", error);
     }
