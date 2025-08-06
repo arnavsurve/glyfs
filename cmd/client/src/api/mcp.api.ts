@@ -37,6 +37,7 @@ export interface CreateMCPServerRequest {
   server_url: string;
   server_type: 'http' | 'sse';
   config: MCPServerConfig;
+  agent_id?: string;
 }
 
 export interface UpdateMCPServerRequest {
@@ -50,6 +51,19 @@ export interface AgentMCPServer {
   server_id: string;
   server_name: string;
   enabled: boolean;
+}
+
+export interface AgentMCPServerDetail {
+  server_id: string;
+  server_name: string;
+  description: string;
+  server_url: string;
+  server_type: 'http' | 'sse';
+  config: MCPServerConfig;
+  enabled: boolean;
+  last_seen?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TestConnectionResponse {
@@ -101,9 +115,9 @@ export const mcpApi = {
   },
 
   // Agent-MCP associations
-  async getAgentMCPServers(agentId: string): Promise<{ servers: AgentMCPServer[] }> {
+  async getAgentMCPServers(agentId: string): Promise<{ servers: AgentMCPServerDetail[] }> {
     const response = await apiClient.get(`/mcp/agents/${agentId}/servers`);
-    return response.data as { servers: AgentMCPServer[] };
+    return response.data as { servers: AgentMCPServerDetail[] };
   },
 
   async associateAgentMCPServer(agentId: string, serverId: string): Promise<{ message: string }> {

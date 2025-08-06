@@ -37,6 +37,7 @@ export interface CreateMCPServerRequest {
   config: MCPServerConfig;
   sensitive_url?: boolean;
   sensitive_headers?: string[];
+  agent_id?: string;
 }
 
 export interface UpdateMCPServerRequest {
@@ -50,6 +51,19 @@ export interface AgentMCPServer {
   server_id: string;
   server_name: string;
   enabled: boolean;
+}
+
+export interface AgentMCPServerDetail {
+  server_id: string;
+  server_name: string;
+  description: string;
+  server_url: string;
+  server_type: "http" | "sse";
+  config: MCPServerConfig;
+  enabled: boolean;
+  last_seen?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const MCP_SERVER_TYPES = {
