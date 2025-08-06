@@ -2,10 +2,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Suspense, lazy } from 'react'
 import { ThemeProvider } from './components/theme-provider'
 import { AuthProvider } from './auth/AuthContext'
-import { ProtectedRoute, PublicRoute } from './auth/ProtectedRoute'
+import { ProtectedRoute, PublicRoute, LandingRoute } from './auth/ProtectedRoute'
 import { Toaster } from './components/ui/sonner'
 
 // Lazy load components
+const LandingPage = lazy(() => import('./components/LandingPage').then(module => ({ default: module.LandingPage })))
 const LoginPage = lazy(() => import('./components/LoginPage').then(module => ({ default: module.LoginPage })))
 const SignupPage = lazy(() => import('./components/SignupPage').then(module => ({ default: module.SignupPage })))
 const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })))
@@ -29,6 +30,16 @@ function App() {
             </div>
           }>
             <Routes>
+              {/* Landing page - shows for unauthenticated, redirects authenticated to dashboard */}
+              <Route 
+                path="/" 
+                element={
+                  <LandingRoute>
+                    <LandingPage />
+                  </LandingRoute>
+                } 
+              />
+              
               {/* Public routes - redirect to dashboard if authenticated */}
               <Route 
                 path="/signup" 
@@ -49,14 +60,14 @@ function App() {
               
               {/* Protected routes with layout */}
               <Route 
-                path="/" 
+                path="/app" 
                 element={
                   <ProtectedRoute>
                     <Layout />
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route index element={<Navigate to="/app/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="agents" element={<AgentsPage />} />
                 <Route path="agents/create" element={<CreateAgentForm />} />
@@ -66,10 +77,13 @@ function App() {
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               
+              {/* Legacy dashboard route redirect */}
+              <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+              
               {/* Catch all route */}
               <Route 
                 path="*" 
-                element={<Navigate to="/dashboard" replace />}
+                element={<Navigate to="/" replace />}
               />
             </Routes>
           </Suspense>

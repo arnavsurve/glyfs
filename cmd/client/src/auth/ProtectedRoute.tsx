@@ -35,7 +35,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If route requires no authentication (like login page) and user is authenticated
   if (!requireAuth && isAuthenticated) {
     // Redirect to dashboard or the originally intended location
-    const from = location.state?.from?.pathname || '/dashboard';
+    const from = location.state?.from?.pathname || '/app/dashboard';
     return <Navigate to={from} replace />;
   }
 
@@ -45,8 +45,30 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 // Convenience component for public routes (login, signup)
 export const PublicRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
   return (
-    <ProtectedRoute requireAuth={false} redirectTo="/dashboard">
+    <ProtectedRoute requireAuth={false} redirectTo="/app/dashboard">
       {children}
     </ProtectedRoute>
   );
+};
+
+// Landing page route - shows landing for unauthenticated, redirects authenticated to dashboard
+export const LandingRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  // Show landing page for unauthenticated users
+  return <>{children}</>;
 };
