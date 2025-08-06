@@ -130,12 +130,12 @@ func (pm *PlanMiddleware) countUserResources(userID uint, resourceType ResourceT
 			return 0, err
 		}
 	case ResourceAPIKey:
-		// Count API keys across all agents
+		// Count API keys across all agents (use is_active instead of deleted_at)
 		if err := pm.DB.Raw(`
 			SELECT COUNT(*) 
 			FROM agent_api_keys aak 
 			JOIN agent_configs ac ON aak.agent_id = ac.id 
-			WHERE ac.user_id = ? AND aak.deleted_at IS NULL
+			WHERE ac.user_id = ? AND aak.is_active = true
 		`, userID).Scan(&count).Error; err != nil {
 			return 0, err
 		}
@@ -177,3 +177,4 @@ func (pm *PlanMiddleware) GetUserResourceCounts(userID uint) (map[string]int, er
 
 	return counts, nil
 }
+
