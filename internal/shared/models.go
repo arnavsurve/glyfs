@@ -204,6 +204,20 @@ type AgentMCPServerResponse struct {
 	Enabled    bool      `json:"enabled"`
 }
 
+// Detailed response for agent MCP servers (includes full server details)
+type AgentMCPServerDetailResponse struct {
+	ServerID     uuid.UUID        `json:"server_id"`
+	ServerName   string           `json:"server_name"`
+	Description  string           `json:"description"`
+	ServerURL    string           `json:"server_url"`
+	ServerType   string           `json:"server_type"`
+	Config       MCPServerConfig  `json:"config"`
+	Enabled      bool             `json:"enabled"`
+	LastSeen     *time.Time       `json:"last_seen,omitempty"`
+	CreatedAt    time.Time        `json:"created_at"`
+	UpdatedAt    time.Time        `json:"updated_at"`
+}
+
 // Usage tracking types
 type UsageMetric struct {
 	ID               uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
