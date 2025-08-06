@@ -444,9 +444,8 @@ print(data["response"])`;
               </span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              MCP servers give your agents access to databases, APIs, file
-              systems, and more. We make connecting them as easy as clicking a
-              button.
+              Integrating MCP-enabled agents in your application takes hundreds
+              of lines of code. We make connecting them as easy as possible.
             </p>
           </div>
 
@@ -461,7 +460,7 @@ print(data["response"])`;
               <CardContent className="text-sm space-y-2">
                 <p>• Agents can only respond with text</p>
                 <p>• No access to your systems or data</p>
-                <p>• Complex custom integrations required</p>
+                <p>• Complex custom integrations</p>
                 <p>• Limited real-world usefulness</p>
               </CardContent>
             </Card>
