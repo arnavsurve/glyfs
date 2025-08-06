@@ -8,6 +8,10 @@ export interface User {
   tier_limits: {
     agent_limit: number;
     agents_used: number;
+    mcp_server_limit: number;
+    mcp_servers_used: number;
+    api_key_limit: number;
+    api_keys_used: number;
   };
 }
 
@@ -32,6 +36,10 @@ export interface AuthResponse {
   tier_limits?: {
     agent_limit: number;
     agents_used: number;
+    mcp_server_limit: number;
+    mcp_servers_used: number;
+    api_key_limit: number;
+    api_keys_used: number;
   };
 }
 

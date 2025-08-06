@@ -117,7 +117,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             display_name: data.display_name,
             avatar_url: data.avatar_url,
             tier: (data.tier as 'free' | 'pro') || 'free',
-            tier_limits: data.tier_limits || { agent_limit: 3, agents_used: 0 },
+            tier_limits: data.tier_limits || { 
+              agent_limit: 3, agents_used: 0,
+              mcp_server_limit: 9, mcp_servers_used: 0,
+              api_key_limit: 3, api_keys_used: 0 
+            },
           };
           dispatch({
             type: "AUTH_SUCCESS",
