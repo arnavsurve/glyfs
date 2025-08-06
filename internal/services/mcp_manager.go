@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -334,10 +335,16 @@ func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryp
 		var err error
 		decryptedURL, err = encryptionService.Decrypt(server.ServerURL)
 		if err != nil {
-			return server, fmt.Errorf("failed to decrypt URL: %w", err)
+			// If decryption fails, assume the URL is not actually encrypted
+			// This handles cases where the encryption flag was set but encryption failed
+			decryptedURL = server.ServerURL
+			urlDecrypted = true
+			// Log the error but don't fail the connection
+			log.Printf("Warning: Failed to decrypt URL for server %s (assuming unencrypted): %v", server.ID, err)
+		} else {
+			decryptedServer.ServerURL = decryptedURL
+			urlDecrypted = true
 		}
-		decryptedServer.ServerURL = decryptedURL
-		urlDecrypted = true
 	}
 
 	// Parse config to update with decrypted data
@@ -366,7 +373,9 @@ func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryp
 
 			decryptedHeaders, err := encryptionService.DecryptSensitiveFields(configHeaders, sensitiveHeaders)
 			if err != nil {
-				return server, fmt.Errorf("failed to decrypt headers: %w", err)
+				// If header decryption fails, log warning but continue with encrypted headers
+				log.Printf("Warning: Failed to decrypt headers for server %s: %v", server.ID, err)
+				decryptedHeaders = configHeaders
 			}
 
 			// Convert back to string map

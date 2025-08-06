@@ -32,6 +32,7 @@ type CreateMCPServerRequest struct {
 	Config           shared.MCPServerConfig `json:"config"`
 	SensitiveURL     bool                   `json:"sensitive_url"`
 	SensitiveHeaders []string               `json:"sensitive_headers"`
+	AgentID          *uuid.UUID             `json:"agent_id"` // Optional: if provided, auto-associate with agent
 }
 
 type UpdateMCPServerRequest struct {
@@ -149,8 +150,40 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 		SensitiveHeaders: string(sensitiveHeadersJSON),
 	}
 
-	if err := h.db.Create(&server).Error; err != nil {
+	// Verify agent ownership if agent_id is provided
+	if req.AgentID != nil {
+		var agent shared.AgentConfig
+		if err := h.db.Where("id = ? AND user_id = ?", *req.AgentID, userID).First(&agent).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return echo.NewHTTPError(http.StatusNotFound, "agent not found or not owned by user")
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to verify agent")
+		}
+	}
+
+	// Use transaction to ensure atomicity
+	tx := h.db.Begin()
+	
+	if err := tx.Create(&server).Error; err != nil {
+		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create MCP server")
+	}
+
+	// Create association if agent_id is provided
+	if req.AgentID != nil {
+		association := shared.AgentMCPServer{
+			AgentID:     *req.AgentID,
+			MCPServerID: server.ID,
+			Enabled:     true,
+		}
+		if err := tx.Create(&association).Error; err != nil {
+			tx.Rollback()
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create agent association")
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to commit transaction")
 	}
 
 	response := shared.MCPServerResponse{
@@ -289,9 +322,12 @@ func (h *MCPHandler) decryptServerData(server shared.MCPServer, encryptionServic
 	if server.EncryptedURL {
 		decryptedURL, err := encryptionService.Decrypt(server.ServerURL)
 		if err != nil {
-			return server, err
+			// If decryption fails, assume the URL is not actually encrypted
+			// This handles cases where the encryption flag was set but encryption failed
+			decryptedServer.ServerURL = server.ServerURL
+		} else {
+			decryptedServer.ServerURL = decryptedURL
 		}
-		decryptedServer.ServerURL = decryptedURL
 	}
 
 	// Decrypt sensitive headers in config
@@ -315,7 +351,8 @@ func (h *MCPHandler) decryptServerData(server shared.MCPServer, encryptionServic
 
 				decryptedHeaders, err := encryptionService.DecryptSensitiveFields(configHeaders, sensitiveHeaders)
 				if err != nil {
-					return server, err
+					// If header decryption fails, continue with encrypted headers
+					decryptedHeaders = configHeaders
 				}
 
 				// Convert back to string map
@@ -546,12 +583,50 @@ func (h *MCPHandler) GetAgentMCPServers(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch agent MCP servers")
 	}
 
-	response := make([]shared.AgentMCPServerResponse, len(associations))
+	// Initialize encryption service for decryption
+	encryptionService, err := services.NewEncryptionService()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to initialize encryption service")
+	}
+
+	// Return full server details instead of just basic info
+	response := make([]shared.AgentMCPServerDetailResponse, len(associations))
 	for i, assoc := range associations {
-		response[i] = shared.AgentMCPServerResponse{
-			ServerID:   assoc.MCPServerID,
-			ServerName: assoc.MCPServer.Name,
-			Enabled:    assoc.Enabled,
+		server := assoc.MCPServer
+		decryptedServer := server
+
+		// Decrypt if needed
+		if server.EncryptedURL || server.SensitiveHeaders != "" {
+			decryptedServer, err = h.decryptServerData(server, encryptionService)
+			if err != nil {
+				// Continue with encrypted data if decryption fails
+				decryptedServer = server
+			}
+		}
+
+		// Parse config
+		var config shared.MCPServerConfig
+		if err := json.Unmarshal([]byte(decryptedServer.Config), &config); err != nil {
+			// Use default config if parsing fails
+			config = shared.MCPServerConfig{
+				ServerType: decryptedServer.ServerType,
+				URL:        decryptedServer.ServerURL,
+				Timeout:    30,
+				Headers:    make(map[string]string),
+			}
+		}
+
+		response[i] = shared.AgentMCPServerDetailResponse{
+			ServerID:     assoc.MCPServerID,
+			ServerName:   decryptedServer.Name,
+			Description:  decryptedServer.Description,
+			ServerURL:    decryptedServer.ServerURL,
+			ServerType:   decryptedServer.ServerType,
+			Config:       config,
+			Enabled:      assoc.Enabled,
+			LastSeen:     decryptedServer.LastSeen,
+			CreatedAt:    decryptedServer.CreatedAt,
+			UpdatedAt:    decryptedServer.UpdatedAt,
 		}
 	}
 
