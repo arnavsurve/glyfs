@@ -53,6 +53,14 @@ export function UpgradePrompt({ open, onOpenChange }: UpgradePromptProps) {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="w-4 h-4 text-green-500" />
+                  <span className="font-medium">9 MCP servers</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="font-medium">3 API keys</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-green-500" />
                   <span>Basic models</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -97,6 +105,18 @@ export function UpgradePrompt({ open, onOpenChange }: UpgradePromptProps) {
                   <Check className="w-4 h-4 text-green-500" />
                   <span className="font-medium">
                     <span className="font-bold">20</span> agents
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="font-medium">
+                    <span className="font-bold">100</span> MCP servers
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="font-medium">
+                    <span className="font-bold">50</span> API keys
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
