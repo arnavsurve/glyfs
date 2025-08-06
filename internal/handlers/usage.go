@@ -21,7 +21,7 @@ func NewUsageHandler(db *gorm.DB) *UsageHandler {
 
 // DailyUsage represents aggregated usage for a single day
 type DailyUsage struct {
-	Date             string `json:"date"`
+	Date             string `json:"date"`  // ISO date string in UTC
 	InvocationCount  int    `json:"invocation_count"`
 	TotalTokens      int    `json:"total_tokens"`
 	PromptTokens     int    `json:"prompt_tokens"`
@@ -75,8 +75,12 @@ func (h *UsageHandler) HandleGetUsageDashboard(c echo.Context) error {
 
 	log.Printf("Usage dashboard request - UserID: %d, Days: %d", userID, days)
 
-	endDate := time.Now()
-	startDate := endDate.AddDate(0, 0, -days)
+	// Use UTC for consistent date boundaries, but extend range to account for timezones
+	// This ensures we capture all data regardless of user timezone
+	now := time.Now().UTC()
+	// Add 2 days buffer (1 before, 1 after) to handle all timezones
+	endDate := now.AddDate(0, 0, 2)
+	startDate := now.AddDate(0, 0, -days-1)
 
 	// First, let's check if we have any usage metrics at all
 	var totalCount int64
@@ -104,19 +108,20 @@ func (h *UsageHandler) HandleGetUsageDashboard(c echo.Context) error {
 		log.Printf("Records in date range %s to %s: %d", startDate.Format("2006-01-02"), endDate.Format("2006-01-02"), debugCount)
 	}
 
-	// Get daily usage using PostgreSQL date_trunc for more reliable date grouping
+	// Get daily usage using PostgreSQL date_trunc in UTC
+	// Return as timestamp strings to preserve timezone info
 	var dailyUsage []DailyUsage
 	if err := h.DB.Raw(`
 		SELECT 
-			date_trunc('day', created_at)::date as date,
+			to_char(date_trunc('day', created_at), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as date,
 			COUNT(*) as invocation_count,
 			SUM(total_tokens) as total_tokens,
 			SUM(prompt_tokens) as prompt_tokens,
 			SUM(completion_tokens) as completion_tokens
 		FROM usage_metrics
 		WHERE user_id = ? AND created_at >= ? AND created_at <= ?
-		GROUP BY date_trunc('day', created_at)::date
-		ORDER BY date ASC
+		GROUP BY date_trunc('day', created_at)
+		ORDER BY date_trunc('day', created_at) ASC
 	`, userID, startDate, endDate).Scan(&dailyUsage).Error; err != nil {
 		log.Printf("Error fetching daily usage: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch daily usage")
@@ -161,22 +166,23 @@ func (h *UsageHandler) HandleGetUsageDashboard(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch total usage")
 	}
 
-	// Fill in missing dates with zero values
+	// Create a map for quick lookup by date
 	dailyUsageMap := make(map[string]DailyUsage)
 	for _, du := range dailyUsage {
-		// Parse the date and reformat it to ensure consistency
-		if parsedDate, err := time.Parse("2006-01-02T15:04:05Z", du.Date); err == nil {
-			du.Date = parsedDate.Format("2006-01-02")
-		} else if parsedDate, err := time.Parse("2006-01-02", du.Date); err == nil {
-			du.Date = parsedDate.Format("2006-01-02")
-		}
+		// The date is already in ISO format from the query
 		dailyUsageMap[du.Date] = du
 		log.Printf("Mapped daily usage: %s = %d invocations, %d tokens", du.Date, du.InvocationCount, du.TotalTokens)
 	}
 
+	// Fill in missing dates for the requested range
+	// Generate all dates in the range in UTC
+	requestedEndDate := time.Now().UTC()
+	requestedStartDate := requestedEndDate.AddDate(0, 0, -days)
+	
 	var completeDailyUsage []DailyUsage
-	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
-		dateStr := d.Format("2006-01-02")
+	for d := requestedStartDate; !d.After(requestedEndDate); d = d.AddDate(0, 0, 1) {
+		// Create the ISO timestamp for start of day in UTC
+		dateStr := d.Format("2006-01-02T00:00:00Z")
 		if usage, exists := dailyUsageMap[dateStr]; exists {
 			completeDailyUsage = append(completeDailyUsage, usage)
 		} else {
@@ -195,8 +201,8 @@ func (h *UsageHandler) HandleGetUsageDashboard(c echo.Context) error {
 		TopAgents:  topAgents,
 		TotalUsage: totalUsage,
 		DateRange: DateRange{
-			StartDate: startDate.Format("2006-01-02"),
-			EndDate:   endDate.Format("2006-01-02"),
+			StartDate: requestedStartDate.Format("2006-01-02"),
+			EndDate:   requestedEndDate.Format("2006-01-02"),
 		},
 	}
 
