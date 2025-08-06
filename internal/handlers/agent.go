@@ -9,6 +9,7 @@ import (
 
 	"github.com/arnavsurve/glyfs/internal/services"
 	"github.com/arnavsurve/glyfs/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -33,7 +34,7 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 	}
 
 	// Check agent limit based on user tier
-	if err := h.CheckAgentLimit(c); err != nil {
+	if err := h.PlanMiddleware.CheckResourceLimit(userID, middleware.ResourceAgent); err != nil {
 		return err
 	}
 
@@ -357,13 +358,23 @@ func (h *Handler) HandleGetAgents(c echo.Context) error {
 		tierConfig = shared.TierConfigs["free"]
 	}
 
+	// Get comprehensive resource counts
+	resourceCounts, err := h.PlanMiddleware.GetUserResourceCounts(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get resource counts")
+	}
+
 	return c.JSON(http.StatusOK, map[string]any{
 		"agents": agents,
 		"count":  len(agents),
 		"tier": map[string]any{
-			"name":        user.Tier,
-			"agent_limit": tierConfig.AgentLimit,
-			"agents_used": len(agents),
+			"name":               user.Tier,
+			"agent_limit":        tierConfig.AgentLimit,
+			"agents_used":        resourceCounts["agents_used"],
+			"mcp_server_limit":   tierConfig.MCPServerLimit,
+			"mcp_servers_used":   resourceCounts["mcp_servers_used"],
+			"api_key_limit":      tierConfig.APIKeyLimit,
+			"api_keys_used":      resourceCounts["api_keys_used"],
 		},
 	})
 }
@@ -472,39 +483,3 @@ func generateAPIKey() (string, error) {
 	return "apk_" + base64.URLEncoding.EncodeToString(randomBytes), nil
 }
 
-// CheckAgentLimit verifies if the user can create more agents based on their tier
-func (h *Handler) CheckAgentLimit(c echo.Context) error {
-	userID, ok := c.Get("user_id").(uint)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
-	}
-
-	// Get user to check their tier
-	var user shared.User
-	if err := h.DB.First(&user, userID).Error; err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user information")
-	}
-
-	// Get tier configuration
-	tierConfig, exists := shared.TierConfigs[user.Tier]
-	if !exists {
-		// Default to free tier if tier is not recognized
-		tierConfig = shared.TierConfigs["free"]
-	}
-
-	// Count active agents for the user (excluding soft deleted)
-	var agentCount int64
-	if err := h.DB.Model(&shared.AgentConfig{}).Where("user_id = ?", userID).Count(&agentCount).Error; err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count agents")
-	}
-
-	// Check if limit is exceeded
-	if int(agentCount) >= tierConfig.AgentLimit {
-		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf(
-			"Agent limit reached. Your %s tier allows %d agents. Please upgrade to create more agents.",
-			user.Tier, tierConfig.AgentLimit,
-		))
-	}
-
-	return nil
-}

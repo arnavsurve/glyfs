@@ -7,20 +7,23 @@ import (
 
 	"github.com/arnavsurve/glyfs/internal/services"
 	"github.com/arnavsurve/glyfs/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
 type MCPHandler struct {
-	db         *gorm.DB
-	mcpManager *services.MCPConnectionManager
+	db             *gorm.DB
+	mcpManager     *services.MCPConnectionManager
+	planMiddleware *middleware.PlanMiddleware
 }
 
-func NewMCPHandler(db *gorm.DB, mcpManager *services.MCPConnectionManager) *MCPHandler {
+func NewMCPHandler(db *gorm.DB, mcpManager *services.MCPConnectionManager, planMiddleware *middleware.PlanMiddleware) *MCPHandler {
 	return &MCPHandler{
-		db:         db,
-		mcpManager: mcpManager,
+		db:             db,
+		mcpManager:     mcpManager,
+		planMiddleware: planMiddleware,
 	}
 }
 
@@ -71,6 +74,11 @@ func (h *MCPHandler) CreateMCPServer(c echo.Context) error {
 	var req CreateMCPServerRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Check MCP server limit based on user tier
+	if err := h.planMiddleware.CheckResourceLimit(userID, middleware.ResourceMCPServer); err != nil {
+		return err
 	}
 
 	// Validate server type

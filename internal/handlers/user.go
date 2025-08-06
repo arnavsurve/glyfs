@@ -186,9 +186,11 @@ func (h *Handler) HandleMe(c echo.Context) error {
 		tierConfig = shared.TierConfigs["free"]
 	}
 
-	// Count active agents for the user
-	var agentCount int64
-	h.DB.Model(&shared.AgentConfig{}).Where("user_id = ?", userID).Count(&agentCount)
+	// Get comprehensive resource counts
+	resourceCounts, err := h.PlanMiddleware.GetUserResourceCounts(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get resource counts")
+	}
 
 	response := map[string]any{
 		"user_id":       userID,
@@ -196,8 +198,12 @@ func (h *Handler) HandleMe(c echo.Context) error {
 		"auth_provider": user.AuthProvider,
 		"tier":          user.Tier,
 		"tier_limits": map[string]any{
-			"agent_limit": tierConfig.AgentLimit,
-			"agents_used": int(agentCount),
+			"agent_limit":        tierConfig.AgentLimit,
+			"agents_used":        resourceCounts["agents_used"],
+			"mcp_server_limit":   tierConfig.MCPServerLimit,
+			"mcp_servers_used":   resourceCounts["mcp_servers_used"],
+			"api_key_limit":      tierConfig.APIKeyLimit,
+			"api_keys_used":      resourceCounts["api_keys_used"],
 		},
 	}
 

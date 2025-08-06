@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/arnavsurve/glyfs/internal/shared"
+	"github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -135,6 +136,11 @@ func (h *Handler) HandleCreateAPIKey(c echo.Context) error {
 
 	if req.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is required")
+	}
+
+	// Check API key limit based on user tier
+	if err := h.PlanMiddleware.CheckResourceLimit(userID, middleware.ResourceAPIKey); err != nil {
+		return err
 	}
 
 	var agent shared.AgentConfig
