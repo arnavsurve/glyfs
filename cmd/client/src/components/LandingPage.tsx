@@ -373,13 +373,6 @@ print(data["response"])`;
               >
                 Sign In
               </Button>
-              <Button
-                onClick={() => navigate("/signup")}
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                Start Building
-                <Sparkles className="w-4 h-4 ml-2" />
-              </Button>
             </div>
           </div>
         </div>
@@ -416,7 +409,7 @@ print(data["response"])`;
               onClick={() => navigate("/signup")}
               className="group bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 px-8"
             >
-              Start Building Free
+              Start Building
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button
@@ -431,11 +424,11 @@ print(data["response"])`;
       </section>
 
       {/* MCP Integration Hero Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background/50 to-primary/5 backdrop-blur-sm border-y border-primary/10">
+      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background/50 to-primary/5 backdrop-blur-sm imary/10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              AI agents without tools are just{" "}
+              Agents without tools are just{" "}
               <span className="text-muted-foreground line-through">
                 expensive
               </span>{" "}
@@ -555,7 +548,8 @@ print(data["response"])`;
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Everything you need to ship AI agents
+              Everything you need to ship{" "}
+              <span className="italic">capable</span> AI
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               We handle the infrastructure so you can focus on building amazing
@@ -915,11 +909,8 @@ print(data["response"])`;
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Enterprise-grade security
+              Your agents, your data, your control.
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Built with security first. Your agents, your data, your control.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -984,7 +975,7 @@ print(data["response"])`;
                   onClick={() => navigate("/signup")}
                   className="group bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 px-8"
                 >
-                  Start Building Free
+                  Start Building
                   <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button
