@@ -441,7 +441,7 @@ export function ChatPage({}: ChatPageProps) {
   };
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(prev => {
+    setIsSidebarCollapsed((prev: boolean) => {
       const newValue = !prev;
       localStorage.setItem("chatSidebarCollapsed", JSON.stringify(newValue));
       return newValue;

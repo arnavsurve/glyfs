@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { LoginCredentials, SignupCredentials, AuthResponse } from '../types/auth.types';
+import type { AuthResponse } from '../types/auth.types';
 
 export const authApi = {
   // Regular auth methods commented out - OAuth only

@@ -12,7 +12,6 @@ import {
   Shield,
   ArrowRight,
   Github,
-  Sparkles,
   ChevronRight,
   Terminal,
   Plug,

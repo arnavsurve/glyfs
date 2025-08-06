@@ -174,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [state.isAuthenticated]);
 
   // Regular auth login commented out - OAuth only
-  const login = async (credentials: LoginCredentials): Promise<void> => {
+  const login = async (_credentials: LoginCredentials): Promise<void> => {
     // OAuth only - regular login disabled
     const errorMessage = "Please use OAuth providers (GitHub or Google) to sign in";
     dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
@@ -209,7 +209,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Regular auth signup commented out - OAuth only
-  const signup = async (credentials: SignupCredentials): Promise<void> => {
+  const signup = async (_credentials: SignupCredentials): Promise<void> => {
     // OAuth only - regular signup disabled
     const errorMessage = "Please use OAuth providers (GitHub or Google) to create an account";
     dispatch({ type: "AUTH_FAILURE", payload: errorMessage });

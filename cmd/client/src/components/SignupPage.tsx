@@ -1,30 +1,25 @@
-import React, { useState, useEffect } from 'react'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { Alert, AlertDescription } from './ui/alert'
-import { Loader2, UserPlus } from 'lucide-react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { UserPlus } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import type { SignupCredentials } from '../types/auth.types'
-import { OAuthButtons, OAuthDivider } from './OAuthButtons'
+import { OAuthButtons } from './OAuthButtons'
 
 interface SignupFormData extends SignupCredentials {
   confirmPassword: string
 }
 
 export function SignupPage() {
-  const [formData, setFormData] = useState<SignupFormData>({
+  const [_formData, _setFormData] = useState<SignupFormData>({
     email: '',
     password: '',
     confirmPassword: ''
   })
-  const [validationError, setValidationError] = useState('')
+  const [_validationError, _setValidationError] = useState('')
   const [oauthError, setOauthError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const { signup, isLoading, error, clearError } = useAuth()
-  const navigate = useNavigate()
+  const [_success, _setSuccess] = useState(false)
+  const { error, clearError } = useAuth()
   const location = useLocation()
 
   // Check for OAuth error in query params
@@ -56,81 +51,15 @@ export function SignupPage() {
 
   // Clear errors when user starts typing
   useEffect(() => {
-    if (error || validationError) {
+    if (error) {
       clearError()
-      setValidationError('')
     }
     if (oauthError) {
       setOauthError(null)
     }
-  }, [formData.email, formData.password, formData.confirmPassword, error, validationError, clearError, oauthError])
+  }, [error, clearError, oauthError])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const validateForm = () => {
-    if (!formData.email) {
-      setValidationError('Email is required')
-      return false
-    }
-    
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-    if (!emailRegex.test(formData.email)) {
-      setValidationError('Please enter a valid email address')
-      return false
-    }
-
-    if (!formData.password) {
-      setValidationError('Password is required')
-      return false
-    }
-
-    if (formData.password.length < 8) {
-      setValidationError('Password must be at least 8 characters long')
-      return false
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setValidationError('Passwords do not match')
-      return false
-    }
-
-    return true
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setValidationError('')
-    
-    if (!validateForm()) {
-      return
-    }
-
-    try {
-      await signup({
-        email: formData.email,
-        password: formData.password
-      })
-      
-      setSuccess(true)
-      
-      // Redirect to dashboard after successful signup (user is now logged in)
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 2000)
-      
-    } catch (err) {
-      // Error is handled by the auth context
-      console.error('Signup failed:', err)
-    }
-  }
-
-  if (success) {
+  if (_success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md">

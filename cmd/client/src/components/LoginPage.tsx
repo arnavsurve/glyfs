@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -9,21 +6,19 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Alert, AlertDescription } from "./ui/alert";
-import { Loader2, User } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { User } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import type { LoginCredentials } from "../types/auth.types";
-import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
+import { OAuthButtons } from "./OAuthButtons";
 
 export function LoginPage() {
-  const [formData, setFormData] = useState<LoginCredentials>({
+  const [_formData, _setFormData] = useState<LoginCredentials>({
     email: "",
     password: "",
   });
   const [oauthError, setOauthError] = useState<string | null>(null);
-  const { login, isLoading, error, clearError } = useAuth();
-  const navigate = useNavigate();
+  const { error, clearError } = useAuth();
   const location = useLocation();
 
   // Check for OAuth error in query params
@@ -61,30 +56,7 @@ export function LoginPage() {
     if (oauthError) {
       setOauthError(null);
     }
-  }, [formData.email, formData.password, error, clearError, oauthError]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      await login(formData);
-      
-      // Get the intended destination or default to dashboard
-      const from = location.state?.from?.pathname || "/dashboard";
-      navigate(from, { replace: true });
-    } catch (err) {
-      // Error is handled by the auth context
-      console.error("Login failed:", err);
-    }
-  };
+  }, [error, clearError, oauthError]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
