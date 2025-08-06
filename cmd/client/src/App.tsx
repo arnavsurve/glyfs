@@ -14,6 +14,7 @@ const AgentsPage = lazy(() => import('./components/AgentsPage').then(module => (
 const CreateAgentForm = lazy(() => import('./components/CreateAgentForm').then(module => ({ default: module.CreateAgentForm })))
 const AgentDetailView = lazy(() => import('./components/AgentDetailView').then(module => ({ default: module.AgentDetailView })))
 const ChatPage = lazy(() => import('./components/ChatPage').then(module => ({ default: module.ChatPage })))
+const MetricsPage = lazy(() => import('./components/MetricsPage').then(module => ({ default: module.MetricsPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(module => ({ default: module.SettingsPage })))
 
 
@@ -61,6 +62,7 @@ function App() {
                 <Route path="agents/create" element={<CreateAgentForm />} />
                 <Route path="agents/:id" element={<AgentDetailView />} />
                 <Route path="chat" element={<ChatPage />} />
+                <Route path="metrics" element={<MetricsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               

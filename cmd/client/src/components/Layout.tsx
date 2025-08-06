@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Bot,
   MessageSquare,
+  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -37,6 +38,12 @@ const sidebarItems: SidebarItem[] = [
     label: "Chat",
     icon: MessageSquare,
     path: "/chat",
+  },
+  {
+    id: "metrics",
+    label: "Metrics",
+    icon: BarChart3,
+    path: "/metrics",
   },
   {
     id: "settings",
