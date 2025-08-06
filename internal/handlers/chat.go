@@ -15,6 +15,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// max returns the larger of x or y
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 // HandleChatStream handles streaming chat requests
 func (h *Handler) HandleChatStream(c echo.Context) error {
 	agentIdStr := c.Param("agentId")
@@ -187,11 +195,18 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	assistantMessage.CreatedAt = time.Now() // Set timestamp to when response finishes
 	h.DB.Save(&assistantMessage)
 
-	// Track usage metrics
+	// Track usage metrics with improved token estimation
+	// Use a more realistic approximation: ~3.5 chars per token, with minimum of 1 token
+	promptChars := len(req.Message)
+	completionChars := len(fullResponse)
+	
+	promptTokens := max(1, (promptChars*10+35)/35)  // Equivalent to chars/3.5 rounded up, min 1
+	completionTokens := max(1, (completionChars*10+35)/35)  // Equivalent to chars/3.5 rounded up, min 1
+	
 	usage := &shared.Usage{
-		PromptTokens:     len(req.Message) / 4,  // Rough estimate
-		CompletionTokens: len(fullResponse) / 4, // Rough estimate
-		TotalTokens:      (len(req.Message) + len(fullResponse)) / 4,
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens, 
+		TotalTokens:      promptTokens + completionTokens,
 	}
 	
 	usageMetric := shared.UsageMetric{
@@ -207,12 +222,8 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	}
 	
 	if err := h.DB.Create(&usageMetric).Error; err != nil {
-		// Still send the completion event since the response was successful
-		h.sendStreamEvent(c, "done", "", map[string]any{
-			"message_id": assistantMessage.ID,
-			"content":    fullResponse,
-		})
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save usage metrics")
+		log.Printf("Warning: Failed to save usage metrics for message %s: %v", assistantMessage.ID, err)
+		// Continue execution - don't fail the entire request for metrics collection failure
 	}
 
 	// Generate title for new sessions

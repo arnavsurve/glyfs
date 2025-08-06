@@ -8,6 +8,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// max returns the larger of x or y
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 func main() {
 	// Load environment variables
 	err := godotenv.Load()
@@ -63,14 +71,12 @@ func main() {
 			continue
 		}
 
-		// Estimate token usage based on content length (rough approximation)
+		// Estimate token usage based on content length (improved approximation)
 		contentLength := len(message.Content)
-		estimatedTokens := contentLength / 4 // Rough estimate: 1 token ≈ 4 characters
 		
-		// For backfill, we'll estimate that completion tokens are the message content
-		// and assume prompt tokens were similar in length
-		completionTokens := estimatedTokens
-		promptTokens := estimatedTokens / 2 // Rough estimate
+		// Use ~3.5 chars per token approximation with minimum of 1 token
+		completionTokens := max(1, (contentLength*10+35)/35) // Equivalent to chars/3.5 rounded up
+		promptTokens := max(1, completionTokens/3) // Rough estimate: prompt is ~1/3 of completion
 		totalTokens := promptTokens + completionTokens
 
 		// Create usage metric
