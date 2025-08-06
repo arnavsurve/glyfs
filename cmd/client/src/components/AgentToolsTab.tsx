@@ -3,7 +3,6 @@ import {
   Plus,
   Server,
   Loader2,
-  Check,
   X,
   Trash2,
   TestTube,
@@ -45,8 +44,7 @@ import {
 } from "./ui/alert-dialog";
 import { mcpApi } from "../api/mcp.api";
 import type {
-  MCPServer,
-  AgentMCPServer,
+  AgentMCPServerDetail,
   CreateMCPServerRequest,
   UpdateMCPServerRequest,
 } from "../types/mcp.types";
@@ -57,8 +55,7 @@ interface AgentToolsTabProps {
 }
 
 export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
-  const [mcpServers, setMcpServers] = useState<MCPServer[]>([]);
-  const [agentServers, setAgentServers] = useState<AgentMCPServer[]>([]);
+  const [agentServers, setAgentServers] = useState<AgentMCPServerDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -66,7 +63,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingServer, setEditingServer] = useState<MCPServer | null>(null);
+  const [editingServer, setEditingServer] = useState<AgentMCPServerDetail | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Create server form state
@@ -186,51 +183,28 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     setEditSensitiveHeaders((prev) => prev.filter((h) => h !== key));
   };
 
-  const openEditModal = async (server: MCPServer) => {
+  const openEditModal = async (server: AgentMCPServerDetail) => {
     setEditingServer(server);
     
-    // Get the server details including config to populate headers
-    try {
-      const serverDetails = await mcpApi.getServer(server.id);
-      const serverData = serverDetails.server;
-      
-      // Use the config data from the detailed response
-      const existingHeaders = serverData.config.headers || {};
-      const existingTimeout = serverData.config.timeout || 30;
-      
-      setEditForm({
-        name: serverData.name,
-        description: serverData.description,
-        server_url: serverData.server_url,
-        config: {
-          server_type: serverData.server_type,
-          url: serverData.server_url,
-          timeout: existingTimeout,
-          headers: existingHeaders,
-        },
-      });
-      
-      // Note: We don't know which headers are sensitive from the API response
-      // so we'll start with empty sensitive headers list
-      setEditSensitiveHeaders([]);
-      
-    } catch (error) {
-      console.error("Failed to fetch server details:", error);
-      toast.error("Failed to load server details");
-      // Fallback to basic server data
-      setEditForm({
-        name: server.name,
-        description: server.description,
-        server_url: server.server_url,
-        config: {
-          server_type: server.server_type,
-          url: server.server_url,
-          timeout: 30,
-          headers: {},
-        },
-      });
-      setEditSensitiveHeaders([]);
-    }
+    // Server already contains full details including config
+    const existingHeaders = server.config.headers || {};
+    const existingTimeout = server.config.timeout || 30;
+    
+    setEditForm({
+      name: server.server_name,
+      description: server.description,
+      server_url: server.server_url,
+      config: {
+        server_type: server.server_type,
+        url: server.server_url,
+        timeout: existingTimeout,
+        headers: existingHeaders,
+      },
+    });
+    
+    // Note: We don't know which headers are sensitive from the API response
+    // so we'll start with empty sensitive headers list
+    setEditSensitiveHeaders([]);
     
     setEditHeaderKey("");
     setEditHeaderValue("");
@@ -242,12 +216,8 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [serversResponse, agentServersResponse] = await Promise.all([
-        mcpApi.listServers(),
-        mcpApi.getAgentMCPServers(agentId),
-      ]);
-
-      setMcpServers(serversResponse.servers || []);
+      // Only fetch servers associated with this agent
+      const agentServersResponse = await mcpApi.getAgentMCPServers(agentId);
       setAgentServers(agentServersResponse.servers || []);
     } catch (err: any) {
       console.error("Failed to fetch MCP data:", err);
@@ -291,6 +261,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       // Set URL in config to match server_url, preserving headers
       const serverData = {
         ...createForm,
+        agent_id: agentId, // Auto-associate with current agent
         config: {
           ...createForm.config,
           url: createForm.server_url,
@@ -362,7 +333,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         },
       };
 
-      await mcpApi.updateServer(editingServer.id, updateData);
+      await mcpApi.updateServer(editingServer.server_id, updateData);
 
       setShowEditModal(false);
       setEditingServer(null);
@@ -408,25 +379,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     }
   };
 
-  const handleToggleAssociation = async (
-    serverId: string,
-    serverName: string,
-    currentlyEnabled: boolean,
-  ) => {
-    try {
-      if (currentlyEnabled) {
-        await mcpApi.disassociateAgentMCPServer(agentId, serverId);
-        toast.success(`Disconnected from "${serverName}"`);
-      } else {
-        await mcpApi.associateAgentMCPServer(agentId, serverId);
-        toast.success(`Connected to "${serverName}"`);
-      }
-      await fetchData();
-    } catch (err: any) {
-      console.error("Failed to toggle association:", err);
-      toast.error("Failed to update server association");
-    }
-  };
 
   const handleToggleEnabled = async (
     serverId: string,
@@ -443,11 +395,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     }
   };
 
-  const getServerAssociation = (
-    serverId: string,
-  ): AgentMCPServer | undefined => {
-    return agentServers.find((as) => as.server_id === serverId);
-  };
 
   const truncateUrl = (url: string, maxLength: number = 50): string => {
     if (url.length <= maxLength) return url;
@@ -503,7 +450,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       </Card>
 
       {/* MCP Servers List */}
-      {mcpServers.length === 0 ? (
+      {agentServers.length === 0 ? (
         <Card>
           <CardContent className="py-12">
             <div className="text-center">
@@ -522,13 +469,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {mcpServers.map((server) => {
-            const association = getServerAssociation(server.id);
-            const isConnected = !!association;
-            const isEnabled = association?.enabled || false;
-
+          {agentServers.map((server) => {
             return (
-              <Card key={server.id} className="relative">
+              <Card key={server.server_id} className="relative">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -539,7 +482,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                           </span>
                         </div>
                         <div>
-                          <h3 className="font-medium">{server.name}</h3>
+                          <h3 className="font-medium">{server.server_name}</h3>
                           <p className="text-sm text-muted-foreground">
                             {server.description}
                           </p>
@@ -565,58 +508,31 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      {/* Connection Toggle */}
+                      {/* Enable/Disable Toggle */}
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() =>
-                          handleToggleAssociation(
-                            server.id,
-                            server.name,
-                            isConnected,
+                          handleToggleEnabled(
+                            server.server_id,
+                            server.server_name,
+                            !server.enabled,
                           )
                         }
                       >
-                        {isConnected ? (
-                          <>
-                            <Check className="w-4 h-4 mr-2 text-green-600" />
-                            Connected
-                          </>
+                        {server.enabled ? (
+                          <ToggleRight className="w-5 h-5 text-green-600" />
                         ) : (
-                          <>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Connect
-                          </>
+                          <ToggleLeft className="w-5 h-5 text-gray-400" />
                         )}
                       </Button>
-
-                      {/* Enable/Disable Toggle (only if connected) */}
-                      {isConnected && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            handleToggleEnabled(
-                              server.id,
-                              server.name,
-                              !isEnabled,
-                            )
-                          }
-                        >
-                          {isEnabled ? (
-                            <ToggleRight className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <ToggleLeft className="w-5 h-5 text-gray-400" />
-                          )}
-                        </Button>
-                      )}
 
                       {/* Test Connection */}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
-                          handleTestConnection(server.id, server.name)
+                          handleTestConnection(server.server_id, server.server_name)
                         }
                       >
                         <TestTube className="w-4 h-4" />
@@ -644,16 +560,15 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                               Delete MCP Server
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{server.name}"?
-                              This will disconnect it from all agents and cannot
-                              be undone.
+                              Are you sure you want to delete "{server.server_name}"?
+                              This will remove the server from this agent.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() =>
-                                handleDeleteServer(server.id, server.name)
+                                handleDeleteServer(server.server_id, server.server_name)
                               }
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
