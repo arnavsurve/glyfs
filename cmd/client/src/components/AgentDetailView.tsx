@@ -177,7 +177,8 @@ export function AgentDetailView() {
                 // Navigate back to the restored agent
                 navigate(`/agents/${id}`);
               } catch (err: any) {
-                toast.error("Failed to restore agent. Please try again.");
+                const errorMessage = err?.message || "Failed to restore agent. Please try again.";
+                toast.error(errorMessage);
               }
             },
           },
@@ -273,7 +274,8 @@ export function AgentDetailView() {
       toast.success("API key created successfully!");
     } catch (err: any) {
       console.error("Failed to create API key:", err);
-      toast.error("Failed to create API key");
+      const errorMessage = err?.message || "Failed to create API key";
+      toast.error(errorMessage);
     } finally {
       setIsCreatingKey(false);
     }
@@ -288,7 +290,8 @@ export function AgentDetailView() {
       toast.success(`API key "${keyName}" revoked successfully`);
     } catch (err: any) {
       console.error("Failed to delete API key:", err);
-      toast.error("Failed to revoke API key");
+      const errorMessage = err?.message || "Failed to revoke API key";
+      toast.error(errorMessage);
     }
   };
 

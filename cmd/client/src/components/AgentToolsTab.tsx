@@ -298,7 +298,8 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       toast.success("MCP server created successfully");
     } catch (err: any) {
       console.error("Failed to create MCP server:", err);
-      toast.error("Failed to create MCP server");
+      const errorMessage = err?.message || "Failed to create MCP server";
+      toast.error(errorMessage);
     } finally {
       setIsCreating(false);
     }
