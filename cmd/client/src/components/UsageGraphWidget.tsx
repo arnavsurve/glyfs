@@ -11,7 +11,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import { TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import {
   Card,
@@ -78,14 +78,45 @@ export function UsageGraphWidget() {
     )
       return null;
 
-    const labels = usageData.daily_usage.map((day) =>
-      format(parseISO(day.date), "MMM d"),
-    );
+    // Group data by local date using browser's local timezone
+    const groupedByLocalDate = new Map<string, typeof usageData.daily_usage[0]>();
+    
+    // Process each UTC date and convert to local date
+    usageData.daily_usage.forEach((day) => {
+      const utcDate = parseISO(day.date);
+      // Convert UTC to local date by creating a new Date in local timezone
+      const localDate = new Date(utcDate.toLocaleString());
+      const localDateStr = format(localDate, "yyyy-MM-dd");
+      
+      // If we already have data for this local date, merge it
+      const existing = groupedByLocalDate.get(localDateStr);
+      if (existing) {
+        existing.invocation_count += day.invocation_count;
+        existing.total_tokens += day.total_tokens;
+        existing.prompt_tokens += day.prompt_tokens;
+        existing.completion_tokens += day.completion_tokens;
+      } else {
+        groupedByLocalDate.set(localDateStr, { 
+          ...day,
+          date: localDateStr  // Update date to local date
+        });
+      }
+    });
+    
+    // Convert to sorted array
+    const sortedDays = Array.from(groupedByLocalDate.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([_, data]) => data);
+
+    const labels = sortedDays.map((day) => {
+      const localDate = parseISO(day.date + "T00:00:00"); // Add time component for parsing
+      return format(localDate, "MMM d");
+    });
 
     const data =
       metricType === "invocations"
-        ? usageData.daily_usage.map((day) => day.invocation_count)
-        : usageData.daily_usage.map((day) => day.total_tokens);
+        ? sortedDays.map((day) => day.invocation_count)
+        : sortedDays.map((day) => day.total_tokens);
 
     return {
       labels,
