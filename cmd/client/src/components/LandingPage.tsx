@@ -430,6 +430,123 @@ print(data["response"])`;
         </div>
       </section>
 
+      {/* MCP Integration Hero Section */}
+      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background/50 to-primary/5 backdrop-blur-sm border-y border-primary/10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Plug className="w-4 h-4" />
+              The MCP Advantage
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">
+              AI agents without tools are just{" "}
+              <span className="text-muted-foreground line-through">expensive</span>{" "}
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                chatbots
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              MCP servers give your agents access to databases, APIs, file systems, and more. 
+              We make connecting them as easy as clicking a button.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left side - Problem/Solution */}
+            <div className="space-y-8">
+              <Card className="border-destructive/20 bg-destructive/5">
+                <CardHeader>
+                  <CardTitle className="text-lg text-destructive flex items-center gap-2">
+                    <Bot className="w-5 h-5" />
+                    Without MCP
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                  <p>• Agents can only respond with text</p>
+                  <p>• No access to your systems or data</p>
+                  <p>• Complex custom integrations required</p>
+                  <p>• Limited real-world usefulness</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-lg text-primary flex items-center gap-2">
+                    <Plug className="w-5 h-5" />
+                    With Glyfs MCP
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                  <p>• Agents can read files, query databases, call APIs</p>
+                  <p>• Access your entire tech stack securely</p>
+                  <p>• One-click MCP server connections</p>
+                  <p>• Authentication and permissions handled</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right side - MCP Server Examples */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold mb-6">Popular MCP Servers You Can Connect</h3>
+              
+              <div className="grid gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50">
+                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                    <Server className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">Database MCP</div>
+                    <div className="text-sm text-muted-foreground">PostgreSQL, MySQL, SQLite queries</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50">
+                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                    <Code2 className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">GitHub MCP</div>
+                    <div className="text-sm text-muted-foreground">Repository access, issue management</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50">
+                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                    <Terminal className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">Filesystem MCP</div>
+                    <div className="text-sm text-muted-foreground">File operations, directory browsing</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/50">
+                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                    <Key className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">REST API MCP</div>
+                    <div className="text-sm text-muted-foreground">Any HTTP API with authentication</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-medium text-sm">Zero Protocol Implementation</div>
+                    <div className="text-xs text-muted-foreground">
+                      We handle MCP connections, auth, and security. You just configure and deploy.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works Section */}
       <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm border-y border-border/20">
         <div className="max-w-6xl mx-auto">
