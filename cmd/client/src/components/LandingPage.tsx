@@ -20,6 +20,33 @@ import {
 import { useNavigate } from "react-router-dom";
 import { MODELS, PROVIDERS } from "../types/agent.types";
 import Marquee from "react-fast-marquee";
+import hljs from "highlight.js/lib/core";
+import bash from "highlight.js/lib/languages/bash";
+import javascript from "highlight.js/lib/languages/javascript";
+import python from "highlight.js/lib/languages/python";
+import "highlight.js/styles/github-dark.css";
+
+// Custom styles for syntax highlighting
+const codeBlockStyles = `
+  .hljs {
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .hljs-string { color: #a5d6ff; }
+  .hljs-keyword { color: #ff7b72; }
+  .hljs-function { color: #d2a8ff; }
+  .hljs-number { color: #79c0ff; }
+  .hljs-comment { color: #8b949e; }
+  .hljs-variable { color: #ffa657; }
+  .hljs-attr { color: #7ee787; }
+  .hljs-name { color: #7ee787; }
+  .hljs-params { color: #f0f6fc; }
+`;
+
+// Register languages
+hljs.registerLanguage("bash", bash);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("python", python);
 
 // Provider Logo Components
 const AnthropicLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
@@ -311,8 +338,16 @@ print(data["response"])`;
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  // Apply syntax highlighting to code examples
+  const highlightedCode = {
+    curl: hljs.highlight(curlExample, { language: "bash" }).value,
+    javascript: hljs.highlight(jsExample, { language: "javascript" }).value,
+    python: hljs.highlight(pythonExample, { language: "python" }).value,
+  };
+
   return (
     <div className="min-h-screen bg-background relative">
+      <style dangerouslySetInnerHTML={{ __html: codeBlockStyles }} />
       {/* ASCII Animation Background - Full Page */}
       <canvas
         ref={canvasRef}
@@ -790,34 +825,39 @@ print(data["response"])`;
                   {/* Code Content */}
                   <div className="mb-6">
                     {activeCodeTab === "curl" && (
-                      <div className="rounded-lg overflow-hidden border bg-[#0d1117]">
+                      <div className="rounded-lg overflow-hidden border border-border/50 bg-[#0d1117]">
                         <div className="p-6">
-                          <pre className="text-sm text-[#e6edf3] overflow-x-auto">
-                            <code className="language-bash">{curlExample}</code>
+                          <pre className="text-sm overflow-x-auto">
+                            <code 
+                              className="language-bash hljs"
+                              dangerouslySetInnerHTML={{ __html: highlightedCode.curl }}
+                            />
                           </pre>
                         </div>
                       </div>
                     )}
 
                     {activeCodeTab === "javascript" && (
-                      <div className="rounded-lg overflow-hidden border bg-[#0d1117]">
+                      <div className="rounded-lg overflow-hidden border border-border/50 bg-[#0d1117]">
                         <div className="p-6">
-                          <pre className="text-sm text-[#e6edf3] overflow-x-auto">
-                            <code className="language-javascript">
-                              {jsExample}
-                            </code>
+                          <pre className="text-sm overflow-x-auto">
+                            <code 
+                              className="language-javascript hljs"
+                              dangerouslySetInnerHTML={{ __html: highlightedCode.javascript }}
+                            />
                           </pre>
                         </div>
                       </div>
                     )}
 
                     {activeCodeTab === "python" && (
-                      <div className="rounded-lg overflow-hidden border bg-[#0d1117]">
+                      <div className="rounded-lg overflow-hidden border border-border/50 bg-[#0d1117]">
                         <div className="p-6">
-                          <pre className="text-sm text-[#e6edf3] overflow-x-auto">
-                            <code className="language-python">
-                              {pythonExample}
-                            </code>
+                          <pre className="text-sm overflow-x-auto">
+                            <code 
+                              className="language-python hljs"
+                              dangerouslySetInnerHTML={{ __html: highlightedCode.python }}
+                            />
                           </pre>
                         </div>
                       </div>
