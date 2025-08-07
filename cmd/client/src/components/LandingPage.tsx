@@ -9,19 +9,13 @@ import {
 } from "./ui/card";
 import {
   Bot,
-  Shield,
   ArrowRight,
-  Github,
   ChevronRight,
-  Terminal,
   Plug,
   Activity,
   Code2,
   CheckCircle,
-  Server,
   MessageSquare,
-  BarChart,
-  Key,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { MODELS, PROVIDERS } from "../types/agent.types";
@@ -99,7 +93,7 @@ export function LandingPage() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeCodeTab, setActiveCodeTab] = useState("curl");
 
-  const curlExample = `curl -X POST "https://glyfs.devapi/agents/your-agent-id/invoke" \\
+  const curlExample = `curl -X POST "https://glyfs.dev/api/agents/{agentId}/invoke" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -116,7 +110,7 @@ export function LandingPage() {
     ]
   }'`;
 
-  const jsExample = `const response = await fetch("https://glyfs.devapi/agents/your-agent-id/invoke", {
+  const jsExample = `const response = await fetch("https://glyfs.dev/api/agents/{agentId}/invoke", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -137,7 +131,7 @@ console.log(data.response);`;
   const pythonExample = `import requests
 
 response = requests.post(
-    "https://glyfs.devapi/agents/your-agent-id/invoke",
+    "https://glyfs.dev/api/agents/{agentId}/invoke",
     headers={
         "Content-Type": "application/json",
         "Authorization": "Bearer YOUR_API_KEY"
@@ -196,28 +190,6 @@ print(data["response"])`;
     google: ["Gemini Pro", "Gemini Flash", "Gemini Ultra", "Coming Soon..."],
   };
 
-  const useCases = [
-    {
-      title: "Customer Support Automation",
-      description:
-        "Build agents that can access your help docs, CRM, and ticketing systems",
-      icon: Bot,
-      example: "Resolve tickets 10x faster with context-aware AI support",
-    },
-    {
-      title: "Internal Tool Orchestration",
-      description:
-        "Let AI coordinate between your APIs, databases, and services",
-      icon: Server,
-      example: "Automate complex workflows that span multiple systems",
-    },
-    {
-      title: "Development Assistants",
-      description: "Create coding companions with access to your entire stack",
-      icon: Code2,
-      example: "AI that can read docs, write code, and run tests",
-    },
-  ];
 
   // ASCII art animation
   useEffect(() => {
@@ -356,9 +328,9 @@ print(data["response"])`;
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-background/50 to-transparent pointer-events-none" />
 
       {/* Navigation */}
-      <nav className="relative z-10 border-b border-border/20 backdrop-blur-md bg-gradient-to-b from-background/20 to-background/5">
+      <nav className="relative z-10 border-b border-border/20 backdrop-blur-md bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-2">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                 Glyfs
@@ -378,7 +350,7 @@ print(data["response"])`;
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
         <div
           className="max-w-4xl mx-auto text-center"
           style={{
@@ -408,7 +380,7 @@ print(data["response"])`;
               onClick={() => navigate("/signup")}
               className="group bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 px-8"
             >
-              Start Building
+              Start building for free
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button
@@ -423,7 +395,7 @@ print(data["response"])`;
       </section>
 
       {/* MCP Integration Hero Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background/50 to-primary/5 backdrop-blur-sm imary/10">
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm border-y border-border/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
@@ -441,15 +413,15 @@ print(data["response"])`;
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-            <Card className="border-destructive/20 bg-destructive/5">
+          <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-destructive/30 transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-lg text-destructive flex items-center gap-2">
                   <Bot className="w-5 h-5" />
                   Without MCP
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-sm space-y-2">
+              <CardContent className="text-sm space-y-3 text-muted-foreground">
                 <p>• Agents can only respond with text</p>
                 <p>• No access to your systems or data</p>
                 <p>• Complex custom integrations</p>
@@ -457,14 +429,14 @@ print(data["response"])`;
               </CardContent>
             </Card>
 
-            <Card className="border-primary/20 bg-primary/5">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-lg text-primary flex items-center gap-2">
                   <Plug className="w-5 h-5" />
                   With MCP
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-sm space-y-2">
+              <CardContent className="text-sm space-y-3 text-muted-foreground">
                 <p>• Agents can read KB articles, query databases, call APIs</p>
                 <p>• Access external resources and tools securely</p>
                 <p>• One-click MCP server connections</p>
@@ -474,24 +446,26 @@ print(data["response"])`;
           </div>
 
           <div className="text-center">
-            <div className="inline-block p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <CheckCircle className="w-6 h-6 text-primary" />
-                <div className="font-semibold text-lg">
-                  Zero Protocol Implementation
+            <Card className="inline-block border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur-sm">
+              <CardContent className="p-8">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <CheckCircle className="w-6 h-6 text-primary" />
+                  <div className="font-semibold text-lg">
+                    Zero Protocol Implementation
+                  </div>
                 </div>
-              </div>
-              <div className="text-muted-foreground">
-                We handle MCP connections, auth, and security. You just plug and
-                play.
-              </div>
-            </div>
+                <div className="text-muted-foreground">
+                  We handle MCP connections, auth, and security. You just plug and
+                  play.
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm border-y border-border/20">
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -543,7 +517,7 @@ print(data["response"])`;
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -560,7 +534,7 @@ print(data["response"])`;
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="group border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                className="group border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/20 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
               >
                 <CardHeader>
                   <div
@@ -583,7 +557,7 @@ print(data["response"])`;
         </div>
       </section>
 
-      {/* Platform Benefits Section */}
+      {/*
       <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm border-y border-border/20">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -688,9 +662,63 @@ print(data["response"])`;
           </div>
         </div>
       </section>
+      */}
+
+      {/* Providers Section */}
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 border-y border-border/20">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Every model. One API.
+          </h2>
+          <p className="text-lg text-muted-foreground mb-12">
+            Switch between providers instantly. Your code stays the same.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-600/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
+              <Card className="relative flex flex-col items-center p-8 hover:border-orange-500/30 transition-all duration-300 overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <AnthropicLogo className="w-12 h-12" />
+                </div>
+                <h3 className="text-xl font-semibold mb-4">Anthropic</h3>
+                <div className="w-full px-2">
+                  <ScrollingModels models={providerModels.anthropic} />
+                </div>
+              </Card>
+            </div>
+
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-gray-100/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
+              <Card className="relative flex flex-col items-center p-8 hover:border-white/30 transition-all duration-300 overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <OpenAILogo className="w-12 h-12 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold mb-4">OpenAI</h3>
+                <div className="w-full px-2">
+                  <ScrollingModels models={providerModels.openai} />
+                </div>
+              </Card>
+            </div>
+
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
+              <Card className="relative flex flex-col items-center p-8 hover:border-blue-500/30 transition-all duration-300 overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <GoogleLogo className="w-12 h-12" />
+                </div>
+                <h3 className="text-xl font-semibold mb-4">Google</h3>
+                <div className="w-full px-2">
+                  <ScrollingModels models={providerModels.google} />
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Developer Experience Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -703,7 +731,7 @@ print(data["response"])`;
           </div>
 
           <div className="max-w-6xl mx-auto">
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/20 transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
                   <Code2 className="w-6 h-6 text-primary" />
@@ -813,7 +841,7 @@ print(data["response"])`;
         </div>
       </section>
 
-      {/* Use Cases Section */}
+      {/* 
       <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm border-y border-border/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -849,116 +877,13 @@ print(data["response"])`;
           </div>
         </div>
       </section>
-
-      {/* Providers Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Every model. One API.
-          </h2>
-          <p className="text-lg text-muted-foreground mb-12">
-            Switch between providers instantly. Your code stays the same.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-600/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
-              <div className="relative flex flex-col items-center p-6 rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300 overflow-hidden">
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <AnthropicLogo className="w-12 h-12" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Anthropic</h3>
-                <div className="w-full px-2">
-                  <ScrollingModels models={providerModels.anthropic} />
-                </div>
-              </div>
-            </div>
-
-            <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-gray-100/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
-              <div className="relative flex flex-col items-center p-6 rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm hover:border-white/30 transition-all duration-300 overflow-hidden">
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <OpenAILogo className="w-12 h-12 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">OpenAI</h3>
-                <div className="w-full px-2">
-                  <ScrollingModels models={providerModels.openai} />
-                </div>
-              </div>
-            </div>
-
-            <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
-              <div className="relative flex flex-col items-center p-6 rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300 overflow-hidden">
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <GoogleLogo className="w-12 h-12" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">Google</h3>
-                <div className="w-full px-2">
-                  <ScrollingModels models={providerModels.google} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Security Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-background/40 backdrop-blur-sm border-y border-border/20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Your agents, your data, your control.
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <Shield className="w-8 h-8 text-primary mb-2" />
-                <CardTitle>Isolated Execution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Every agent runs in its own secure environment. Complete
-                  isolation between agents and customers.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <Key className="w-8 h-8 text-primary mb-2" />
-                <CardTitle>API Authentication</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Secure API keys with granular permissions. Rate limiting and
-                  usage controls built-in.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <Activity className="w-8 h-8 text-primary mb-2" />
-                <CardTitle>Full Audit Trail</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Every request, tool call, and response logged. Complete
-                  visibility for compliance and debugging.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
+      */}
 
       {/* CTA Section */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 p-12 text-center backdrop-blur-sm">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 border-primary/20 backdrop-blur-sm">
+            <CardContent className="p-16 text-center">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent animate-pulse" />
             <div className="relative z-10">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -974,19 +899,13 @@ print(data["response"])`;
                   onClick={() => navigate("/signup")}
                   className="group bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 px-8"
                 >
-                  Start Building
+                  Start building for free
                   <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300"
-                >
-                  Talk to Sales
                 </Button>
               </div>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -995,7 +914,6 @@ print(data["response"])`;
         <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <Terminal className="w-6 h-6 text-primary" />
               <h3 className="text-xl font-bold">Glyfs</h3>
               <span className="text-muted-foreground">© 2025</span>
             </div>
@@ -1020,13 +938,6 @@ print(data["response"])`;
                 className="hover:text-primary transition-colors"
               >
                 Support
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hover:text-primary transition-colors"
-              >
-                <Github className="w-4 h-4" />
               </Button>
             </div>
           </div>
