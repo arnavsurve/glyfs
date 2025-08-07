@@ -788,7 +788,7 @@ print(data["response"])`;
                   </div>
 
                   {/* Code Content */}
-                  <div className="min-h-[400px]">
+                  <div className="mb-6">
                     {activeCodeTab === "curl" && (
                       <div className="rounded-lg overflow-hidden border bg-[#0d1117]">
                         <div className="p-6">
