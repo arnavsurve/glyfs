@@ -214,9 +214,13 @@ print(data["response"])`;
   const providerModels = {
     anthropic: MODELS[PROVIDERS.ANTHROPIC].map((model) => model.label),
     openai: MODELS[PROVIDERS.OPENAI].map((model) => model.label),
-    google: ["Gemini Pro", "Gemini Flash", "Gemini Ultra", "Coming Soon..."],
+    google: [
+      "Gemini 2.5 Pro",
+      "Gemini 2.5 Flash",
+      "Gemini 2.5 Flash-Lite",
+      "Gemini 2.5 Flash Live",
+    ],
   };
-
 
   // ASCII art animation
   useEffect(() => {
@@ -278,8 +282,8 @@ print(data["response"])`;
       };
     };
 
-    // Initialize more particles for full page coverage
-    for (let i = 0; i < 120; i++) {
+    // Initialize fewer particles for subtle background effect
+    for (let i = 0; i < 60; i++) {
       particles.push(createParticle());
     }
 
@@ -308,10 +312,10 @@ print(data["response"])`;
           particles[index].y = canvas.height;
         }
 
-        // Draw particle with enhanced visibility
+        // Draw particle with reduced visibility for better readability
         const isDark = document.documentElement.classList.contains("dark");
-        const baseColor = isDark ? 150 : 80;
-        ctx.fillStyle = `rgba(${baseColor}, ${baseColor}, ${baseColor}, ${particle.opacity * 0.6})`;
+        const baseColor = isDark ? 120 : 60;
+        ctx.fillStyle = `rgba(${baseColor}, ${baseColor}, ${baseColor}, ${particle.opacity * 0.3})`;
         ctx.fillText(particle.char, particle.x, particle.y);
       });
 
@@ -351,7 +355,7 @@ print(data["response"])`;
       {/* ASCII Animation Background - Full Page */}
       <canvas
         ref={canvasRef}
-        className="fixed top-0 left-0 w-full pointer-events-none opacity-60 dark:opacity-50 z-0"
+        className="fixed top-0 left-0 w-full pointer-events-none opacity-30 dark:opacity-20 z-0"
         style={{
           mixBlendMode: "screen",
           height: "100vh",
@@ -490,8 +494,8 @@ print(data["response"])`;
                   </div>
                 </div>
                 <div className="text-muted-foreground">
-                  We handle MCP connections, auth, and security. You just plug and
-                  play.
+                  We handle MCP connections, auth, and security. You just plug
+                  and play.
                 </div>
               </CardContent>
             </Card>
@@ -828,9 +832,11 @@ print(data["response"])`;
                       <div className="rounded-lg overflow-hidden border border-border/50 bg-[#0d1117]">
                         <div className="p-6">
                           <pre className="text-sm overflow-x-auto">
-                            <code 
+                            <code
                               className="language-bash hljs"
-                              dangerouslySetInnerHTML={{ __html: highlightedCode.curl }}
+                              dangerouslySetInnerHTML={{
+                                __html: highlightedCode.curl,
+                              }}
                             />
                           </pre>
                         </div>
@@ -841,9 +847,11 @@ print(data["response"])`;
                       <div className="rounded-lg overflow-hidden border border-border/50 bg-[#0d1117]">
                         <div className="p-6">
                           <pre className="text-sm overflow-x-auto">
-                            <code 
+                            <code
                               className="language-javascript hljs"
-                              dangerouslySetInnerHTML={{ __html: highlightedCode.javascript }}
+                              dangerouslySetInnerHTML={{
+                                __html: highlightedCode.javascript,
+                              }}
                             />
                           </pre>
                         </div>
@@ -854,9 +862,11 @@ print(data["response"])`;
                       <div className="rounded-lg overflow-hidden border border-border/50 bg-[#0d1117]">
                         <div className="p-6">
                           <pre className="text-sm overflow-x-auto">
-                            <code 
+                            <code
                               className="language-python hljs"
-                              dangerouslySetInnerHTML={{ __html: highlightedCode.python }}
+                              dangerouslySetInnerHTML={{
+                                __html: highlightedCode.python,
+                              }}
                             />
                           </pre>
                         </div>
@@ -924,26 +934,26 @@ print(data["response"])`;
         <div className="max-w-4xl mx-auto">
           <Card className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 border-primary/20 backdrop-blur-sm">
             <CardContent className="p-16 text-center">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent animate-pulse" />
-            <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Ready to deploy your first agent?
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Join hundreds of developers building the future of AI-powered
-                applications.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button
-                  size="lg"
-                  onClick={() => navigate("/signup")}
-                  className="group bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 px-8"
-                >
-                  Start building for free
-                  <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent animate-pulse" />
+              <div className="relative z-10">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Ready to deploy your first agent?
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Join hundreds of developers building the future of AI-powered
+                  applications.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <Button
+                    size="lg"
+                    onClick={() => navigate("/signup")}
+                    className="group bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 px-8"
+                  >
+                    Start building for free
+                    <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
               </div>
-            </div>
             </CardContent>
           </Card>
         </div>
