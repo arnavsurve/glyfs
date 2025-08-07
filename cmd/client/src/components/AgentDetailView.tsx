@@ -161,7 +161,7 @@ export function AgentDetailView() {
       await agentsApi.deleteAgent(id);
 
       // Navigate immediately to agents list
-      navigate("/agents");
+      navigate("/app/agents");
 
       // Show persistent success toast with undo action after a brief delay
       // This ensures the toast appears after navigation is complete
@@ -175,9 +175,10 @@ export function AgentDetailView() {
                 await agentsApi.restoreAgent(id);
                 toast.success(`"${agent.name}" has been restored!`);
                 // Navigate back to the restored agent
-                navigate(`/agents/${id}`);
+                navigate(`/app/agents/${id}`);
               } catch (err: any) {
-                const errorMessage = err?.message || "Failed to restore agent. Please try again.";
+                const errorMessage =
+                  err?.message || "Failed to restore agent. Please try again.";
                 toast.error(errorMessage);
               }
             },
@@ -390,7 +391,7 @@ export function AgentDetailView() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/agents")}
+              onClick={() => navigate("/app/agents")}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />

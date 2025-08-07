@@ -64,18 +64,19 @@ export function CreateAgentForm() {
         max_tokens: formData.max_tokens,
         temperature: formData.temperature,
       };
-      
+
       // Only include system_prompt if it's not empty
       if (formData.system_prompt && formData.system_prompt.trim()) {
         requestData.system_prompt = formData.system_prompt.trim();
       }
 
       await agentsApi.createAgent(requestData);
-      navigate("/agents", {
+      navigate("/app/agents", {
         state: { message: `Agent "${formData.name}" created successfully!` },
       });
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || "Failed to create agent";
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to create agent";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -92,7 +93,7 @@ export function CreateAgentForm() {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate("/agents")}
+            onClick={() => navigate("/app/agents")}
             className="mb-4 -ml-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -188,7 +189,8 @@ export function CreateAgentForm() {
                     className="mt-1 min-h-[120px]"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Optional: Define your agent's personality, expertise, and behavior. Leave empty to use model defaults.
+                    Optional: Define your agent's personality, expertise, and
+                    behavior. Leave empty to use model defaults.
                   </p>
                 </div>
               </div>
@@ -308,7 +310,7 @@ export function CreateAgentForm() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/agents")}
+                  onClick={() => navigate("/app/agents")}
                   disabled={isLoading}
                 >
                   Cancel
@@ -338,4 +340,3 @@ export function CreateAgentForm() {
     </div>
   );
 }
-
