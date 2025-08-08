@@ -69,7 +69,6 @@ func (r *CreateAgentRequest) IsValidModel() bool {
 	case OpenAI:
 		return OpenAIModel(r.Model).IsValid()
 	case Google:
-		// TODO: Add Google model validation when implemented
 		return false
 	default:
 		return false
@@ -93,13 +92,12 @@ func (r *UpdateAgentRequest) IsValidModel() bool {
 		case OpenAI:
 			return OpenAIModel(*r.Model).IsValid()
 		case Google:
-			// TODO: Add Google model validation when implemented
-			return false
+				return false
 		default:
 			return false
 		}
 	}
-	return true // No provider/model update, so it's valid
+	return true
 }
 
 type CreateUserRequest struct {
@@ -113,7 +111,7 @@ type LoginRequest struct {
 }
 
 type Message struct {
-	Role    string `json:"role"` // "user" or "assistant"
+	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
@@ -134,9 +132,9 @@ type Usage struct {
 }
 
 type UserSettingsResponse struct {
-	AnthropicAPIKey string `json:"anthropic_api_key"` // Masked
-	OpenAIAPIKey    string `json:"openai_api_key"`    // Masked
-	GeminiAPIKey    string `json:"gemini_api_key"`    // Masked
+	AnthropicAPIKey string `json:"anthropic_api_key"`
+	OpenAIAPIKey    string `json:"openai_api_key"`
+	GeminiAPIKey    string `json:"gemini_api_key"`
 }
 
 type UpdateUserSettingsRequest struct {

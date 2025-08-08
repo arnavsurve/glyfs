@@ -27,7 +27,6 @@ func NewSettingsHandler(db *gorm.DB) (*SettingsHandler, error) {
 	}, nil
 }
 
-// GetUserSettings retrieves the current user's settings with masked API keys
 func (h *SettingsHandler) GetUserSettings(c echo.Context) error {
 	userID, ok := c.Get("user_id").(uint)
 	if !ok {
@@ -38,13 +37,11 @@ func (h *SettingsHandler) GetUserSettings(c echo.Context) error {
 	err := h.db.Where("user_id = ?", userID).First(&settings).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			// Return empty settings if none exist
 			return c.JSON(http.StatusOK, shared.UserSettingsResponse{})
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve settings")
 	}
 
-	// Decrypt and mask API keys
 	response := shared.UserSettingsResponse{}
 
 	if settings.AnthropicAPIKey != "" {
@@ -71,7 +68,6 @@ func (h *SettingsHandler) GetUserSettings(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// UpdateUserSettings updates the current user's API keys
 func (h *SettingsHandler) UpdateUserSettings(c echo.Context) error {
 	userID, ok := c.Get("user_id").(uint)
 	if !ok {
@@ -83,7 +79,6 @@ func (h *SettingsHandler) UpdateUserSettings(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	// Find or create settings
 	var settings shared.UserSettings
 	err := h.db.Where("user_id = ?", userID).First(&settings).Error
 	if err != nil {
@@ -94,12 +89,10 @@ func (h *SettingsHandler) UpdateUserSettings(c echo.Context) error {
 		}
 	}
 
-	// Update and encrypt API keys
 	if req.AnthropicAPIKey != nil {
 		if *req.AnthropicAPIKey == "" {
 			settings.AnthropicAPIKey = ""
 		} else {
-			// Validate Anthropic API key format
 			if !strings.HasPrefix(*req.AnthropicAPIKey, "sk-ant-") {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid Anthropic API key format")
 			}
@@ -115,7 +108,6 @@ func (h *SettingsHandler) UpdateUserSettings(c echo.Context) error {
 		if *req.OpenAIAPIKey == "" {
 			settings.OpenAIAPIKey = ""
 		} else {
-			// Validate OpenAI API key format
 			if !strings.HasPrefix(*req.OpenAIAPIKey, "sk-") {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid OpenAI API key format")
 			}
@@ -131,7 +123,6 @@ func (h *SettingsHandler) UpdateUserSettings(c echo.Context) error {
 		if *req.GeminiAPIKey == "" {
 			settings.GeminiAPIKey = ""
 		} else {
-			// Gemini API keys don't have a specific prefix, just validate length
 			if len(*req.GeminiAPIKey) < 20 {
 				return echo.NewHTTPError(http.StatusBadRequest, "Invalid Gemini API key format")
 			}
@@ -143,25 +134,20 @@ func (h *SettingsHandler) UpdateUserSettings(c echo.Context) error {
 		}
 	}
 
-	// Save settings
 	if err := h.db.Save(&settings).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save settings")
 	}
 
-	// Return updated settings (masked)
 	return h.GetUserSettings(c)
 }
 
-// Helper function to mask API keys for display
 func maskAPIKey(key string) string {
 	if len(key) < 8 {
 		return "***"
 	}
-	// Show first 7 characters and last 4 characters
 	return key[:7] + "..." + key[len(key)-4:]
 }
 
-// CheckAPIKeyForProvider checks if user has configured API key for the given provider
 func (h *SettingsHandler) CheckAPIKeyForProvider(userID uint, provider string) (bool, error) {
 	var settings shared.UserSettings
 	err := h.db.Where("user_id = ?", userID).First(&settings).Error
@@ -184,7 +170,6 @@ func (h *SettingsHandler) CheckAPIKeyForProvider(userID uint, provider string) (
 	}
 }
 
-// GetAPIKeyForProvider retrieves and decrypts the API key for a given provider
 func (h *SettingsHandler) GetAPIKeyForProvider(userID uint, provider string) (string, error) {
 	var settings shared.UserSettings
 	err := h.db.Where("user_id = ?", userID).First(&settings).Error

@@ -33,12 +33,10 @@ func (h *Handler) HandleCreateAgent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "provider is required")
 	}
 
-	// Check agent limit based on user tier
 	if err := h.PlanMiddleware.CheckResourceLimit(userID, middleware.ResourceAgent); err != nil {
 		return err
 	}
 
-	// Check if user has API key for the provider
 	hasKey, err := h.SettingsHandler.CheckAPIKeyForProvider(userID, string(req.Provider))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check API key configuration")
@@ -119,7 +117,6 @@ func (h *Handler) HandleAgentInferenceInternal(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
-	// Get user's API key for the provider
 	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(userID, agent.Provider)
 	if err != nil || apiKey == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Please configure your %s API key in Settings", agent.Provider))
@@ -150,13 +147,11 @@ func (h *Handler) HandleAgentInference(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
 	}
 
-	// For public API, we need to get the agent owner's API key
 	var user shared.User
 	if err := h.DB.Where("id = ?", agent.UserID).First(&user).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get agent owner")
 	}
 
-	// Get agent owner's API key for the provider
 	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(agent.UserID, agent.Provider)
 	if err != nil || apiKey == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Agent owner has not configured %s API key", agent.Provider))
@@ -187,7 +182,6 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
 	}
 
-	// Convert AgentInferenceRequest to ChatStreamRequest format
 	var contextMessages []shared.ChatContextMessage
 	for i, msg := range req.History {
 		contextMessages = append(contextMessages, shared.ChatContextMessage{
@@ -203,33 +197,28 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 		Context: contextMessages,
 	}
 
-	// Set headers for SSE
 	c.Response().Header().Set("Content-Type", "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
 	c.Response().Header().Set("Access-Control-Allow-Origin", "*")
 	c.Response().Header().Set("Access-Control-Allow-Headers", "Cache-Control")
 
-	// Send initial metadata event
 	h.sendStreamEvent(c, "metadata", "", map[string]any{
 		"agent_id": agent.ID,
 	})
 
-	// For public API, we need to get the agent owner's API key
 	var user shared.User
 	if err := h.DB.Where("id = ?", agent.UserID).First(&user).Error; err != nil {
 		h.sendStreamEvent(c, "error", "Failed to get agent owner", nil)
 		return nil
 	}
 
-	// Get agent owner's API key for the provider
 	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(agent.UserID, agent.Provider)
 	if err != nil || apiKey == "" {
 		h.sendStreamEvent(c, "error", fmt.Sprintf("Agent owner has not configured %s API key", agent.Provider), nil)
 		return nil
 	}
 
-	// Stream the response
 	llmService := services.NewLLMService(h.MCPManager)
 	fullResponse := ""
 	var finalUsage *shared.Usage
@@ -241,7 +230,6 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 	}
 
 	toolEventFunc := func(event *shared.ToolCallEvent) {
-		// Send tool events directly
 		h.sendStreamEvent(c, "tool_event", "", event)
 		c.Response().Flush()
 	}
@@ -252,14 +240,12 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 		return nil
 	}
 
-	// Generate final usage statistics (estimate for now)
 	finalUsage = &shared.Usage{
-		PromptTokens:     len(req.Message) / 4,  // Rough estimate
-		CompletionTokens: len(fullResponse) / 4, // Rough estimate
+		PromptTokens:     len(req.Message) / 4,
+		CompletionTokens: len(fullResponse) / 4,
 		TotalTokens:      (len(req.Message) + len(fullResponse)) / 4,
 	}
 
-	// Send completion event with usage
 	h.sendStreamEvent(c, "done", "", map[string]any{
 		"response": fullResponse,
 		"usage":    finalUsage,
@@ -346,19 +332,16 @@ func (h *Handler) HandleGetAgents(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve agents")
 	}
 
-	// Get user to check their tier
 	var user shared.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user information")
 	}
 
-	// Get tier configuration
 	tierConfig, exists := shared.TierConfigs[user.Tier]
 	if !exists {
 		tierConfig = shared.TierConfigs["free"]
 	}
 
-	// Get comprehensive resource counts
 	resourceCounts, err := h.PlanMiddleware.GetUserResourceCounts(userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get resource counts")
@@ -421,13 +404,11 @@ func (h *Handler) HandleDeleteAgent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
 	}
 
-	// Check if agent exists and belongs to user (soft deleted agents won't be found)
 	var agent shared.AgentConfig
 	if err := h.DB.Where(&shared.AgentConfig{UserID: userID, ID: agentId}).First(&agent).Error; err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
 	}
 
-	// Soft delete the agent (sets DeletedAt timestamp)
 	if err := h.DB.Delete(&agent).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete agent")
 	}
@@ -453,18 +434,15 @@ func (h *Handler) HandleRestoreAgent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user context")
 	}
 
-	// Find the soft deleted agent and restore it
 	var agent shared.AgentConfig
 	if err := h.DB.Unscoped().Where(&shared.AgentConfig{UserID: userID, ID: agentId}).First(&agent).Error; err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
 	}
 
-	// Check if the agent is actually deleted
 	if agent.DeletedAt.Time.IsZero() {
 		return echo.NewHTTPError(http.StatusBadRequest, "Agent is not deleted")
 	}
 
-	// Restore the agent by setting DeletedAt to nil
 	if err := h.DB.Unscoped().Model(&agent).Update("deleted_at", nil).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to restore agent")
 	}

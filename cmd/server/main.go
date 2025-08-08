@@ -10,9 +10,9 @@ import (
 
 	"github.com/arnavsurve/glyfs/internal/db"
 	"github.com/arnavsurve/glyfs/internal/handlers"
+	planmiddleware "github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/arnavsurve/glyfs/internal/services"
 	"github.com/arnavsurve/glyfs/internal/shared"
-	planmiddleware "github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -39,7 +39,7 @@ func main() {
 			AllowOrigins:     []string{"http://localhost:5173"},
 			AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
 			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
-			AllowCredentials: true, // Allow cookies to be sent with CORS requests
+			AllowCredentials: true,
 		}))
 	}
 
@@ -50,7 +50,6 @@ func main() {
 		CookieHTTPOnly: false,
 		CookieSameSite: http.SameSiteStrictMode,
 		Skipper: func(c echo.Context) bool {
-			// Skip CSRF for all auth endpoints to match frontend behavior
 			return strings.HasPrefix(c.Path(), "/api/auth/") ||
 				strings.HasPrefix(c.Path(), "/api/agents/") && (strings.HasSuffix(c.Path(), "/invoke") || strings.HasSuffix(c.Path(), "/invoke/stream"))
 		},
@@ -58,19 +57,15 @@ func main() {
 
 	db := db.SetupDB()
 
-	// Initialize MCP Connection Manager
 	mcpManager := services.NewMCPConnectionManager(db)
 
-	// Initialize Settings Handler
 	settingsHandler, err := handlers.NewSettingsHandler(db)
 	if err != nil {
 		log.Fatal("Failed to initialize settings handler:", err)
 	}
 
-	// Initialize Plan Middleware
 	planMiddleware := planmiddleware.NewPlanMiddleware(db)
 
-	// Get JWT secret
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
 		log.Fatal("JWT_SECRET environment variable not set")
@@ -83,17 +78,13 @@ func main() {
 		PlanMiddleware:  planMiddleware,
 	}
 
-	// Initialize OAuth Handler (needs reference to main handler)
 	oauthHandler := handlers.NewOAuthHandler(db, jwtSecret, &h)
 	h.OAuthHandler = oauthHandler
 
-	// Start token cleanup worker - runs every hour
 	h.StartTokenCleanupWorker(1 * time.Hour)
 
-	// Start OAuth state cleanup worker
 	go oauthHandler.CleanupExpiredStates()
 
-	// Serve static files from React build
 	staticPath := filepath.Join("cmd", "client", "dist")
 	if _, err := os.Stat(staticPath); err == nil {
 		e.Static("/assets", filepath.Join(staticPath, "assets"))
@@ -123,7 +114,6 @@ func main() {
 		return h.HandleRefreshToken(c)
 	})
 
-	// OAuth endpoints
 	oauth := auth.Group("/oauth")
 	oauth.GET("/github", func(c echo.Context) error {
 		return h.OAuthHandler.HandleGitHubLogin(c)
@@ -141,7 +131,6 @@ func main() {
 		return h.OAuthHandler.HandleAuthProviders(c)
 	})
 
-	// Admin endpoint for manual token cleanup (protected)
 	// api.POST("/admin/cleanup-tokens", h.JWTMiddleware(func(c echo.Context) error {
 	// 	if err := h.CleanupExpiredTokens(); err != nil {
 	// 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to cleanup tokens")
@@ -186,7 +175,6 @@ func main() {
 		return h.HandleDeleteChatSession(c)
 	})
 
-	// API key management routes
 	protected.GET("/agents/:agentId/keys", func(c echo.Context) error {
 		return h.HandleGetAPIKeys(c)
 	})
@@ -197,15 +185,12 @@ func main() {
 		return h.HandleDeleteAPIKey(c)
 	})
 
-	// MCP Server management routes
 	mcpHandler := handlers.NewMCPHandler(db, mcpManager, planMiddleware)
 	mcpHandler.RegisterMCPRoutes(protected)
 
-	// Usage tracking routes
 	usageHandler := handlers.NewUsageHandler(db)
 	usageHandler.RegisterUsageRoutes(protected)
 
-	// User settings routes
 	protected.GET("/user/settings", func(c echo.Context) error {
 		return settingsHandler.GetUserSettings(c)
 	})
@@ -213,7 +198,6 @@ func main() {
 		return settingsHandler.UpdateUserSettings(c)
 	})
 
-	// Public API key authenticated routes
 	api.POST("/agents/:agentId/invoke", h.APIKeyMiddleware(func(c echo.Context) error {
 		return h.HandleAgentInference(c)
 	}))

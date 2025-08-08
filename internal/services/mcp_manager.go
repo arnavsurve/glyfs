@@ -48,7 +48,6 @@ func NewMCPConnectionManager(db *gorm.DB) *MCPConnectionManager {
 		db:          db,
 	}
 
-	// Start background health checker
 	go manager.healthChecker()
 
 	return manager
@@ -117,14 +116,12 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 		return nil, fmt.Errorf("failed to create MCP client: %w", err)
 	}
 
-	// Create adapter
 	adapter, err := langchaingo_mcp_adapter.New(mcpClient)
 	if err != nil {
 		mcpClient.Close()
 		return nil, fmt.Errorf("failed to create MCP adapter: %w", err)
 	}
 
-	// Get available tools
 	tools, err := adapter.Tools()
 	if err != nil {
 		mcpClient.Close()
@@ -151,15 +148,12 @@ func (m *MCPConnectionManager) createHTTPClient(config shared.MCPServerConfig) (
 		return nil, fmt.Errorf("URL is required for HTTP client")
 	}
 
-	// Set default timeout if not specified
 	if config.Timeout == 0 {
 		config.Timeout = 30 // 30 seconds default
 	}
 
-	// Prepare options
 	var options []transport.StreamableHTTPCOption
 
-	// Add headers if provided
 	if len(config.Headers) > 0 {
 		options = append(options, transport.WithHTTPHeaders(config.Headers))
 	}
@@ -172,25 +166,20 @@ func (m *MCPConnectionManager) createSSEClient(config shared.MCPServerConfig) (*
 		return nil, fmt.Errorf("URL is required for SSE client")
 	}
 
-	// Set default timeout if not specified
 	if config.Timeout == 0 {
 		config.Timeout = 30 // 30 seconds default
 	}
 
-	// Prepare options
 	var options []transport.ClientOption
 
-	// Add headers if provided
 	if len(config.Headers) > 0 {
 		options = append(options, transport.WithHeaders(config.Headers))
 	}
 
-	// Create SSE client
 	return client.NewSSEMCPClient(config.URL, options...)
 }
 
 func (m *MCPConnectionManager) GetAgentTools(ctx context.Context, agentID uuid.UUID) ([]tools.Tool, error) {
-	// Get all MCP servers for this agent
 	var associations []shared.AgentMCPServer
 	if err := m.db.Preload("MCPServer").Where("agent_id = ? AND enabled = ?", agentID, true).Find(&associations).Error; err != nil {
 		return nil, fmt.Errorf("failed to get agent MCP servers: %w", err)
@@ -203,14 +192,11 @@ func (m *MCPConnectionManager) GetAgentTools(ctx context.Context, agentID uuid.U
 
 		conn, err := m.GetConnection(ctx, assoc.MCPServerID)
 		if err != nil {
-			// Log error but continue with other servers
 			errors = append(errors, fmt.Errorf("failed to connect to server %s: %w", assoc.MCPServer.Name, err))
 			continue
 		}
 
-		// Add tools with server name prefix to avoid conflicts
 		for _, tool := range conn.Tools {
-			// Create a wrapped tool that includes server context
 			wrappedTool := &ServerTool{
 				Tool:       tool,
 				ServerID:   assoc.MCPServerID,
@@ -220,7 +206,6 @@ func (m *MCPConnectionManager) GetAgentTools(ctx context.Context, agentID uuid.U
 		}
 	}
 
-	// If we have errors but also some tools, log errors but return tools
 	if len(errors) > 0 && len(allTools) == 0 {
 		return nil, fmt.Errorf("failed to connect to any MCP servers: %v", errors)
 	}
@@ -252,15 +237,12 @@ func (m *MCPConnectionManager) checkConnections() {
 	defer m.mutex.Unlock()
 
 	for serverID, conn := range m.connections {
-		// Remove connections not used for 10 minutes
 		if time.Since(conn.LastUsed) > 10*time.Minute {
 			conn.Client.Close()
 			delete(m.connections, serverID)
 			continue
 		}
 
-		// TODO: Implement health check ping for HTTP/SSE connections
-		// For now, assume connection is healthy if no error
 		if conn.Status == StatusError {
 			conn.Client.Close()
 			delete(m.connections, serverID)
@@ -269,18 +251,14 @@ func (m *MCPConnectionManager) checkConnections() {
 }
 
 
-// TestConnection tests if we can connect to an MCP server
 func (m *MCPConnectionManager) TestConnection(ctx context.Context, serverID uuid.UUID) error {
-	// Close any existing connection first
 	m.CloseConnection(serverID)
 
-	// Try to create a new connection
 	conn, err := m.createConnection(ctx, serverID)
 	if err != nil {
 		return err
 	}
 
-	// Test that we can get tools
 	if len(conn.Tools) == 0 {
 		return fmt.Errorf("connection successful but no tools available")
 	}
@@ -288,7 +266,6 @@ func (m *MCPConnectionManager) TestConnection(ctx context.Context, serverID uuid
 	return nil
 }
 
-// GetServerTools returns available tools for a specific server
 func (m *MCPConnectionManager) GetServerTools(ctx context.Context, serverID uuid.UUID) ([]string, error) {
 	conn, err := m.GetConnection(ctx, serverID)
 	if err != nil {
@@ -303,7 +280,6 @@ func (m *MCPConnectionManager) GetServerTools(ctx context.Context, serverID uuid
 	return toolNames, nil
 }
 
-// ServerTool wraps a tool with server context information
 type ServerTool struct {
 	tools.Tool
 	ServerID   uuid.UUID
@@ -311,7 +287,6 @@ type ServerTool struct {
 }
 
 func (st *ServerTool) Name() string {
-	// Prefix tool name with server name to avoid conflicts
 	return fmt.Sprintf("%s_%s", st.ServerName, st.Tool.Name())
 }
 
@@ -319,27 +294,21 @@ func (st *ServerTool) Description() string {
 	return fmt.Sprintf("[%s] %s", st.ServerName, st.Tool.Description())
 }
 
-// Implement the Call method to maintain tool interface
 func (st *ServerTool) Call(ctx context.Context, input string) (string, error) {
 	return st.Tool.Call(ctx, input)
 }
 
-// decryptServerData decrypts sensitive fields in an MCP server
 func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryptionService *EncryptionService) (shared.MCPServer, error) {
 	decryptedServer := server
 
-	// Decrypt URL if it's encrypted
 	var decryptedURL string
 	urlDecrypted := false
 	if server.EncryptedURL {
 		var err error
 		decryptedURL, err = encryptionService.Decrypt(server.ServerURL)
 		if err != nil {
-			// If decryption fails, assume the URL is not actually encrypted
-			// This handles cases where the encryption flag was set but encryption failed
 			decryptedURL = server.ServerURL
 			urlDecrypted = true
-			// Log the error but don't fail the connection
 			log.Printf("Warning: Failed to decrypt URL for server %s (assuming unencrypted): %v", server.ID, err)
 		} else {
 			decryptedServer.ServerURL = decryptedURL
@@ -347,18 +316,15 @@ func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryp
 		}
 	}
 
-	// Parse config to update with decrypted data
 	var config shared.MCPServerConfig
 	if err := json.Unmarshal([]byte(server.Config), &config); err != nil {
 		return server, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Update URL in config if it was decrypted
 	if urlDecrypted {
 		config.URL = decryptedURL
 	}
 
-	// Decrypt sensitive headers in config if they exist
 	if server.SensitiveHeaders != "" {
 		var sensitiveHeaders []string
 		if err := json.Unmarshal([]byte(server.SensitiveHeaders), &sensitiveHeaders); err != nil {
@@ -373,12 +339,10 @@ func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryp
 
 			decryptedHeaders, err := encryptionService.DecryptSensitiveFields(configHeaders, sensitiveHeaders)
 			if err != nil {
-				// If header decryption fails, log warning but continue with encrypted headers
 				log.Printf("Warning: Failed to decrypt headers for server %s: %v", server.ID, err)
 				decryptedHeaders = configHeaders
 			}
 
-			// Convert back to string map
 			config.Headers = make(map[string]string)
 			for k, v := range decryptedHeaders {
 				if str, ok := v.(string); ok {
@@ -388,7 +352,6 @@ func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryp
 		}
 	}
 
-	// Marshal updated config back to JSON
 	configJSON, err := json.Marshal(config)
 	if err != nil {
 		return server, fmt.Errorf("failed to marshal config: %w", err)

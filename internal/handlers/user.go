@@ -34,11 +34,10 @@ type JWTClaims struct {
 }
 
 const (
-	accessTokenExpiry  = 15 * time.Minute   // Short-lived access token
-	refreshTokenExpiry = 7 * 24 * time.Hour // 7 days
+	accessTokenExpiry  = 15 * time.Minute
+	refreshTokenExpiry = 7 * 24 * time.Hour
 )
 
-// HandleSignup - Regular auth signup (commented out - OAuth only)
 // func (h *Handler) HandleSignup(c echo.Context) error {
 // 	var req shared.CreateUserRequest
 // 	if err := c.Bind(&req); err != nil {
@@ -99,7 +98,6 @@ const (
 // 	})
 // }
 
-// HandleLogin - Regular auth login (commented out - OAuth only)
 // func (h *Handler) HandleLogin(c echo.Context) error {
 // 	var req shared.LoginRequest
 // 	if err := c.Bind(&req); err != nil {
@@ -143,7 +141,6 @@ const (
 // }
 
 func (h *Handler) HandleLogout(c echo.Context) error {
-	// Revoke access token
 	if cookie, err := c.Cookie("auth_token"); err == nil && cookie.Value != "" {
 		token, _ := jwt.ParseWithClaims(cookie.Value, &JWTClaims{}, func(token *jwt.Token) (any, error) {
 			return jwtSecret, nil
@@ -159,7 +156,6 @@ func (h *Handler) HandleLogout(c echo.Context) error {
 		}
 	}
 
-	// Revoke refresh token if present
 	if cookie, err := c.Cookie("refresh_token"); err == nil && cookie.Value != "" {
 		h.DB.Model(&shared.RefreshToken{}).Where("token = ?", cookie.Value).Update("is_revoked", true)
 	}
@@ -174,19 +170,16 @@ func (h *Handler) HandleMe(c echo.Context) error {
 	userID := c.Get("user_id").(uint)
 	email := c.Get("email").(string)
 
-	// Fetch full user info to include OAuth details
 	var user shared.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch user details")
 	}
 
-	// Get tier configuration
 	tierConfig, exists := shared.TierConfigs[user.Tier]
 	if !exists {
 		tierConfig = shared.TierConfigs["free"]
 	}
 
-	// Get comprehensive resource counts
 	resourceCounts, err := h.PlanMiddleware.GetUserResourceCounts(userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get resource counts")
@@ -207,7 +200,6 @@ func (h *Handler) HandleMe(c echo.Context) error {
 		},
 	}
 
-	// Include optional fields if they exist
 	if user.DisplayName != nil {
 		response["display_name"] = *user.DisplayName
 	}
@@ -243,7 +235,6 @@ func (h *Handler) HandleRefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "database error")
 	}
 
-	// Revoke the current refresh token
 	if err := tx.Model(&refreshToken).Update("is_revoked", true).Error; err != nil {
 		tx.Rollback()
 		log.Printf("Failed to revoke current refresh token: id=%d, err=%v", refreshToken.ID, err)
@@ -257,14 +248,12 @@ func (h *Handler) HandleRefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate access token")
 	}
 
-	// Generate new refresh token
 	newRefreshTokenString, err := generateRefreshToken()
 	if err != nil {
 		tx.Rollback()
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate refresh token")
 	}
 
-	// Create new refresh token
 	newRefreshTokenRecord := shared.RefreshToken{
 		UserID:    user.ID,
 		Token:     newRefreshTokenString,
@@ -278,7 +267,6 @@ func (h *Handler) HandleRefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create refresh token")
 	}
 
-	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		log.Printf("Failed to commit refresh token transaction: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "transaction failed")
@@ -319,17 +307,14 @@ func generateRefreshToken() (string, error) {
 }
 
 func (h *Handler) createRefreshToken(userID uint) (string, error) {
-	// Use mutex to prevent race conditions for the same user
 	refreshTokenMutex.Lock()
 	defer refreshTokenMutex.Unlock()
 
-	// Generate token first to fail fast if there's an issue
 	tokenString, err := generateRefreshToken()
 	if err != nil {
 		return "", err
 	}
 
-	// Use database transaction to ensure atomicity
 	tx := h.DB.Begin()
 	if tx.Error != nil {
 		return "", tx.Error
@@ -341,14 +326,12 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 		}
 	}()
 
-	// Revoke all existing refresh tokens for this user
 	if err := tx.Model(&shared.RefreshToken{}).Where("user_id = ?", userID).Update("is_revoked", true).Error; err != nil {
 		tx.Rollback()
 		log.Printf("Failed to revoke existing tokens for user %d: %v", userID, err)
 		return "", err
 	}
 
-	// Create new refresh token
 	refreshToken := shared.RefreshToken{
 		UserID:    userID,
 		Token:     tokenString,
@@ -362,7 +345,6 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 		return "", err
 	}
 
-	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		log.Printf("Failed to commit refresh token transaction for user %d: %v", userID, err)
 		return "", err
@@ -371,12 +353,7 @@ func (h *Handler) createRefreshToken(userID uint) (string, error) {
 	return tokenString, nil
 }
 
-// CleanupExpiredTokens removes expired and revoked tokens from the database
 func (h *Handler) CleanupExpiredTokens() error {
-	// Delete refresh tokens that are either:
-	// 1. Expired (past their expiration date)
-	// 2. Revoked (marked as revoked)
-	// 3. Very old (created more than 30 days ago as a safety measure)
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 
 	result := h.DB.Where(
@@ -391,7 +368,6 @@ func (h *Handler) CleanupExpiredTokens() error {
 
 	log.Printf("Cleaned up %d expired/revoked refresh tokens", result.RowsAffected)
 
-	// Also cleanup revoked JWT tokens that have expired
 	result = h.DB.Where("expires_at < ?", time.Now()).Delete(&shared.RevokedToken{})
 
 	if result.Error != nil {
@@ -404,7 +380,6 @@ func (h *Handler) CleanupExpiredTokens() error {
 	return nil
 }
 
-// StartTokenCleanupWorker starts a background goroutine that periodically cleans up expired tokens
 func (h *Handler) StartTokenCleanupWorker(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -418,7 +393,6 @@ func (h *Handler) StartTokenCleanupWorker(interval time.Duration) {
 	log.Printf("Started token cleanup worker with interval: %v", interval)
 }
 
-// SetAuthCookies sets authentication cookies for access and refresh tokens
 func SetAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	accessCookie := &http.Cookie{
 		Name:     "auth_token",
@@ -434,7 +408,7 @@ func SetAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	refreshCookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		Path:     "/", // Make available to all endpoints
+		Path:     "/",
 		MaxAge:   int(refreshTokenExpiry.Seconds()),
 		HttpOnly: true,
 		Secure:   os.Getenv("ENV") == "production",
@@ -455,7 +429,6 @@ func clearAuthCookies(c echo.Context) {
 	}
 	c.SetCookie(accessCookie)
 
-	// Clear refresh token cookie
 	refreshCookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",

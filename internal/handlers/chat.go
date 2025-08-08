@@ -15,7 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// max returns the larger of x or y
 func max(x, y int) int {
 	if x > y {
 		return x
@@ -23,7 +22,6 @@ func max(x, y int) int {
 	return y
 }
 
-// HandleChatStream handles streaming chat requests
 func (h *Handler) HandleChatStream(c echo.Context) error {
 	agentIdStr := c.Param("agentId")
 	if agentIdStr == "" {
@@ -49,19 +47,16 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "message is required")
 	}
 
-	// Find the agent
 	var agent shared.AgentConfig
 	if err := h.DB.Where("id = ? AND user_id = ?", agentId, userID).First(&agent).Error; err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Agent not found")
 	}
 
-	// Get or create chat session
 	session, err := h.getOrCreateChatSession(agentId, userID, req.SessionID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get chat session: %v", err))
 	}
 
-	// Load conversation history if session exists
 	var conversationHistory []shared.ChatMessage
 	if session.ID != uuid.Nil {
 		if err := h.DB.Where("session_id = ?", session.ID).
@@ -70,7 +65,6 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		}
 	}
 
-	// Convert database history to context format
 	var contextMessages []shared.ChatContextMessage
 	if len(conversationHistory) > 0 {
 		for _, msg := range conversationHistory {
@@ -86,7 +80,6 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		req.Context = []shared.ChatContextMessage{}
 	}
 
-	// Save user message
 	userMessage := shared.ChatMessage{
 		SessionID: session.ID,
 		Role:      "user",
@@ -97,20 +90,17 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save user message")
 	}
 
-	// Set headers for SSE
 	c.Response().Header().Set("Content-Type", "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
 	c.Response().Header().Set("Access-Control-Allow-Origin", "*")
 	c.Response().Header().Set("Access-Control-Allow-Headers", "Cache-Control")
 
-	// Send initial event
 	h.sendStreamEvent(c, "metadata", "", map[string]any{
 		"session_id": session.ID,
 		"message_id": userMessage.ID,
 	})
 
-	// Create assistant message to accumulate response
 	assistantMessage := shared.ChatMessage{
 		SessionID: session.ID,
 		Role:      "assistant",
@@ -121,14 +111,12 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create assistant message")
 	}
 
-	// Get user's API key for the provider
 	apiKey, err := h.SettingsHandler.GetAPIKeyForProvider(userID, agent.Provider)
 	if err != nil || apiKey == "" {
 		h.sendStreamEvent(c, "error", fmt.Sprintf("Please configure your %s API key in Settings", agent.Provider), nil)
 		return nil
 	}
 
-	// Stream the response
 	llmService := services.NewLLMService(h.MCPManager)
 	fullResponse := ""
 
@@ -139,14 +127,11 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	}
 
 	toolEventFunc := func(event *shared.ToolCallEvent) {
-		// Skip saving tool_batch_complete events - they're just signals
 		if event.Type == "tool_batch_complete" {
-			// Send the event but don't save to database
 			h.sendStreamEvent(c, "tool_event", "", event)
 			return
 		}
 
-		// Save tool call as a message for persistence
 		toolMessage := shared.ChatMessage{
 			SessionID: session.ID,
 			Role:      "tool",

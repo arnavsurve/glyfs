@@ -33,7 +33,6 @@ func SetupDB() *gorm.DB {
 		&shared.UsageMetric{},
 	)
 
-	// Create partial unique index for agent names (only for non-deleted agents)
 	if err := db.Exec(`
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agent_name_active 
 		ON agent_configs(user_id, name) 
@@ -42,7 +41,6 @@ func SetupDB() *gorm.DB {
 		log.Printf("Warning: Failed to create partial unique index: %v", err)
 	}
 
-	// Create unique index for OAuth providers (only for OAuth users)
 	if err := db.Exec(`
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth_provider 
 		ON users(auth_provider, oauth_id) 

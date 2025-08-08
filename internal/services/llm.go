@@ -45,7 +45,6 @@ func (s *LLMService) CreateLLM(provider string, apiKey string) (llms.Model, erro
 	}
 }
 
-// CreateLLMForTitleGeneration creates an LLM client using server API key for title generation
 func (s *LLMService) CreateLLMForTitleGeneration() (llms.Model, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -62,12 +61,10 @@ func (s *LLMService) GenerateResponse(ctx context.Context, agent *shared.AgentCo
 
 	messages := s.buildMessages(agent.SystemPrompt, req.History, req.Message)
 
-	// Get available tools for this agent
 	var toolsList []tools.Tool
 	if s.mcpManager != nil {
 		agentTools, err := s.mcpManager.GetAgentTools(ctx, agent.ID)
 		if err != nil {
-			// Log error but continue without tools
 			log.Printf("Warning: Failed to get agent tools: %v\n", err)
 		} else {
 			toolsList = agentTools
@@ -79,7 +76,6 @@ func (s *LLMService) GenerateResponse(ctx context.Context, agent *shared.AgentCo
 		llms.WithTemperature(agent.Temperature),
 	}
 
-	// Add tools if available - convert to llms.Tool format
 	if len(toolsList) > 0 {
 		llmsTools := s.convertToLLMSTools(toolsList)
 		opts = append(opts, llms.WithTools(llmsTools))
@@ -133,17 +129,14 @@ func (s *LLMService) GenerateResponseStream(ctx context.Context, agent *shared.A
 
 	messages := s.buildMessagesFromContext(agent.SystemPrompt, req.Context, req.Message)
 
-	// Get available tools for this agent
 	var toolsList []tools.Tool
 	toolsMap := make(map[string]tools.Tool)
 	if s.mcpManager != nil {
 		agentTools, err := s.mcpManager.GetAgentTools(ctx, agent.ID)
 		if err != nil {
-			// Log error but continue without tools
 			log.Printf("Warning: Failed to get agent tools: %v\n", err)
 		} else {
 			toolsList = agentTools
-			// Create a map for quick tool lookup
 			for _, tool := range toolsList {
 				toolsMap[tool.Name()] = tool
 			}
@@ -161,7 +154,6 @@ func (s *LLMService) buildMessagesFromContext(systemPrompt string, context []sha
 	}
 
 	for _, msg := range context {
-		// Skip tool messages - they're for UI display only, not LLM context
 		if msg.Role == "tool" {
 			continue
 		}
@@ -234,8 +226,7 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 			llms.WithTemperature(agent.Temperature),
 		}
 
-		// Add tools if available
-		if len(toolsList) > 0 {
+			if len(toolsList) > 0 {
 			llmsTools := s.convertToLLMSTools(toolsList)
 			opts = append(opts, llms.WithTools(llmsTools))
 		}
@@ -244,7 +235,6 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 			opts = append(opts, llms.WithMaxTokens(agent.MaxTokens))
 		}
 
-		// Generate content (non-streaming for tool handling)
 		content, err := llm.GenerateContent(ctx, conversationMessages, opts...)
 		if err != nil {
 			return fmt.Errorf("generating content: %w", err)
@@ -256,19 +246,15 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 
 		choice := content.Choices[0]
 
-		// Check if there are tool calls to execute
 		if len(choice.ToolCalls) > 0 {
-			// Execute all tool calls
 			toolResults := make([]llms.MessageContent, 0)
 
 			for _, toolCall := range choice.ToolCalls {
 				result, err := s.executeToolCall(ctx, toolCall, toolsMap, toolEventFunc)
 				if err != nil {
-					// Continue with error message
 					result = fmt.Sprintf("Error executing tool: %v", err)
 				}
 
-				// Add iteration progress guidance to encourage conclusion
 				progressGuidance := ""
 				if iteration >= maxIterations-5 {
 					progressGuidance = fmt.Sprintf("\n\n[Iteration %d/%d: Consider summarizing your findings and providing a final response rather than continuing exploration]", iteration+1, maxIterations)
@@ -277,7 +263,6 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 					progressGuidance = fmt.Sprintf("\n\n[Iteration %d/%d: You're approaching the iteration limit. Please provide a final response based on the information gathered so far.]", iteration+1, maxIterations)
 				}
 
-				// Add tool result to conversation
 				toolResults = append(toolResults, llms.MessageContent{
 					Role: llms.ChatMessageTypeTool,
 					Parts: []llms.ContentPart{
@@ -290,7 +275,6 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 				})
 			}
 
-			// Add assistant message with tool calls
 			assistantMsg := llms.MessageContent{
 				Role:  llms.ChatMessageTypeAI,
 				Parts: []llms.ContentPart{},
@@ -311,23 +295,19 @@ func (s *LLMService) generateWithToolSupport(ctx context.Context, llm llms.Model
 			conversationMessages = append(conversationMessages, assistantMsg)
 			conversationMessages = append(conversationMessages, toolResults...)
 
-			// Send tool batch complete event to indicate all tools in this iteration are done
 			if toolEventFunc != nil {
 				toolEventFunc(&shared.ToolCallEvent{
 					Type: "tool_batch_complete",
 				})
 			}
 
-			// Continue to next iteration to get final response
 			continue
 		}
 
-		// No tool calls, stream the final response
 		if choice.Content != "" {
-			// Stream the content character by character for smooth UX
 			for _, char := range choice.Content {
 				streamFunc(string(char))
-				time.Sleep(10 * time.Millisecond) // Small delay for streaming effect
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 
@@ -341,7 +321,6 @@ func (s *LLMService) executeToolCall(ctx context.Context, toolCall llms.ToolCall
 	startTime := time.Now()
 	toolName := toolCall.FunctionCall.Name
 
-	// Send tool start event
 	if toolEventFunc != nil {
 		var args map[string]any
 		json.Unmarshal([]byte(toolCall.FunctionCall.Arguments), &args)
@@ -354,7 +333,6 @@ func (s *LLMService) executeToolCall(ctx context.Context, toolCall llms.ToolCall
 		})
 	}
 
-	// Find the tool
 	tool, exists := toolsMap[toolName]
 	if !exists {
 		err := fmt.Errorf("tool not found: %s", toolName)
@@ -370,7 +348,6 @@ func (s *LLMService) executeToolCall(ctx context.Context, toolCall llms.ToolCall
 		return "", err
 	}
 
-	// Execute the tool
 	result, err := tool.Call(ctx, toolCall.FunctionCall.Arguments)
 	duration := time.Since(startTime).Milliseconds()
 
@@ -387,7 +364,6 @@ func (s *LLMService) executeToolCall(ctx context.Context, toolCall llms.ToolCall
 		return "", err
 	}
 
-	// Send success event
 	if toolEventFunc != nil {
 		toolEventFunc(&shared.ToolCallEvent{
 			Type:     "tool_result",
@@ -401,7 +377,6 @@ func (s *LLMService) executeToolCall(ctx context.Context, toolCall llms.ToolCall
 	return result, nil
 }
 
-// convertToLLMSTools converts tools.Tool interface to llms.Tool struct
 func (s *LLMService) convertToLLMSTools(toolsList []tools.Tool) []llms.Tool {
 	llmsTools := make([]llms.Tool, len(toolsList))
 	for i, tool := range toolsList {

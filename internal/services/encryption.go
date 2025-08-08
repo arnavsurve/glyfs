@@ -19,7 +19,6 @@ type EncryptionService struct {
 }
 
 func InitEncryptionKey() {
-	// First try dedicated encryption key
 	envKey := os.Getenv("ENCRYPTION_KEY")
 	if envKey != "" {
 		hash := sha256.Sum256([]byte(envKey))
@@ -86,14 +85,12 @@ func (s *EncryptionService) Decrypt(encrypted string) (string, error) {
 	return string(plaintext), nil
 }
 
-// EncryptSensitiveFields encrypts sensitive fields in a map
 func (s *EncryptionService) EncryptSensitiveFields(data map[string]any, sensitiveFields []string) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for key, value := range data {
 		result[key] = value
 
-		// Check if this field should be encrypted
 		for _, sensitive := range sensitiveFields {
 			if key == sensitive {
 				if str, ok := value.(string); ok {
@@ -111,14 +108,12 @@ func (s *EncryptionService) EncryptSensitiveFields(data map[string]any, sensitiv
 	return result, nil
 }
 
-// DecryptSensitiveFields decrypts sensitive fields in a map
 func (s *EncryptionService) DecryptSensitiveFields(data map[string]any, sensitiveFields []string) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for key, value := range data {
 		result[key] = value
 
-		// Check if this field should be decrypted
 		for _, sensitive := range sensitiveFields {
 			if key == sensitive {
 				if str, ok := value.(string); ok {
