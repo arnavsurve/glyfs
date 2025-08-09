@@ -35,11 +35,12 @@ const (
 	GPT4o     OpenAIModel = "gpt-4o"
 	GPT4oMini OpenAIModel = "gpt-4o-mini"
 	GPT41Nano OpenAIModel = "gpt-4.1-nano-2025-04-14"
+	GPT5      OpenAIModel = "gpt-5-2025-08-07"
 )
 
 func (om OpenAIModel) IsValid() bool {
 	switch om {
-	case O4Mini, O3, O3Mini, O3Pro, O1, O1Mini, GPT41, GPT4o, GPT4oMini:
+	case O4Mini, O3, O3Mini, O3Pro, O1, O1Mini, GPT41, GPT4o, GPT4oMini, GPT5:
 		return true
 	}
 	return false
@@ -54,12 +55,12 @@ const (
 )
 
 type CreateAgentRequest struct {
-	Name         string             `json:"name"`
-	Provider     InferenceProvider  `json:"provider"`
-	Model        string             `json:"model"`
-	SystemPrompt *string            `json:"system_prompt,omitempty"`
-	MaxTokens    int                `json:"max_tokens"`
-	Temperature  float64            `json:"temperature"`
+	Name         string            `json:"name"`
+	Provider     InferenceProvider `json:"provider"`
+	Model        string            `json:"model"`
+	SystemPrompt *string           `json:"system_prompt,omitempty"`
+	MaxTokens    int               `json:"max_tokens"`
+	Temperature  float64           `json:"temperature"`
 }
 
 func (r *CreateAgentRequest) IsValidModel() bool {
@@ -92,7 +93,7 @@ func (r *UpdateAgentRequest) IsValidModel() bool {
 		case OpenAI:
 			return OpenAIModel(*r.Model).IsValid()
 		case Google:
-				return false
+			return false
 		default:
 			return false
 		}

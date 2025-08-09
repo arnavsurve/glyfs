@@ -71,6 +71,7 @@ export const MODELS = {
     { value: "claude-opus-4-20250514", label: "Claude Opus 4" },
   ],
   [PROVIDERS.OPENAI]: [
+    { value: "gpt-5", label: "GPT-5" },
     { value: "gpt-4o", label: "GPT-4o" },
     { value: "gpt-4o-mini", label: "GPT-4o Mini" },
     { value: "gpt-4.1", label: "GPT-4.1" },
@@ -97,4 +98,3 @@ export const PROVIDER_DISPLAY_NAMES = {
 export const getProviderDisplayName = (provider: string): string => {
   return PROVIDER_DISPLAY_NAMES[provider as Provider] || provider;
 };
-
