@@ -1,0 +1,107 @@
+{
+  "app_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-06db6b5f754c3663d"
+  },
+  "cost_saving_commands": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "start_app": "string",
+        "start_nat": "string",
+        "start_rds": "string",
+        "stop_app": "string",
+        "stop_nat": "string",
+        "stop_rds": "string"
+      }
+    ],
+    "value": {
+      "start_app": "aws ec2 start-instances --instance-ids i-0240646004c989954",
+      "start_nat": "aws ec2 start-instances --instance-ids i-0a2c1cad482afade3",
+      "start_rds": "aws rds start-db-instance --db-instance-identifier db-NOW5ALAF4G3PI4FN3DYF27PKI4",
+      "stop_app": "aws ec2 stop-instances --instance-ids i-0240646004c989954",
+      "stop_nat": "aws ec2 stop-instances --instance-ids i-0a2c1cad482afade3",
+      "stop_rds": "aws rds stop-db-instance --db-instance-identifier db-NOW5ALAF4G3PI4FN3DYF27PKI4"
+    }
+  },
+  "db_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-08103e94cf9a9d276"
+  },
+  "ec2_instance_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "i-0240646004c989954"
+  },
+  "ec2_public_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "54.177.28.218"
+  },
+  "ecr_registry": {
+    "sensitive": false,
+    "type": "string",
+    "value": "662147645785.dkr.ecr.us-west-1.amazonaws.com"
+  },
+  "ecr_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "662147645785.dkr.ecr.us-west-1.amazonaws.com/glyfs"
+  },
+  "nat_instance_ip": {
+    "sensitive": false,
+    "type": "string",
+    "value": "54.193.93.13"
+  },
+  "private_subnet_ids": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "subnet-0d567d2bc1bf93aec",
+      "subnet-02392cb3f36e01031"
+    ]
+  },
+  "public_subnet_ids": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "subnet-0bb5b2f8ebd8e106f",
+      "subnet-0b270f03e046cd233"
+    ]
+  },
+  "rds_endpoint": {
+    "sensitive": false,
+    "type": "string",
+    "value": "glyfs-db-production.cn02w2e4ms1o.us-west-1.rds.amazonaws.com:5432"
+  },
+  "rds_port": {
+    "sensitive": false,
+    "type": "number",
+    "value": 5432
+  },
+  "ssh_connection_command": {
+    "sensitive": false,
+    "type": "string",
+    "value": "ssh -i ~/.ssh/id_rsa ec2-user@54.177.28.218"
+  },
+  "vpc_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "vpc-0f04f5bd5fef44638"
+  }
+}

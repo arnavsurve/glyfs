@@ -15,7 +15,7 @@ resource "aws_db_instance" "postgres" {
   identifier = "glyfs-db-${var.environment}"
 
   engine         = "postgres"
-  engine_version = "17.2"
+  engine_version = "17.4"
   instance_class = var.db_instance_class
 
   allocated_storage     = var.db_allocated_storage
