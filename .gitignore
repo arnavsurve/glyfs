@@ -6,3 +6,4 @@ bin
 localnotes
 .claude
 *.pem
+.DS_Store
