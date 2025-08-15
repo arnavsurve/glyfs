@@ -62,56 +62,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG
           script: |
-            # Login to ECR
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY
-            
-            # Store current container ID for rollback
-            CURRENT_CONTAINER=$(docker ps -q --filter "name=glyfs-app")
-            
-            # Pull the new image
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            
-            # Start new container with environment variables
-            docker run -d \
-              --name glyfs-app-new \
-              --restart unless-stopped \
-              -p 8081:8080 \
-              --env-file /home/ec2-user/.env.production \
-              $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            
-            # Wait for health check
-            sleep 10
-            if curl -f http://localhost:8081/health; then
-              echo "Health check passed, switching traffic..."
-              
-              # Stop old container if exists
-              if [ ! -z "$CURRENT_CONTAINER" ]; then
-                docker stop glyfs-app || true
-                docker rm glyfs-app || true
-              fi
-              
-              # Rename new container
-              docker rename glyfs-app-new glyfs-app
-              
-              # Update port mapping (requires restart)
-              docker stop glyfs-app
-              docker run -d \
-                --name glyfs-app \
-                --restart unless-stopped \
-                -p 8080:8080 \
-                --env-file /home/ec2-user/.env.production \
-                $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-              
-              # Clean up old images
-              docker image prune -f
-              
-              echo "Deployment successful!"
-            else
-              echo "Health check failed, rolling back..."
-              docker stop glyfs-app-new
-              docker rm glyfs-app-new
-              exit 1
-            fi
+            # Use the deployment script
+            ECR_REGISTRY=$ECR_REGISTRY \
+            ECR_REPOSITORY=$ECR_REPOSITORY \
+            IMAGE_TAG=$IMAGE_TAG \
+            AWS_REGION=${{ env.AWS_REGION }} \
+            /home/ec2-user/scripts/deploy-ecr.sh
 
       - name: Verify deployment
         run: |
