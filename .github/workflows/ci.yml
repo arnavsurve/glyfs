@@ -2,19 +2,10 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
-    branches: [main, dev]
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy_env:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - skip
 
 env:
   AWS_REGION: us-west-1
@@ -84,13 +75,12 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Get EC2 Instance IP
+      - name: Get Elastic IP
         id: get-instance
         run: |
-          INSTANCE_IP=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=glyfs-app-production" \
-                      "Name=instance-state-name,Values=running" \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
+          INSTANCE_IP=$(aws ec2 describe-addresses \
+            --filters "Name=tag:Name,Values=glyfs-eip-production" \
+            --query "Addresses[0].PublicIp" \
             --output text)
           echo "instance_ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
 
@@ -106,9 +96,6 @@ jobs:
           envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG
           script: |
             echo "🚀 Deploying commit $IMAGE_TAG to production..."
-            
-            # Login to ECR
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY
             
             # Run deployment script
             ECR_REGISTRY=$ECR_REGISTRY \

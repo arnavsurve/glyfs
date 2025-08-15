@@ -49,16 +49,22 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 log_info "Pulling image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-# Get current container ID if exists
-CURRENT_CONTAINER=$(docker ps -q --filter "name=^${CONTAINER_NAME}$" || true)
+# Get current container ID if exists (running or stopped)
+CURRENT_CONTAINER=$(docker ps -aq --filter "name=^${CONTAINER_NAME}$" || true)
 if [ ! -z "$CURRENT_CONTAINER" ]; then
     log_info "Current container found: $CURRENT_CONTAINER"
     
-    # Create backup tag of current running image
-    CURRENT_IMAGE=$(docker inspect $CURRENT_CONTAINER --format='{{.Config.Image}}')
-    docker tag $CURRENT_IMAGE $ECR_REGISTRY/$ECR_REPOSITORY:rollback
-    log_info "Tagged current image as rollback: $CURRENT_IMAGE"
+    # Create backup tag of current image if container is running
+    if [ "$(docker ps -q --filter "name=^${CONTAINER_NAME}$")" ]; then
+        CURRENT_IMAGE=$(docker inspect $CURRENT_CONTAINER --format='{{.Config.Image}}')
+        docker tag $CURRENT_IMAGE $ECR_REGISTRY/$ECR_REPOSITORY:rollback
+        log_info "Tagged current image as rollback: $CURRENT_IMAGE"
+    fi
 fi
+
+# Clean up any existing test container
+docker stop $NEW_CONTAINER_NAME 2>/dev/null || true
+docker rm $NEW_CONTAINER_NAME 2>/dev/null || true
 
 # Start new container on different port for testing
 log_info "Starting new container for testing..."
@@ -93,16 +99,14 @@ if [ "$HEALTH_CHECK_PASSED" = false ]; then
     exit 1
 fi
 
-# If we have an old container, stop it gracefully
-if [ ! -z "$CURRENT_CONTAINER" ]; then
-    log_info "Stopping old container gracefully..."
-    docker stop --time=30 $CONTAINER_NAME || true
-    docker rm $CONTAINER_NAME || true
-fi
-
 # Stop the new container to reconfigure ports
 docker stop $NEW_CONTAINER_NAME
 docker rm $NEW_CONTAINER_NAME
+
+# Clean up any existing containers with the target name (running or stopped)
+log_info "Cleaning up any existing production containers..."
+docker stop $CONTAINER_NAME 2>/dev/null || true
+docker rm $CONTAINER_NAME 2>/dev/null || true
 
 # Start the container with the correct name and port
 log_info "Starting production container..."
