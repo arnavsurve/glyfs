@@ -136,7 +136,7 @@ export function CreateAgentForm() {
                       <p className="text-sm text-destructive">{error}</p>
                       {error.includes("API key") && (
                         <Link
-                          to="/settings"
+                          to="/app/settings"
                           className="text-sm text-primary hover:underline mt-1 inline-block"
                         >
                           Go to Settings to configure API keys →
