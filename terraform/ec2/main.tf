@@ -14,6 +14,10 @@ variable "instance_type" {
   type    = string
   default = "t3.micro"
 }
+variable "iam_instance_profile" {
+  type        = string
+  description = "IAM instance profile name for EC2"
+}
 
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -37,11 +41,18 @@ resource "aws_instance" "app" {
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.app_sg_id]
   key_name               = var.key_name
+  iam_instance_profile   = var.iam_instance_profile
 
   user_data = file("${path.module}/user_data.sh")
 
   tags = {
     Name = "glyfs-app-${var.environment}"
   }
+}
+
+# Output the instance ID
+output "output_instance_id" {
+  value       = aws_instance.app.id
+  description = "EC2 instance ID"
 }
 

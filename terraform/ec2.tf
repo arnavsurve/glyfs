@@ -9,10 +9,11 @@ resource "aws_key_pair" "app" {
 }
 
 module "ec2" {
-  source        = "./ec2"
-  environment   = var.environment
-  app_sg_id     = aws_security_group.app.id
-  key_name      = aws_key_pair.app.key_name
-  subnet_id     = aws_subnet.public_a.id
-  instance_type = var.instance_type
+  source                 = "./ec2"
+  environment            = var.environment
+  app_sg_id              = aws_security_group.app.id
+  key_name               = aws_key_pair.app.key_name
+  subnet_id              = aws_subnet.public_a.id
+  instance_type          = var.instance_type
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 }
