@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { TemperatureSlider } from "./ui/temperature-slider";
 import {
   Card,
   CardContent,
@@ -38,7 +39,7 @@ export function CreateAgentForm() {
     model: "claude-3-5-sonnet-20241022",
     system_prompt: "",
     max_tokens: 2048,
-    temperature: 0.7,
+    temperature: 0.5,
   });
 
   const handleProviderChange = (provider: Provider) => {
@@ -276,32 +277,15 @@ export function CreateAgentForm() {
                     </p>
                   </div>
 
-                  <div>
-                    <Label
-                      htmlFor="temperature"
-                      className="text-sm font-medium"
-                    >
-                      Temperature
-                    </Label>
-                    <Input
-                      id="temperature"
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={formData.temperature}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          temperature: parseFloat(e.target.value) || 0.7,
-                        }))
-                      }
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Response entropy (0.0-1.0)
-                    </p>
-                  </div>
+                  <TemperatureSlider
+                    value={formData.temperature}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        temperature: value,
+                      }))
+                    }
+                  />
                 </div>
               </div>
 

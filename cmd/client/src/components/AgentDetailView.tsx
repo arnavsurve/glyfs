@@ -18,6 +18,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { TemperatureSlider } from "./ui/temperature-slider";
 import {
   Card,
   CardContent,
@@ -626,27 +627,15 @@ export function AgentDetailView() {
                         </p>
                       </div>
 
-                      <div>
-                        <Label htmlFor="temperature">Temperature</Label>
-                        <Input
-                          id="temperature"
-                          type="number"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          value={editForm.temperature || agent.temperature}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              temperature: parseFloat(e.target.value) || 0.7,
-                            }))
-                          }
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Response entropy (0.0-1.0)
-                        </p>
-                      </div>
+                      <TemperatureSlider
+                        value={editForm.temperature ?? agent.temperature}
+                        onChange={(value) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            temperature: value,
+                          }))
+                        }
+                      />
                     </div>
                   </CardContent>
                 </Card>
