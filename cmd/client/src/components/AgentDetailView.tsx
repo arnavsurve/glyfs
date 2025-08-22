@@ -56,6 +56,7 @@ import {
 import { transformAgentData } from "../utils/agent.utils";
 import { toast } from "sonner";
 import { AgentToolsTab } from "./AgentToolsTab";
+import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
 
 export function AgentDetailView() {
   const { id } = useParams<{ id: string }>();
@@ -84,6 +85,20 @@ export function AgentDetailView() {
 
   // Ref for scroll container
   const scrollContainerRef = useRef<HTMLElement | null>(null);
+
+  // Function to reset form to original values
+  const resetForm = () => {
+    if (agent) {
+      setEditForm({
+        name: agent.name,
+        provider: agent.provider as any,
+        model: agent.llm_model,
+        system_prompt: agent.system_prompt,
+        max_tokens: agent.max_tokens,
+        temperature: agent.temperature,
+      });
+    }
+  };
 
   useEffect(() => {
     async function fetchAgent() {
@@ -141,7 +156,8 @@ export function AgentDetailView() {
         setAgent(transformedAgent);
       }
 
-      // Show success toast
+      // Mark as saved and show success toast
+      markAsSaved();
       toast.success("Agent updated successfully!");
     } catch (err: any) {
       const errorMessage = err.message || "Failed to save agent";
@@ -194,6 +210,29 @@ export function AgentDetailView() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Unsaved changes detection (placed after handleSave is defined)
+  const {
+    hasUnsavedChanges,
+    showConfirmDialog,
+    handleSaveAndContinue,
+    handleDiscardAndContinue,
+    handleCancel,
+    markAsSaved,
+    checkUnsavedChanges,
+  } = useUnsavedChanges(agent, editForm, {
+    enabled: activeTab === "overview", // Only track changes on overview tab
+    onSave: handleSave,
+    onDiscard: resetForm,
+  });
+
+  // Handle navigation with unsaved changes check
+  const handleNavigation = (to: string) => {
+    if (!checkUnsavedChanges(to)) {
+      navigate(to);
+    }
+    // If there are unsaved changes, checkUnsavedChanges will show the dialog
   };
 
   const copyToClipboard = async (text: string, field: string) => {
@@ -392,7 +431,7 @@ export function AgentDetailView() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/app/agents")}
+              onClick={() => handleNavigation("/app/agents")}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -416,8 +455,9 @@ export function AgentDetailView() {
           <div className="flex items-center space-x-2">
             <Button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !hasUnsavedChanges}
               className="flex items-center space-x-2"
+              variant={hasUnsavedChanges ? "default" : "outline"}
             >
               {isSaving ? (
                 <>
@@ -427,7 +467,7 @@ export function AgentDetailView() {
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
+                  <span>{hasUnsavedChanges ? "Save Changes" : "No Changes"}</span>
                 </>
               )}
             </Button>
@@ -1079,6 +1119,43 @@ data: {"type":"done","content":"","data":{"response":"Once upon a time...","usag
           </div>
         </div>
       </div>
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={() => {}}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to this agent. What would you like to do?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={handleCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <Button 
+              variant="outline" 
+              onClick={handleDiscardAndContinue}
+              className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              Discard Changes
+            </Button>
+            <AlertDialogAction 
+              onClick={handleSaveAndContinue}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save & Continue"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
