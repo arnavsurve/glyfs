@@ -237,7 +237,7 @@ export function LandingPage() {
         <section className="py-32 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-medium mb-8 tracking-tight leading-tight">
-              Agent infrastructure platform
+              Ship agents, not infrastructure
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
               The complete infrastructure layer for deploying, managing, and scaling AI agents in production.
