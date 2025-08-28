@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Bot,
   MessageSquare,
-  BarChart3,
   Settings,
   LogOut,
   Menu,
