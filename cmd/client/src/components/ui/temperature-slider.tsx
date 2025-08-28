@@ -60,19 +60,6 @@ export function TemperatureSlider({
     setIsInputFocused(true)
   }
 
-  const getTemperatureDescription = (temp: number) => {
-    if (temp <= 0.2) return "Very Focused"
-    if (temp <= 0.4) return "Focused"
-    if (temp <= 0.6) return "Balanced"
-    if (temp <= 0.8) return "Creative"
-    return "Very Creative"
-  }
-
-  const getTemperatureColor = (temp: number) => {
-    if (temp <= 0.3) return "text-blue-500"
-    if (temp <= 0.7) return "text-green-500"
-    return "text-orange-500"
-  }
 
   return (
     <div className={cn("space-y-2", className)}>
