@@ -78,7 +78,7 @@
   border-radius: 0.25rem;
   font-size: 0.8125rem;
   font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
+    'Geist Mono', ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
 
