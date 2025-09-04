@@ -221,7 +221,15 @@ export function AgentDetailView() {
     handleCancel,
     markAsSaved,
     checkUnsavedChanges,
-  } = useUnsavedChanges(agent, editForm, {
+  } = useUnsavedChanges(
+    agent ? {
+      name: agent.name,
+      system_prompt: agent.system_prompt,
+      temperature: agent.temperature,
+      max_tokens: agent.max_tokens
+    } : null, 
+    editForm, 
+    {
     enabled: activeTab === "overview", // Only track changes on overview tab
     onSave: handleSave,
     onDiscard: resetForm,

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 /**
  * Hook to detect unsaved changes and handle navigation blocking
@@ -18,7 +18,6 @@ export function useUnsavedChanges<T extends Record<string, any>>(
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
   const originalDataRef = useRef(originalData)
-  const location = useLocation()
   const navigate = useNavigate()
 
   // Update original data reference when it changes

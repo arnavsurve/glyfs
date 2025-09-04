@@ -31,7 +31,7 @@ export function LandingPage() {
       size: number;
       opacity: number;
       pulsePhase: number;
-      type: 'hub' | 'node' | 'data';
+      type: "hub" | "node" | "data";
     }> = [];
 
     // Data streams
@@ -53,18 +53,31 @@ export function LandingPage() {
         size: Math.random() * 3 + 2,
         opacity: Math.random() * 0.5 + 0.3,
         pulsePhase: Math.random() * Math.PI * 2,
-        type: i < 3 ? 'hub' : i < 8 ? 'node' : 'data'
+        type: i < 3 ? "hub" : i < 8 ? "node" : "data",
       });
     }
 
     // Data characters for streams
-    const dataChars = ['█', '▓', '▒', '░', '●', '◯', '▪', '▫', '∶', '∷', '⟨', '⟩'];
+    const dataChars = [
+      "█",
+      "▓",
+      "▒",
+      "░",
+      "●",
+      "◯",
+      "▪",
+      "▫",
+      "∶",
+      "∷",
+      "⟨",
+      "⟩",
+    ];
 
     // Create data streams
     const createStream = () => {
       const startNode = nodes[Math.floor(Math.random() * nodes.length)];
       const endNode = nodes[Math.floor(Math.random() * nodes.length)];
-      
+
       if (startNode === endNode) return;
 
       // Create smooth bezier curve path
@@ -75,14 +88,16 @@ export function LandingPage() {
 
       const path: Array<{ x: number; y: number }> = [];
       for (let t = 0; t <= 1; t += 0.02) {
-        const x = Math.pow(1-t, 3) * startNode.x + 
-                  3 * Math.pow(1-t, 2) * t * controlX1 + 
-                  3 * (1-t) * Math.pow(t, 2) * controlX2 + 
-                  Math.pow(t, 3) * endNode.x;
-        const y = Math.pow(1-t, 3) * startNode.y + 
-                  3 * Math.pow(1-t, 2) * t * controlY1 + 
-                  3 * (1-t) * Math.pow(t, 2) * controlY2 + 
-                  Math.pow(t, 3) * endNode.y;
+        const x =
+          Math.pow(1 - t, 3) * startNode.x +
+          3 * Math.pow(1 - t, 2) * t * controlX1 +
+          3 * (1 - t) * Math.pow(t, 2) * controlX2 +
+          Math.pow(t, 3) * endNode.x;
+        const y =
+          Math.pow(1 - t, 3) * startNode.y +
+          3 * Math.pow(1 - t, 2) * t * controlY1 +
+          3 * (1 - t) * Math.pow(t, 2) * controlY2 +
+          Math.pow(t, 3) * endNode.y;
         path.push({ x, y });
       }
 
@@ -91,7 +106,7 @@ export function LandingPage() {
         progress: 0,
         speed: 0.008 + Math.random() * 0.012,
         opacity: 0.6 + Math.random() * 0.4,
-        char: dataChars[Math.floor(Math.random() * dataChars.length)]
+        char: dataChars[Math.floor(Math.random() * dataChars.length)],
       });
     };
 
@@ -103,11 +118,11 @@ export function LandingPage() {
     let animationFrame: number;
     const animate = () => {
       // Clear with subtle trail effect
-      ctx.fillStyle = 'rgba(20, 20, 23, 0.03)';
+      ctx.fillStyle = "rgba(20, 20, 23, 0.03)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const isDark = document.documentElement.classList.contains("dark");
-      const baseColor = isDark ? 'rgba(255, 255, 255, ' : 'rgba(0, 0, 0, ';
+      const baseColor = isDark ? "rgba(255, 255, 255, " : "rgba(0, 0, 0, ";
 
       // Update and draw nodes
       nodes.forEach((node, index) => {
@@ -133,10 +148,11 @@ export function LandingPage() {
           const dx = other.x - node.x;
           const dy = other.y - node.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          
+
           if (distance < 150) {
-            const opacity = (1 - distance / 150) * 0.1 * node.opacity * other.opacity;
-            ctx.strokeStyle = baseColor + opacity + ')';
+            const opacity =
+              (1 - distance / 150) * 0.1 * node.opacity * other.opacity;
+            ctx.strokeStyle = baseColor + opacity + ")";
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(node.x, node.y);
@@ -147,20 +163,20 @@ export function LandingPage() {
 
         // Draw node
         const nodeOpacity = node.opacity * pulse * 0.4;
-        if (node.type === 'hub') {
+        if (node.type === "hub") {
           // Hub nodes are larger and more prominent
-          ctx.fillStyle = baseColor + nodeOpacity + ')';
+          ctx.fillStyle = baseColor + nodeOpacity + ")";
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.size * 1.5, 0, Math.PI * 2);
           ctx.fill();
-          
+
           // Inner glow
-          ctx.fillStyle = baseColor + (nodeOpacity * 0.3) + ')';
+          ctx.fillStyle = baseColor + nodeOpacity * 0.3 + ")";
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.size * 3, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.fillStyle = baseColor + nodeOpacity + ')';
+          ctx.fillStyle = baseColor + nodeOpacity + ")";
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
           ctx.fill();
@@ -170,7 +186,7 @@ export function LandingPage() {
       // Update and draw data streams
       streams.forEach((stream, index) => {
         stream.progress += stream.speed;
-        
+
         if (stream.progress >= 1) {
           streams.splice(index, 1);
           return;
@@ -179,17 +195,17 @@ export function LandingPage() {
         // Draw flowing data
         const currentIndex = Math.floor(stream.progress * stream.path.length);
         const trailLength = 8;
-        
+
         for (let i = 0; i < trailLength; i++) {
           const trailIndex = currentIndex - i;
           if (trailIndex < 0) continue;
-          
+
           const point = stream.path[trailIndex];
           const trailOpacity = stream.opacity * (1 - i / trailLength) * 0.6;
-          
-          ctx.fillStyle = baseColor + trailOpacity + ')';
+
+          ctx.fillStyle = baseColor + trailOpacity + ")";
           ctx.font = `${12 - i}px Geist Mono`;
-          ctx.textAlign = 'center';
+          ctx.textAlign = "center";
           ctx.fillText(stream.char, point.x, point.y);
         }
       });
@@ -218,99 +234,106 @@ export function LandingPage() {
         className="fixed inset-0 w-full h-full pointer-events-none opacity-45 dark:opacity-30"
         style={{ zIndex: 0 }}
       />
-      
+
       {/* Content overlay */}
       <div className="relative z-10">
-      {/* Navigation */}
-      <nav className="border-b border-border/40">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex justify-between items-center py-8">
-            <h1 className="text-2xl font-medium">Glyfs</h1>
+        {/* Navigation */}
+        <nav className="border-b border-border/40">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex justify-between items-center py-8">
+              <h1 className="text-2xl font-medium">Glyfs</h1>
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/login")}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Sign In
+              </Button>
+            </div>
+          </div>
+        </nav>
+
+        {/* Hero Section */}
+        <section className="py-32 px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-medium mb-8 tracking-tight leading-tight">
+              AI agents that actually work
+            </h1>
+            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+              Deploy production-ready agents with tool access in minutes, not
+              months.
+            </p>
             <Button
-              variant="ghost"
-              onClick={() => navigate("/login")}
-              className="text-muted-foreground hover:text-foreground"
+              size="lg"
+              onClick={() => navigate("/signup")}
+              className="h-12 px-8 text-base"
             >
-              Sign In
+              Get started
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
-        </div>
-      </nav>
+        </section>
 
-      {/* Hero Section */}
-      <section className="py-32 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-medium mb-8 tracking-tight leading-tight">
-            AI agents that actually work
-          </h1>
-          <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-            Deploy production-ready agents with tool access in minutes, not months.
-          </p>
-          <Button
-            size="lg"
-            onClick={() => navigate("/signup")}
-            className="h-12 px-8 text-base"
-          >
-            Get started
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        </div>
-      </section>
-
-      {/* Simple feature list */}
-      <section className="py-24 px-6 border-t border-border/40">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-12 text-center">
-            <div>
-              <h3 className="text-lg font-medium mb-3">MCP Integration</h3>
-              <p className="text-muted-foreground">
-                Connect any MCP server without writing protocol code
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-3">All Providers</h3>
-              <p className="text-muted-foreground">
-                One API for Anthropic, OpenAI, Google, and more
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-3">Built-in Testing</h3>
-              <p className="text-muted-foreground">
-                Test agents and tool calls directly in the platform
-              </p>
+        {/* Simple feature list */}
+        <section className="py-24 px-6 border-t border-border/40">
+          <div className="max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-12 text-center">
+              <div>
+                <h3 className="text-lg font-medium mb-3">MCP Integration</h3>
+                <p className="text-muted-foreground">
+                  Connect any MCP server without writing protocol code
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium mb-3">All Providers</h3>
+                <p className="text-muted-foreground">
+                  One API for Anthropic, OpenAI, Google, and more
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium mb-3">Built-in Testing</h3>
+                <p className="text-muted-foreground">
+                  Test agents and tool calls directly in the platform
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Simple CTA */}
-      <section className="py-24 px-6 border-t border-border/40">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-medium mb-6">
-            Ready to build?
-          </h2>
-          <p className="text-muted-foreground mb-8">
-            Start with our free tier. No credit card required.
-          </p>
-          <Button
-            size="lg"
-            onClick={() => navigate("/signup")}
-            className="h-12 px-8"
-          >
-            Start building
-          </Button>
-        </div>
-      </section>
+        {/* Simple CTA */}
+        <section className="py-24 px-6 border-t border-border/40">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-3xl font-medium mb-6">Ready to build?</h2>
+            <p className="text-muted-foreground mb-8">
+              Start with our free tier. No credit card required.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => navigate("/signup")}
+              className="h-12 px-8"
+            >
+              Start building
+            </Button>
+          </div>
+        </section>
 
         {/* Minimal footer */}
         <footer className="border-t border-border/40 py-12 px-6">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <span className="text-muted-foreground">© 2025 Glyfs</span>
             <div className="flex gap-8">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+              >
                 Docs
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+              >
                 Support
               </Button>
             </div>
@@ -320,3 +343,4 @@ export function LandingPage() {
     </div>
   );
 }
+
