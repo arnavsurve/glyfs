@@ -257,10 +257,10 @@ export function LandingPage() {
         <section className="py-32 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-medium mb-8 tracking-tight leading-tight">
-              AI agents that actually work
+              Plug and play infrastructure for your AI agents.
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-              Deploy production-ready agents with tool access in minutes, not
+              Deploy production-ready agents with MCP access in minutes, not
               months.
             </p>
             <Button
@@ -343,4 +343,3 @@ export function LandingPage() {
     </div>
   );
 }
-
