@@ -1182,13 +1182,12 @@ data: {"type":"done","content":"","data":{"response":"Once upon a time...","usag
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
             <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
-            <Button
-              variant="outline"
+            <AlertDialogAction
               onClick={handleDiscardAndContinue}
-              className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Discard Changes
-            </Button>
+            </AlertDialogAction>
             <AlertDialogAction
               onClick={handleSaveAndContinue}
               disabled={isSaving}
