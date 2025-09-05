@@ -212,6 +212,32 @@ export function AgentDetailView() {
     }
   };
 
+  // Create a stable original data object that doesn't change on every render
+  const [originalData, setOriginalData] = useState<{
+    name: string;
+    provider: "anthropic" | "openai" | "google";
+    model: string;
+    system_prompt: string;
+    temperature: number;
+    max_tokens: number;
+  } | null>(null);
+
+  // Update original data only when agent changes, not on every render
+  useEffect(() => {
+    if (agent) {
+      setOriginalData({
+        name: agent.name,
+        provider: agent.provider as "anthropic" | "openai" | "google",
+        model: agent.llm_model,
+        system_prompt: agent.system_prompt,
+        temperature: agent.temperature,
+        max_tokens: agent.max_tokens,
+      });
+    } else {
+      setOriginalData(null);
+    }
+  }, [agent?.id, agent?.name, agent?.provider, agent?.llm_model, agent?.system_prompt, agent?.temperature, agent?.max_tokens]);
+
   // Unsaved changes detection (placed after handleSave is defined)
   const {
     hasUnsavedChanges,
@@ -222,18 +248,32 @@ export function AgentDetailView() {
     markAsSaved,
     checkUnsavedChanges,
   } = useUnsavedChanges(
-    agent ? {
-      name: agent.name,
-      system_prompt: agent.system_prompt,
-      temperature: agent.temperature,
-      max_tokens: agent.max_tokens
-    } : null, 
-    editForm, 
+    originalData,
+    editForm,
     {
-    enabled: activeTab === "overview", // Only track changes on overview tab
-    onSave: handleSave,
-    onDiscard: resetForm,
-  });
+      enabled: activeTab === "overview", // Only track changes on overview tab
+      onSave: handleSave,
+      onDiscard: resetForm,
+    },
+  );
+
+  // Debug logging - only when changes are made
+  useEffect(() => {
+    if (agent) {
+      console.log('Change detection debug:', {
+        original: {
+          name: agent.name,
+          provider: agent.provider,
+          model: agent.llm_model,
+          system_prompt: agent.system_prompt,
+          temperature: agent.temperature,
+          max_tokens: agent.max_tokens,
+        },
+        current: editForm,
+        hasUnsavedChanges
+      });
+    }
+  }, [editForm, hasUnsavedChanges, agent]);
 
   // Handle navigation with unsaved changes check
   const handleNavigation = (to: string) => {
@@ -461,6 +501,7 @@ export function AgentDetailView() {
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Debug: hasUnsavedChanges = {hasUnsavedChanges.toString()} */}
             <Button
               onClick={handleSave}
               disabled={isSaving || !hasUnsavedChanges}
@@ -475,7 +516,9 @@ export function AgentDetailView() {
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>{hasUnsavedChanges ? "Save Changes" : "No Changes"}</span>
+                  <span>
+                    {hasUnsavedChanges ? "Save Changes" : "No Changes"}
+                  </span>
                 </>
               )}
             </Button>
@@ -1138,17 +1181,15 @@ data: {"type":"done","content":"","data":{"response":"Once upon a time...","usag
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-            <AlertDialogCancel onClick={handleCancel}>
-              Cancel
-            </AlertDialogCancel>
-            <Button 
-              variant="outline" 
+            <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
               onClick={handleDiscardAndContinue}
               className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Discard Changes
             </Button>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleSaveAndContinue}
               disabled={isSaving}
             >
