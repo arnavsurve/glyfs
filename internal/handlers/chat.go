@@ -117,7 +117,7 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		return nil
 	}
 
-	llmService := services.NewLLMService(h.MCPManager)
+	llmService := services.NewLLMService(h.MCPConnManager)
 	fullResponse := ""
 
 	streamFunc := func(chunk string) {
@@ -184,16 +184,16 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 	// Use a more realistic approximation: ~3.5 chars per token, with minimum of 1 token
 	promptChars := len(req.Message)
 	completionChars := len(fullResponse)
-	
-	promptTokens := max(1, (promptChars*10+35)/35)  // Equivalent to chars/3.5 rounded up, min 1
-	completionTokens := max(1, (completionChars*10+35)/35)  // Equivalent to chars/3.5 rounded up, min 1
-	
+
+	promptTokens := max(1, (promptChars*10+35)/35)         // Equivalent to chars/3.5 rounded up, min 1
+	completionTokens := max(1, (completionChars*10+35)/35) // Equivalent to chars/3.5 rounded up, min 1
+
 	usage := &shared.Usage{
 		PromptTokens:     promptTokens,
-		CompletionTokens: completionTokens, 
+		CompletionTokens: completionTokens,
 		TotalTokens:      promptTokens + completionTokens,
 	}
-	
+
 	usageMetric := shared.UsageMetric{
 		UserID:           userID,
 		AgentID:          agent.ID,
@@ -205,7 +205,7 @@ func (h *Handler) HandleChatStream(c echo.Context) error {
 		CompletionTokens: usage.CompletionTokens,
 		TotalTokens:      usage.TotalTokens,
 	}
-	
+
 	if err := h.DB.Create(&usageMetric).Error; err != nil {
 		log.Printf("Warning: Failed to save usage metrics for message %s: %v", assistantMessage.ID, err)
 		// Continue execution - don't fail the entire request for metrics collection failure

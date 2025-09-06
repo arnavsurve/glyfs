@@ -73,7 +73,7 @@ func main() {
 
 	h := handlers.Handler{
 		DB:              db,
-		MCPManager:      mcpManager,
+		MCPConnManager:  mcpManager,
 		SettingsHandler: settingsHandler,
 		PlanMiddleware:  planMiddleware,
 	}

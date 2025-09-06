@@ -187,15 +187,15 @@ type MCPServerResponse struct {
 
 // Detailed response for individual server (includes config for editing)
 type MCPServerDetailResponse struct {
-	ID          uuid.UUID        `json:"id"`
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	ServerURL   string           `json:"server_url"`
-	ServerType  string           `json:"server_type"`
-	Config      MCPServerConfig  `json:"config"`
-	LastSeen    *time.Time       `json:"last_seen,omitempty"`
-	CreatedAt   time.Time        `json:"created_at"`
-	UpdatedAt   time.Time        `json:"updated_at"`
+	ID          uuid.UUID       `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	ServerURL   string          `json:"server_url"`
+	ServerType  string          `json:"server_type"`
+	Config      MCPServerConfig `json:"config"`
+	LastSeen    *time.Time      `json:"last_seen,omitempty"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
 type AgentMCPServerResponse struct {
@@ -206,16 +206,16 @@ type AgentMCPServerResponse struct {
 
 // Detailed response for agent MCP servers (includes full server details)
 type AgentMCPServerDetailResponse struct {
-	ServerID     uuid.UUID        `json:"server_id"`
-	ServerName   string           `json:"server_name"`
-	Description  string           `json:"description"`
-	ServerURL    string           `json:"server_url"`
-	ServerType   string           `json:"server_type"`
-	Config       MCPServerConfig  `json:"config"`
-	Enabled      bool             `json:"enabled"`
-	LastSeen     *time.Time       `json:"last_seen,omitempty"`
-	CreatedAt    time.Time        `json:"created_at"`
-	UpdatedAt    time.Time        `json:"updated_at"`
+	ServerID    uuid.UUID       `json:"server_id"`
+	ServerName  string          `json:"server_name"`
+	Description string          `json:"description"`
+	ServerURL   string          `json:"server_url"`
+	ServerType  string          `json:"server_type"`
+	Config      MCPServerConfig `json:"config"`
+	Enabled     bool            `json:"enabled"`
+	LastSeen    *time.Time      `json:"last_seen,omitempty"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
 // Usage tracking types
@@ -231,7 +231,7 @@ type UsageMetric struct {
 	PromptTokens     int        `gorm:"not null" json:"prompt_tokens"`
 	CompletionTokens int        `gorm:"not null" json:"completion_tokens"`
 	TotalTokens      int        `gorm:"not null" json:"total_tokens"`
-	CostEstimate     *float64   `json:"cost_estimate,omitempty"` // Future use
+	CostEstimate     *float64   `json:"cost_estimate,omitempty"`
 
 	// Relationships
 	User    User         `gorm:"foreignKey:UserID;references:ID" json:"user"`
