@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/arnavsurve/glyfs/internal/services"
 	"github.com/arnavsurve/glyfs/internal/shared"
-	"github.com/arnavsurve/glyfs/internal/middleware"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -122,7 +122,7 @@ func (h *Handler) HandleAgentInferenceInternal(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Please configure your %s API key in Settings", agent.Provider))
 	}
 
-	llmService := services.NewLLMService(h.MCPManager)
+	llmService := services.NewLLMService(h.MCPConnManager)
 
 	response, err := llmService.GenerateResponse(c.Request().Context(), &agent, &req, apiKey)
 	if err != nil {
@@ -157,7 +157,7 @@ func (h *Handler) HandleAgentInference(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Agent owner has not configured %s API key", agent.Provider))
 	}
 
-	llmService := services.NewLLMService(h.MCPManager)
+	llmService := services.NewLLMService(h.MCPConnManager)
 
 	response, err := llmService.GenerateResponse(c.Request().Context(), agent, &req, apiKey)
 	if err != nil {
@@ -219,7 +219,7 @@ func (h *Handler) HandleAgentInferenceStream(c echo.Context) error {
 		return nil
 	}
 
-	llmService := services.NewLLMService(h.MCPManager)
+	llmService := services.NewLLMService(h.MCPConnManager)
 	fullResponse := ""
 	var finalUsage *shared.Usage
 
@@ -351,13 +351,13 @@ func (h *Handler) HandleGetAgents(c echo.Context) error {
 		"agents": agents,
 		"count":  len(agents),
 		"tier": map[string]any{
-			"name":               user.Tier,
-			"agent_limit":        tierConfig.AgentLimit,
-			"agents_used":        resourceCounts["agents_used"],
-			"mcp_server_limit":   tierConfig.MCPServerLimit,
-			"mcp_servers_used":   resourceCounts["mcp_servers_used"],
-			"api_key_limit":      tierConfig.APIKeyLimit,
-			"api_keys_used":      resourceCounts["api_keys_used"],
+			"name":             user.Tier,
+			"agent_limit":      tierConfig.AgentLimit,
+			"agents_used":      resourceCounts["agents_used"],
+			"mcp_server_limit": tierConfig.MCPServerLimit,
+			"mcp_servers_used": resourceCounts["mcp_servers_used"],
+			"api_key_limit":    tierConfig.APIKeyLimit,
+			"api_keys_used":    resourceCounts["api_keys_used"],
 		},
 	})
 }
@@ -460,4 +460,3 @@ func generateAPIKey() (string, error) {
 	}
 	return "apk_" + base64.URLEncoding.EncodeToString(randomBytes), nil
 }
-
