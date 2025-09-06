@@ -75,7 +75,7 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 	}
 
 	var server shared.MCPServer
-	if err := m.db.First(&server, "id = ?", serverID).Error; err != nil {
+	if err := m.db.WithContext(ctx).First(&server, "id = ?", serverID).Error; err != nil {
 		return nil, fmt.Errorf("server not found: %w", err)
 	}
 
@@ -249,7 +249,6 @@ func (m *MCPConnectionManager) checkConnections() {
 		}
 	}
 }
-
 
 func (m *MCPConnectionManager) TestConnection(ctx context.Context, serverID uuid.UUID) error {
 	m.CloseConnection(serverID)
