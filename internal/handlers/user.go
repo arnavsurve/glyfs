@@ -191,12 +191,12 @@ func (h *Handler) HandleMe(c echo.Context) error {
 		"auth_provider": user.AuthProvider,
 		"tier":          user.Tier,
 		"tier_limits": map[string]any{
-			"agent_limit":        tierConfig.AgentLimit,
-			"agents_used":        resourceCounts["agents_used"],
-			"mcp_server_limit":   tierConfig.MCPServerLimit,
-			"mcp_servers_used":   resourceCounts["mcp_servers_used"],
-			"api_key_limit":      tierConfig.APIKeyLimit,
-			"api_keys_used":      resourceCounts["api_keys_used"],
+			"agent_limit":      tierConfig.AgentLimit,
+			"agents_used":      resourceCounts["agents_used"],
+			"mcp_server_limit": tierConfig.MCPServerLimit,
+			"mcp_servers_used": resourceCounts["mcp_servers_used"],
+			"api_key_limit":    tierConfig.APIKeyLimit,
+			"api_keys_used":    resourceCounts["api_keys_used"],
 		},
 	}
 
@@ -304,53 +304,6 @@ func generateRefreshToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
-}
-
-func (h *Handler) createRefreshToken(userID uint) (string, error) {
-	refreshTokenMutex.Lock()
-	defer refreshTokenMutex.Unlock()
-
-	tokenString, err := generateRefreshToken()
-	if err != nil {
-		return "", err
-	}
-
-	tx := h.DB.Begin()
-	if tx.Error != nil {
-		return "", tx.Error
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	if err := tx.Model(&shared.RefreshToken{}).Where("user_id = ?", userID).Update("is_revoked", true).Error; err != nil {
-		tx.Rollback()
-		log.Printf("Failed to revoke existing tokens for user %d: %v", userID, err)
-		return "", err
-	}
-
-	refreshToken := shared.RefreshToken{
-		UserID:    userID,
-		Token:     tokenString,
-		ExpiresAt: time.Now().Add(refreshTokenExpiry),
-		IsRevoked: false,
-	}
-
-	if err := tx.Create(&refreshToken).Error; err != nil {
-		tx.Rollback()
-		log.Printf("Failed to create refresh token for user %d: %v", userID, err)
-		return "", err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		log.Printf("Failed to commit refresh token transaction for user %d: %v", userID, err)
-		return "", err
-	}
-
-	return tokenString, nil
 }
 
 func (h *Handler) CleanupExpiredTokens() error {

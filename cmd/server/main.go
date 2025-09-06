@@ -71,15 +71,15 @@ func main() {
 		log.Fatal("JWT_SECRET environment variable not set")
 	}
 
+	oauthHandler := handlers.NewOAuthHandler(db, jwtSecret)
+
 	h := handlers.Handler{
 		DB:              db,
 		MCPConnManager:  mcpManager,
 		SettingsHandler: settingsHandler,
 		PlanMiddleware:  planMiddleware,
+		OAuthHandler:    oauthHandler,
 	}
-
-	oauthHandler := handlers.NewOAuthHandler(db, jwtSecret, &h)
-	h.OAuthHandler = oauthHandler
 
 	h.StartTokenCleanupWorker(1 * time.Hour)
 
