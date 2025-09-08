@@ -1,6 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle2, User, Mail } from 'lucide-react';
-import { useAuth } from '../auth/AuthContext';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { CheckCircle2, User, Mail } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 const GitHubIcon = () => (
   <svg
@@ -40,36 +46,36 @@ const GoogleIcon = () => (
 
 const getProviderInfo = (authProvider: string) => {
   switch (authProvider) {
-    case 'github':
+    case "github":
       return {
-        name: 'GitHub',
+        name: "GitHub",
         icon: <GitHubIcon />,
-        description: 'Connected via GitHub OAuth'
+        description: "Connected via GitHub OAuth",
       };
-    case 'google':
+    case "google":
       return {
-        name: 'Google',
+        name: "Google",
         icon: <GoogleIcon />,
-        description: 'Connected via Google OAuth'
+        description: "Connected via Google OAuth",
       };
-    case 'local':
+    case "local":
     default:
       return {
-        name: 'Email & Password',
+        name: "Email & Password",
         icon: <Mail className="w-5 h-5" />,
-        description: 'Traditional email and password authentication'
+        description: "Traditional email and password authentication",
       };
   }
 };
 
 export function LinkedAccounts() {
   const { user } = useAuth();
-  
+
   if (!user) {
     return null;
   }
 
-  const authProvider = user.auth_provider || 'local';
+  const authProvider = user.auth_provider || "local";
   const providerInfo = getProviderInfo(authProvider);
 
   return (
@@ -95,7 +101,7 @@ export function LinkedAccounts() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
             <span className="text-green-600 dark:text-green-400 font-medium">
@@ -108,13 +114,17 @@ export function LinkedAccounts() {
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <label className="text-sm font-medium text-muted-foreground">
+                Email
+              </label>
               <div className="mt-1 text-sm">{user.email}</div>
             </div>
-            
+
             {user.display_name && (
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Display Name</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Display Name
+                </label>
                 <div className="mt-1 text-sm">{user.display_name}</div>
               </div>
             )}
@@ -122,7 +132,9 @@ export function LinkedAccounts() {
 
           {user.avatar_url && (
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Avatar</label>
+              <label className="text-sm font-medium text-muted-foreground">
+                Avatar
+              </label>
               <div className="mt-2">
                 <img
                   src={user.avatar_url}
@@ -135,21 +147,23 @@ export function LinkedAccounts() {
         </div>
 
         {/* Info for OAuth users */}
-        {authProvider !== 'local' && (
+        {authProvider !== "local" && (
           <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900 rounded-lg">
             <p className="text-sm text-blue-800 dark:text-blue-300">
-              <strong>OAuth Authentication:</strong> Your account is securely linked with {providerInfo.name}. 
-              You can sign in quickly without remembering a password.
+              <strong>OAuth Authentication:</strong> Your account is securely
+              linked with {providerInfo.name}. You can sign in quickly without
+              remembering a password.
             </p>
           </div>
         )}
 
         {/* Info for local users */}
-        {authProvider === 'local' && (
+        {authProvider === "local" && (
           <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900 rounded-lg">
             <p className="text-sm text-green-800 dark:text-green-300">
-              <strong>Password Authentication:</strong> Your account uses traditional email and password authentication. 
-              Consider linking with OAuth providers for faster sign-in.
+              <strong>Password Authentication:</strong> Your account uses
+              traditional email and password authentication. Consider linking
+              with OAuth providers for faster sign-in.
             </p>
           </div>
         )}

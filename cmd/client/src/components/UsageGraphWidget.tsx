@@ -38,14 +38,14 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 );
 
 type MetricType = "invocations" | "tokens";
 
 export function UsageGraphWidget() {
   const [usageData, setUsageData] = useState<UsageDashboardResponse | null>(
-    null,
+    null
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,15 +79,18 @@ export function UsageGraphWidget() {
       return null;
 
     // Group data by local date using browser's local timezone
-    const groupedByLocalDate = new Map<string, typeof usageData.daily_usage[0]>();
-    
+    const groupedByLocalDate = new Map<
+      string,
+      (typeof usageData.daily_usage)[0]
+    >();
+
     // Process each UTC date and convert to local date
     usageData.daily_usage.forEach((day) => {
       const utcDate = parseISO(day.date);
       // Convert UTC to local date by creating a new Date in local timezone
       const localDate = new Date(utcDate.toLocaleString());
       const localDateStr = format(localDate, "yyyy-MM-dd");
-      
+
       // If we already have data for this local date, merge it
       const existing = groupedByLocalDate.get(localDateStr);
       if (existing) {
@@ -96,13 +99,13 @@ export function UsageGraphWidget() {
         existing.prompt_tokens += day.prompt_tokens;
         existing.completion_tokens += day.completion_tokens;
       } else {
-        groupedByLocalDate.set(localDateStr, { 
+        groupedByLocalDate.set(localDateStr, {
           ...day,
-          date: localDateStr  // Update date to local date
+          date: localDateStr, // Update date to local date
         });
       }
     });
-    
+
     // Convert to sorted array
     const sortedDays = Array.from(groupedByLocalDate.entries())
       .sort(([a], [b]) => a.localeCompare(b))

@@ -102,7 +102,7 @@ class ApiClient {
 
   async get<T>(
     url: string,
-    config?: Omit<RequestConfig, "url" | "method">,
+    config?: Omit<RequestConfig, "url" | "method">
   ): Promise<ApiResponse<T>> {
     return this.request<T>({
       url,
@@ -114,7 +114,7 @@ class ApiClient {
   async post<T>(
     url: string,
     data?: any,
-    config?: Omit<RequestConfig, "url" | "method" | "body">,
+    config?: Omit<RequestConfig, "url" | "method" | "body">
   ): Promise<ApiResponse<T>> {
     return this.request<T>({
       url,
@@ -127,7 +127,7 @@ class ApiClient {
   async put<T>(
     url: string,
     data?: any,
-    config?: Omit<RequestConfig, "url" | "method" | "body">,
+    config?: Omit<RequestConfig, "url" | "method" | "body">
   ): Promise<ApiResponse<T>> {
     return this.request<T>({
       url,
@@ -140,7 +140,7 @@ class ApiClient {
   async patch<T>(
     url: string,
     data?: any,
-    config?: Omit<RequestConfig, "url" | "method" | "body">,
+    config?: Omit<RequestConfig, "url" | "method" | "body">
   ): Promise<ApiResponse<T>> {
     return this.request<T>({
       url,
@@ -152,7 +152,7 @@ class ApiClient {
 
   async delete<T>(
     url: string,
-    config?: Omit<RequestConfig, "url" | "method">,
+    config?: Omit<RequestConfig, "url" | "method">
   ): Promise<ApiResponse<T>> {
     return this.request<T>({
       url,

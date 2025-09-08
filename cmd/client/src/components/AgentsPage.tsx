@@ -15,7 +15,7 @@ export function AgentsPage() {
   const location = useLocation();
   const { user } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [tierInfo, setTierInfo] = useState<AgentsResponse['tier']>();
+  const [tierInfo, setTierInfo] = useState<AgentsResponse["tier"]>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -44,9 +44,10 @@ export function AgentsPage() {
   }, [location.key]); // Re-fetch when navigation occurs
 
   const handleCreateClick = () => {
-    const agentLimit = tierInfo?.agent_limit ?? user?.tier_limits?.agent_limit ?? 3;
+    const agentLimit =
+      tierInfo?.agent_limit ?? user?.tier_limits?.agent_limit ?? 3;
     const agentsUsed = tierInfo?.agents_used ?? agents.length;
-    
+
     if (agentsUsed >= agentLimit) {
       setShowUpgradePrompt(true);
     } else {
@@ -150,4 +151,3 @@ export function AgentsPage() {
     </div>
   );
 }
-

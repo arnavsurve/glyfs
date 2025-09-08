@@ -1,5 +1,12 @@
-import { apiClient } from './client';
-import type { Agent, CreateAgentRequest, UpdateAgentRequest, AgentInferenceRequest, AgentInferenceResponse, AgentsResponse } from '../types/agent.types';
+import { apiClient } from "./client";
+import type {
+  Agent,
+  CreateAgentRequest,
+  UpdateAgentRequest,
+  AgentInferenceRequest,
+  AgentInferenceResponse,
+  AgentsResponse,
+} from "../types/agent.types";
 
 export interface CreateAgentResponse {
   message: string;
@@ -30,55 +37,93 @@ export interface CreateAPIKeyResponse {
 
 export const agentsApi = {
   getAgents: async (): Promise<AgentsResponse> => {
-    const response = await apiClient.get<AgentsResponse>('/agents');
+    const response = await apiClient.get<AgentsResponse>("/agents");
     return response.data;
   },
 
   getAgent: async (agentId: string): Promise<{ agent: Agent }> => {
-    const response = await apiClient.get<{ agent: Agent }>(`/agents/${agentId}`);
+    const response = await apiClient.get<{ agent: Agent }>(
+      `/agents/${agentId}`
+    );
     return response.data;
   },
 
-  createAgent: async (agentData: CreateAgentRequest): Promise<CreateAgentResponse> => {
-    const response = await apiClient.post<CreateAgentResponse>('/agents', agentData);
+  createAgent: async (
+    agentData: CreateAgentRequest
+  ): Promise<CreateAgentResponse> => {
+    const response = await apiClient.post<CreateAgentResponse>(
+      "/agents",
+      agentData
+    );
     return response.data;
   },
 
-  updateAgent: async (agentId: string, agentData: UpdateAgentRequest): Promise<UpdateAgentResponse> => {
-    const response = await apiClient.put<UpdateAgentResponse>(`/agents/${agentId}`, agentData);
+  updateAgent: async (
+    agentId: string,
+    agentData: UpdateAgentRequest
+  ): Promise<UpdateAgentResponse> => {
+    const response = await apiClient.put<UpdateAgentResponse>(
+      `/agents/${agentId}`,
+      agentData
+    );
     return response.data;
   },
 
-  invokeAgent: async (agentId: string, request: AgentInferenceRequest): Promise<AgentInferenceResponse> => {
-    const response = await apiClient.post<AgentInferenceResponse>(`/agents/${agentId}/invoke`, request);
+  invokeAgent: async (
+    agentId: string,
+    request: AgentInferenceRequest
+  ): Promise<AgentInferenceResponse> => {
+    const response = await apiClient.post<AgentInferenceResponse>(
+      `/agents/${agentId}/invoke`,
+      request
+    );
     return response.data;
   },
 
   deleteAgent: async (agentId: string): Promise<{ message: string }> => {
-    const response = await apiClient.delete<{ message: string }>(`/agents/${agentId}`);
+    const response = await apiClient.delete<{ message: string }>(
+      `/agents/${agentId}`
+    );
     return response.data;
   },
 
   restoreAgent: async (agentId: string): Promise<{ message: string }> => {
-    const response = await apiClient.post<{ message: string }>(`/agents/${agentId}/restore`);
+    const response = await apiClient.post<{ message: string }>(
+      `/agents/${agentId}/restore`
+    );
     return response.data;
   },
 
   // API Key Management
-  getAPIKeys: async (agentId: string): Promise<{ api_keys: APIKey[]; count: number }> => {
-    const response = await apiClient.get<{ api_keys: APIKey[]; count: number }>(`/agents/${agentId}/keys`);
+  getAPIKeys: async (
+    agentId: string
+  ): Promise<{ api_keys: APIKey[]; count: number }> => {
+    const response = await apiClient.get<{ api_keys: APIKey[]; count: number }>(
+      `/agents/${agentId}/keys`
+    );
     return response.data;
   },
 
-  createAPIKey: async (agentId: string, name: string): Promise<CreateAPIKeyResponse> => {
-    const response = await apiClient.post<CreateAPIKeyResponse>(`/agents/${agentId}/keys`, {
-      name,
-    });
+  createAPIKey: async (
+    agentId: string,
+    name: string
+  ): Promise<CreateAPIKeyResponse> => {
+    const response = await apiClient.post<CreateAPIKeyResponse>(
+      `/agents/${agentId}/keys`,
+      {
+        name,
+      }
+    );
     return response.data;
   },
 
-  deleteAPIKey: async (agentId: string, keyId: string): Promise<{ message: string }> => {
-    const response = await apiClient.delete<{ message: string }>(`/agents/${agentId}/keys/${keyId}`);
+  deleteAPIKey: async (
+    agentId: string,
+    keyId: string
+  ): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(
+      `/agents/${agentId}/keys/${keyId}`
+    );
     return response.data;
   },
 };

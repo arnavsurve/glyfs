@@ -1,15 +1,15 @@
-import { useState } from "react"
-import { Label } from "./label"
-import { Input } from "./input"
-import { Slider } from "./slider"
-import { cn } from "../../lib/utils"
+import { useState } from "react";
+import { Label } from "./label";
+import { Input } from "./input";
+import { Slider } from "./slider";
+import { cn } from "../../lib/utils";
 
 interface TemperatureSliderProps {
-  value: number
-  onChange: (value: number) => void
-  className?: string
-  label?: string
-  id?: string
+  value: number;
+  onChange: (value: number) => void;
+  className?: string;
+  label?: string;
+  id?: string;
 }
 
 export function TemperatureSlider({
@@ -17,49 +17,48 @@ export function TemperatureSlider({
   onChange,
   className,
   label = "Temperature",
-  id = "temperature"
+  id = "temperature",
 }: TemperatureSliderProps) {
-  const [inputValue, setInputValue] = useState(value.toString())
-  const [isInputFocused, setIsInputFocused] = useState(false)
+  const [inputValue, setInputValue] = useState(value.toString());
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   const handleSliderChange = (values: number[]) => {
-    const newValue = values[0]
-    onChange(newValue)
+    const newValue = values[0];
+    onChange(newValue);
     if (!isInputFocused) {
-      setInputValue(newValue.toString())
+      setInputValue(newValue.toString());
     }
-  }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputVal = e.target.value
-    setInputValue(inputVal)
-    
+    const inputVal = e.target.value;
+    setInputValue(inputVal);
+
     // Only update the actual value if it's a valid number
-    const numValue = parseFloat(inputVal)
+    const numValue = parseFloat(inputVal);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 1) {
-      onChange(numValue)
+      onChange(numValue);
     }
-  }
+  };
 
   const handleInputBlur = () => {
-    setIsInputFocused(false)
-    const numValue = parseFloat(inputValue)
-    
+    setIsInputFocused(false);
+    const numValue = parseFloat(inputValue);
+
     // Reset to current value if input is invalid
     if (isNaN(numValue) || numValue < 0 || numValue > 1) {
-      setInputValue(value.toString())
+      setInputValue(value.toString());
     } else {
       // Ensure the value is properly formatted
-      const clampedValue = Math.max(0, Math.min(1, numValue))
-      setInputValue(clampedValue.toString())
-      onChange(clampedValue)
+      const clampedValue = Math.max(0, Math.min(1, numValue));
+      setInputValue(clampedValue.toString());
+      onChange(clampedValue);
     }
-  }
+  };
 
   const handleInputFocus = () => {
-    setIsInputFocused(true)
-  }
-
+    setIsInputFocused(true);
+  };
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -78,7 +77,7 @@ export function TemperatureSlider({
           placeholder="0.5"
         />
       </div>
-      
+
       <Slider
         value={[value]}
         onValueChange={handleSliderChange}
@@ -87,10 +86,10 @@ export function TemperatureSlider({
         step={0.1}
         className="w-full"
       />
-      
+
       <p className="text-xs text-muted-foreground">
         Response randomness (0.0-1.0)
       </p>
     </div>
-  )
+  );
 }

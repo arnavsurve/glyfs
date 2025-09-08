@@ -73,4 +73,3 @@ export const MCP_SERVER_TYPES = {
 
 export type MCPServerType =
   (typeof MCP_SERVER_TYPES)[keyof typeof MCP_SERVER_TYPES];
-

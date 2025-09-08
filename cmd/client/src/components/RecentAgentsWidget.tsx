@@ -55,7 +55,7 @@ export function RecentAgentsWidget() {
                   ? session
                   : latest;
               },
-              null,
+              null
             );
 
             return {
@@ -69,7 +69,7 @@ export function RecentAgentsWidget() {
             // If we can't fetch sessions for an agent, just return it without activity
             return agent as AgentWithActivity;
           }
-        }),
+        })
       );
 
       // Filter agents with activity and sort by most recent

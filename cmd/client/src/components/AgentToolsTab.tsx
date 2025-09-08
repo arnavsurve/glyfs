@@ -60,10 +60,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingServer, setEditingServer] = useState<AgentMCPServerDetail | null>(null);
+  const [editingServer, setEditingServer] =
+    useState<AgentMCPServerDetail | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Create server form state
@@ -92,7 +93,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const [editHeaderValue, setEditHeaderValue] = useState("");
   const [isEditHeaderSensitive, setIsEditHeaderSensitive] = useState(false);
   const [isEditUrlSensitive, setIsEditUrlSensitive] = useState(false);
-  const [editSensitiveHeaders, setEditSensitiveHeaders] = useState<string[]>([]);
+  const [editSensitiveHeaders, setEditSensitiveHeaders] = useState<string[]>(
+    []
+  );
 
   const addHeader = () => {
     if (headerKey.trim() && headerValue.trim()) {
@@ -185,11 +188,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
   const openEditModal = async (server: AgentMCPServerDetail) => {
     setEditingServer(server);
-    
+
     // Server already contains full details including config
     const existingHeaders = server.config.headers || {};
     const existingTimeout = server.config.timeout || 30;
-    
+
     setEditForm({
       name: server.server_name,
       description: server.description,
@@ -201,11 +204,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         headers: existingHeaders,
       },
     });
-    
+
     // Note: We don't know which headers are sensitive from the API response
     // so we'll start with empty sensitive headers list
     setEditSensitiveHeaders([]);
-    
+
     setEditHeaderKey("");
     setEditHeaderValue("");
     setIsEditHeaderSensitive(false);
@@ -327,7 +330,8 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         description: editForm.description,
         server_url: editForm.server_url,
         config: {
-          server_type: editForm.config?.server_type || editingServer.server_type,
+          server_type:
+            editForm.config?.server_type || editingServer.server_type,
           url: editForm.server_url || editingServer.server_url,
           timeout: editForm.config?.timeout || 30,
           headers: finalHeaders,
@@ -344,7 +348,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       setIsEditHeaderSensitive(false);
       setIsEditUrlSensitive(false);
       setEditSensitiveHeaders([]);
-      
+
       await fetchData();
       toast.success("MCP server updated successfully");
     } catch (err: any) {
@@ -380,11 +384,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     }
   };
 
-
   const handleToggleEnabled = async (
     serverId: string,
     serverName: string,
-    enabled: boolean,
+    enabled: boolean
   ) => {
     try {
       await mcpApi.toggleAgentMCPServer(agentId, serverId, enabled);
@@ -395,7 +398,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       toast.error("Failed to toggle server");
     }
   };
-
 
   const truncateUrl = (url: string, maxLength: number = 50): string => {
     if (url.length <= maxLength) return url;
@@ -425,8 +427,8 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                 <span>Agent Tools</span>
               </CardTitle>
               <CardDescription className="mt-4">
-                Connect your agent to MCP (Model Context Protocol) servers to
-                provide unlimited tools and capabilities
+                Connect your agent to Model Context Protocol servers to provide
+                access to tools and resources
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
@@ -517,7 +519,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                           handleToggleEnabled(
                             server.server_id,
                             server.server_name,
-                            !server.enabled,
+                            !server.enabled
                           )
                         }
                       >
@@ -533,7 +535,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() =>
-                          handleTestConnection(server.server_id, server.server_name)
+                          handleTestConnection(
+                            server.server_id,
+                            server.server_name
+                          )
                         }
                       >
                         <TestTube className="w-4 h-4" />
@@ -561,15 +566,19 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                               Delete MCP Server
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{server.server_name}"?
-                              This will remove the server from this agent.
+                              Are you sure you want to delete "
+                              {server.server_name}"? This will remove the server
+                              from this agent.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() =>
-                                handleDeleteServer(server.server_id, server.server_name)
+                                handleDeleteServer(
+                                  server.server_id,
+                                  server.server_name
+                                )
                               }
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
@@ -748,7 +757,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                           </Button>
                         </div>
                       );
-                    },
+                    }
                   )}
                 </div>
               )}
@@ -856,11 +865,15 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
               <div>
                 <Label htmlFor="edit-server-type">Server Type</Label>
                 <Select
-                  value={editForm.config?.server_type || editingServer?.server_type || "http"}
+                  value={
+                    editForm.config?.server_type ||
+                    editingServer?.server_type ||
+                    "http"
+                  }
                   onValueChange={(value: "http" | "sse") => {
                     setEditForm((prev) => ({
                       ...prev,
-                      config: { 
+                      config: {
                         ...prev.config,
                         server_type: value,
                         url: prev.config?.url || "",
@@ -912,7 +925,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
             </div>
 
             <div>
-              <Label htmlFor="edit-server-description">Description (Optional)</Label>
+              <Label htmlFor="edit-server-description">
+                Description (Optional)
+              </Label>
               <Textarea
                 id="edit-server-description"
                 value={editForm.description || ""}
@@ -994,7 +1009,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                           </Button>
                         </div>
                       );
-                    },
+                    }
                   )}
                 </div>
               )}
@@ -1025,7 +1040,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                       variant="outline"
                       size="sm"
                       onClick={addEditHeader}
-                      disabled={!editHeaderKey.trim() || !editHeaderValue.trim()}
+                      disabled={
+                        !editHeaderKey.trim() || !editHeaderValue.trim()
+                      }
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -1054,9 +1071,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleEditServer}
-              disabled={
-                !editForm.name || !editForm.server_url || isUpdating
-              }
+              disabled={!editForm.name || !editForm.server_url || isUpdating}
             >
               {isUpdating ? (
                 <>

@@ -1,7 +1,7 @@
 export interface ChatMessage {
   id: string;
   session_id: string;
-  role: 'user' | 'assistant' | 'tool';
+  role: "user" | "assistant" | "tool";
   content: string;
   metadata?: string;
   created_at: string;
@@ -9,7 +9,7 @@ export interface ChatMessage {
 
 export interface ChatContextMessage {
   id: string;
-  role: 'user' | 'assistant' | 'tool';
+  role: "user" | "assistant" | "tool";
   content: string;
   created_at: string;
 }
@@ -30,13 +30,13 @@ export interface ChatStreamRequest {
 }
 
 export interface ChatStreamEvent {
-  type: 'token' | 'done' | 'error' | 'metadata' | 'tool_event';
+  type: "token" | "done" | "error" | "metadata" | "tool_event";
   content: string;
   data?: any;
 }
 
 export interface ToolCallEvent {
-  type: 'tool_start' | 'tool_result' | 'tool_error' | 'tool_batch_complete';
+  type: "tool_start" | "tool_result" | "tool_error" | "tool_batch_complete";
   call_id?: string;
   tool_name?: string;
   arguments?: Record<string, any>;
@@ -45,7 +45,6 @@ export interface ToolCallEvent {
   duration_ms?: number;
   batch_complete?: boolean; // Frontend-only flag to track when tool batch is complete
 }
-
 
 export interface ChatState {
   currentSession: ChatSession | null;

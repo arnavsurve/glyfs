@@ -1,4 +1,4 @@
-import type { Agent } from '../types/agent.types';
+import type { Agent } from "../types/agent.types";
 
 /**
  * Transform backend agent data to frontend interface

@@ -69,7 +69,7 @@ export function AgentDetailView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "tools" | "api">(
-    "overview",
+    "overview"
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -236,7 +236,15 @@ export function AgentDetailView() {
     } else {
       setOriginalData(null);
     }
-  }, [agent?.id, agent?.name, agent?.provider, agent?.llm_model, agent?.system_prompt, agent?.temperature, agent?.max_tokens]);
+  }, [
+    agent?.id,
+    agent?.name,
+    agent?.provider,
+    agent?.llm_model,
+    agent?.system_prompt,
+    agent?.temperature,
+    agent?.max_tokens,
+  ]);
 
   // Unsaved changes detection (placed after handleSave is defined)
   const {
@@ -247,20 +255,16 @@ export function AgentDetailView() {
     handleCancel,
     markAsSaved,
     checkUnsavedChanges,
-  } = useUnsavedChanges(
-    originalData,
-    editForm,
-    {
-      enabled: activeTab === "overview", // Only track changes on overview tab
-      onSave: handleSave,
-      onDiscard: resetForm,
-    },
-  );
+  } = useUnsavedChanges(originalData, editForm, {
+    enabled: activeTab === "overview", // Only track changes on overview tab
+    onSave: handleSave,
+    onDiscard: resetForm,
+  });
 
   // Debug logging - only when changes are made
   useEffect(() => {
     if (agent) {
-      console.log('Change detection debug:', {
+      console.log("Change detection debug:", {
         original: {
           name: agent.name,
           provider: agent.provider,
@@ -270,7 +274,7 @@ export function AgentDetailView() {
           max_tokens: agent.max_tokens,
         },
         current: editForm,
-        hasUnsavedChanges
+        hasUnsavedChanges,
       });
     }
   }, [editForm, hasUnsavedChanges, agent]);
@@ -326,7 +330,7 @@ export function AgentDetailView() {
         newParams.set("tab", tab);
         return newParams;
       },
-      { replace: true },
+      { replace: true }
     );
   };
 
@@ -401,7 +405,7 @@ export function AgentDetailView() {
           newParams.set("tab", "overview");
           return newParams;
         },
-        { replace: true },
+        { replace: true }
       );
     }
   }, [searchParams, setSearchParams]);
@@ -1027,7 +1031,7 @@ data: {"type":"done","content":"","data":{"response":"Once upon a time...","usag
                                   <span className="ml-2">
                                     • Last used{" "}
                                     {new Date(
-                                      key.last_used,
+                                      key.last_used
                                     ).toLocaleDateString()}
                                   </span>
                                 )}

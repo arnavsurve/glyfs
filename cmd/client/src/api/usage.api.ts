@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export interface DailyUsage {
   date: string;
@@ -38,7 +38,7 @@ export interface UsageDashboardResponse {
 
 export const usageApi = {
   getDashboardUsage: async (days?: number): Promise<UsageDashboardResponse> => {
-    const url = days ? `/usage/dashboard?days=${days}` : '/usage/dashboard';
+    const url = days ? `/usage/dashboard?days=${days}` : "/usage/dashboard";
     const response = await apiClient.get<UsageDashboardResponse>(url);
     return response.data;
   },

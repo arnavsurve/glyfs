@@ -8,7 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Send, MessageSquare, Bot, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Send,
+  MessageSquare,
+  Bot,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -33,7 +40,7 @@ export function ChatPage({}: ChatPageProps) {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(
-    null,
+    null
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -94,7 +101,7 @@ export function ChatPage({}: ChatPageProps) {
 
       if (savedAgentId) {
         agentToSelect = response.agents.find(
-          (agent) => agent.id === savedAgentId,
+          (agent) => agent.id === savedAgentId
         );
       }
 
@@ -130,9 +137,9 @@ export function ChatPage({}: ChatPageProps) {
 
   // Filter out tool_start messages from historical sessions to match live chat UX
   const filterHistoricalMessages = (messages: ChatMessage[]) => {
-    return messages.filter(msg => {
+    return messages.filter((msg) => {
       if (msg.role !== "tool") return true;
-      
+
       try {
         const toolEvent = JSON.parse(msg.metadata || "{}");
         return toolEvent.type !== "tool_start";
@@ -302,8 +309,8 @@ export function ChatPage({}: ChatPageProps) {
                                   : `Tool failed: ${toolEvent.tool_name}`,
                               metadata: JSON.stringify(toolEvent),
                             }
-                          : msg,
-                      ),
+                          : msg
+                      )
                     );
                   }
                 }
@@ -332,7 +339,7 @@ export function ChatPage({}: ChatPageProps) {
               }, 100);
               break;
           }
-        },
+        }
       );
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -451,7 +458,9 @@ export function ChatPage({}: ChatPageProps) {
   return (
     <div className="flex h-full bg-background">
       {/* Sidebar */}
-      <div className={`${isSidebarCollapsed ? "w-16" : "w-80"} transition-all duration-300 border-r border-border flex flex-col`}>
+      <div
+        className={`${isSidebarCollapsed ? "w-16" : "w-80"} transition-all duration-300 border-r border-border flex flex-col`}
+      >
         {isSidebarCollapsed ? (
           /* Collapsed Sidebar - Only Toggle Button */
           <div className="flex-1 flex items-start justify-center p-4">
@@ -484,7 +493,9 @@ export function ChatPage({}: ChatPageProps) {
 
             {/* Agent Selector */}
             <div className="p-4 border-b border-border">
-              <label className="text-sm font-medium mb-2 block">Select Agent</label>
+              <label className="text-sm font-medium mb-2 block">
+                Select Agent
+              </label>
               {isLoadingAgents ? (
                 <div className="flex items-center justify-center h-10 bg-muted rounded-md">
                   <span className="text-sm text-muted-foreground">
@@ -675,25 +686,24 @@ export function ChatPage({}: ChatPageProps) {
 
                   {/* Thinking Indicator */}
                   {isStreaming && !streamingMessage && (
-                      <div className="flex justify-start">
-                        <div className="max-w-[80%] p-3 rounded-lg bg-card border">
-                          <div className="flex items-center space-x-2">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                              <div
-                                className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-                                style={{ animationDelay: "0.2s" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-                                style={{ animationDelay: "0.4s" }}
-                              ></div>
-                            </div>
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] p-3 rounded-lg bg-card border">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                              style={{ animationDelay: "0.4s" }}
+                            ></div>
                           </div>
                         </div>
                       </div>
-                    )}
-
+                    </div>
+                  )}
 
                   {/* Streaming Message */}
                   {isStreaming && streamingMessage && (

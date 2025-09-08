@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useRef,
+} from "react";
 import type { ReactNode } from "react";
 import type {
   AuthState,
@@ -116,11 +122,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             auth_provider: data.auth_provider,
             display_name: data.display_name,
             avatar_url: data.avatar_url,
-            tier: (data.tier as 'free' | 'pro') || 'free',
-            tier_limits: data.tier_limits || { 
-              agent_limit: 3, agents_used: 0,
-              mcp_server_limit: 9, mcp_servers_used: 0,
-              api_key_limit: 3, api_keys_used: 0 
+            tier: (data.tier as "free" | "pro") || "free",
+            tier_limits: data.tier_limits || {
+              agent_limit: 3,
+              agents_used: 0,
+              mcp_server_limit: 9,
+              mcp_servers_used: 0,
+              api_key_limit: 3,
+              api_keys_used: 0,
             },
           };
           dispatch({
@@ -167,7 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           refreshInProgress.current = false;
         }
       },
-      12 * 60 * 1000,
+      12 * 60 * 1000
     ); // Refresh every 12 minutes
 
     return () => clearInterval(refreshInterval);
@@ -176,10 +185,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Regular auth login commented out - OAuth only
   const login = async (_credentials: LoginCredentials): Promise<void> => {
     // OAuth only - regular login disabled
-    const errorMessage = "Please use OAuth providers (GitHub or Google) to sign in";
+    const errorMessage =
+      "Please use OAuth providers (GitHub or Google) to sign in";
     dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
     throw new Error(errorMessage);
-    
+
     // Original implementation:
     // try {
     //   dispatch({ type: "AUTH_START" });
@@ -211,10 +221,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Regular auth signup commented out - OAuth only
   const signup = async (_credentials: SignupCredentials): Promise<void> => {
     // OAuth only - regular signup disabled
-    const errorMessage = "Please use OAuth providers (GitHub or Google) to create an account";
+    const errorMessage =
+      "Please use OAuth providers (GitHub or Google) to create an account";
     dispatch({ type: "AUTH_FAILURE", payload: errorMessage });
     throw new Error(errorMessage);
-    
+
     // Original implementation:
     // try {
     //   dispatch({ type: "AUTH_START" });
@@ -298,4 +309,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-

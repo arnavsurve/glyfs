@@ -1,63 +1,77 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { UserPlus } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
-import type { SignupCredentials } from '../types/auth.types'
-import { OAuthButtons } from './OAuthButtons'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { UserPlus } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import type { SignupCredentials } from "../types/auth.types";
+import { OAuthButtons } from "./OAuthButtons";
 
 interface SignupFormData extends SignupCredentials {
-  confirmPassword: string
+  confirmPassword: string;
 }
 
 export function SignupPage() {
   const [_formData, _setFormData] = useState<SignupFormData>({
-    email: '',
-    password: '',
-    confirmPassword: ''
-  })
-  const [_validationError, _setValidationError] = useState('')
-  const [oauthError, setOauthError] = useState<string | null>(null)
-  const [_success, _setSuccess] = useState(false)
-  const { error, clearError } = useAuth()
-  const location = useLocation()
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [_validationError, _setValidationError] = useState("");
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [_success, _setSuccess] = useState(false);
+  const { error, clearError } = useAuth();
+  const location = useLocation();
 
   // Check for OAuth error in query params
   useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const errorParam = params.get('error')
-    const errorDesc = params.get('description')
-    
+    const params = new URLSearchParams(location.search);
+    const errorParam = params.get("error");
+    const errorDesc = params.get("description");
+
     if (errorParam) {
       const errorMessages: Record<string, string> = {
-        'access_denied': 'Authorization was denied. Please try again.',
-        'invalid_state': 'Security validation failed. Please try again.',
-        'github_api_error': 'Unable to connect to GitHub. Please try again later.',
-        'google_api_error': 'Unable to connect to Google. Please try again later.',
-        'no_email': 'No email address found. Please ensure your account has a verified email.',
-        'email_already_exists': 'An account with this email already exists. Please log in instead.',
-        'user_creation_failed': 'Failed to create account. Please try again.',
-        'token_generation_failed': 'Authentication failed. Please try again.',
-        'token_exchange_failed': 'Authentication failed. Please try again.'
-      }
-      
-      setOauthError(errorMessages[errorParam] || errorDesc || 'Authentication failed. Please try again.')
-      
+        access_denied: "Authorization was denied. Please try again.",
+        invalid_state: "Security validation failed. Please try again.",
+        github_api_error:
+          "Unable to connect to GitHub. Please try again later.",
+        google_api_error:
+          "Unable to connect to Google. Please try again later.",
+        no_email:
+          "No email address found. Please ensure your account has a verified email.",
+        email_already_exists:
+          "An account with this email already exists. Please log in instead.",
+        user_creation_failed: "Failed to create account. Please try again.",
+        token_generation_failed: "Authentication failed. Please try again.",
+        token_exchange_failed: "Authentication failed. Please try again.",
+      };
+
+      setOauthError(
+        errorMessages[errorParam] ||
+          errorDesc ||
+          "Authentication failed. Please try again."
+      );
+
       // Clean up URL
-      const newUrl = window.location.pathname
-      window.history.replaceState({}, document.title, newUrl)
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
     }
-  }, [location])
+  }, [location]);
 
   // Clear errors when user starts typing
   useEffect(() => {
     if (error) {
-      clearError()
+      clearError();
     }
     if (oauthError) {
-      setOauthError(null)
+      setOauthError(null);
     }
-  }, [error, clearError, oauthError])
+  }, [error, clearError, oauthError]);
 
   if (_success) {
     return (
@@ -70,13 +84,14 @@ export function SignupPage() {
               </div>
               <CardTitle className="text-2xl">Account Created!</CardTitle>
               <CardDescription>
-                Your account has been created successfully. Redirecting to dashboard...
+                Your account has been created successfully. Redirecting to
+                dashboard...
               </CardDescription>
             </CardHeader>
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -95,10 +110,10 @@ export function SignupPage() {
           <CardContent className="space-y-4">
             {/* OAuth Buttons */}
             <OAuthButtons mode="signup" />
-            
+
             {/* Regular auth form commented out - OAuth only */}
             {/* <OAuthDivider /> */}
-            
+
             {/* <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -151,11 +166,14 @@ export function SignupPage() {
                 Create Account
               </Button>
             </form> */}
-            
+
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline cursor-pointer">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="text-primary hover:underline cursor-pointer"
+                >
                   Sign in
                 </Link>
               </p>
@@ -164,5 +182,5 @@ export function SignupPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

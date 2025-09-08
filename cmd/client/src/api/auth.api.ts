@@ -1,5 +1,5 @@
-import { apiClient } from './client';
-import type { AuthResponse } from '../types/auth.types';
+import { apiClient } from "./client";
+import type { AuthResponse } from "../types/auth.types";
 
 export const authApi = {
   // Regular auth methods commented out - OAuth only
@@ -14,7 +14,7 @@ export const authApi = {
   // },
 
   refreshToken: async (): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/refresh');
+    const response = await apiClient.post<AuthResponse>("/auth/refresh");
     return response.data;
   },
 

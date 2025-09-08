@@ -1,10 +1,10 @@
-import { Button } from '@/components/ui/button';
-import type { OAuthProvider } from '@/types/auth.types';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import type { OAuthProvider } from "@/types/auth.types";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface OAuthButtonsProps {
-  mode: 'login' | 'signup';
+  mode: "login" | "signup";
   onOAuthStart?: () => void;
 }
 
@@ -45,19 +45,21 @@ const GoogleIcon = () => (
 );
 
 export function OAuthButtons({ mode, onOAuthStart }: OAuthButtonsProps) {
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
+    null
+  );
 
   const handleOAuthLogin = (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     if (onOAuthStart) {
       onOAuthStart();
     }
-    
+
     // Redirect to OAuth endpoint
     window.location.href = `/api/auth/oauth/${provider}`;
   };
 
-  const actionText = mode === 'login' ? 'Continue with' : 'Sign up with';
+  const actionText = mode === "login" ? "Continue with" : "Sign up with";
 
   return (
     <div className="space-y-3">
@@ -65,10 +67,10 @@ export function OAuthButtons({ mode, onOAuthStart }: OAuthButtonsProps) {
         type="button"
         variant="outline"
         className="w-full"
-        onClick={() => handleOAuthLogin('github')}
+        onClick={() => handleOAuthLogin("github")}
         disabled={loadingProvider !== null}
       >
-        {loadingProvider === 'github' ? (
+        {loadingProvider === "github" ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <GitHubIcon />
@@ -80,10 +82,10 @@ export function OAuthButtons({ mode, onOAuthStart }: OAuthButtonsProps) {
         type="button"
         variant="outline"
         className="w-full"
-        onClick={() => handleOAuthLogin('google')}
+        onClick={() => handleOAuthLogin("google")}
         disabled={loadingProvider !== null}
       >
-        {loadingProvider === 'google' ? (
+        {loadingProvider === "google" ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <GoogleIcon />
@@ -101,7 +103,9 @@ export function OAuthDivider() {
         <span className="w-full border-t" />
       </div>
       <div className="relative flex justify-center text-xs uppercase">
-        <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+        <span className="bg-background px-2 text-muted-foreground">
+          Or continue with email
+        </span>
       </div>
     </div>
   );

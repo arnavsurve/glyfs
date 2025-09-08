@@ -78,8 +78,8 @@
   border-radius: 0.25rem;
   font-size: 0.8125rem;
   font-family:
-    'Geist Mono', ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+    "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .markdown-content pre {
@@ -172,4 +172,3 @@
     max-height: 200px;
   }
 }
-

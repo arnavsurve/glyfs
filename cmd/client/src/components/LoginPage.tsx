@@ -24,24 +24,32 @@ export function LoginPage() {
   // Check for OAuth error in query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const errorParam = params.get('error');
-    const errorDesc = params.get('description');
-    
+    const errorParam = params.get("error");
+    const errorDesc = params.get("description");
+
     if (errorParam) {
       const errorMessages: Record<string, string> = {
-        'access_denied': 'Authorization was denied. Please try again.',
-        'invalid_state': 'Security validation failed. Please try again.',
-        'github_api_error': 'Unable to connect to GitHub. Please try again later.',
-        'google_api_error': 'Unable to connect to Google. Please try again later.',
-        'no_email': 'No email address found. Please ensure your account has a verified email.',
-        'email_already_exists': 'An account with this email already exists. Please log in with your password.',
-        'user_creation_failed': 'Failed to create account. Please try again.',
-        'token_generation_failed': 'Authentication failed. Please try again.',
-        'token_exchange_failed': 'Authentication failed. Please try again.'
+        access_denied: "Authorization was denied. Please try again.",
+        invalid_state: "Security validation failed. Please try again.",
+        github_api_error:
+          "Unable to connect to GitHub. Please try again later.",
+        google_api_error:
+          "Unable to connect to Google. Please try again later.",
+        no_email:
+          "No email address found. Please ensure your account has a verified email.",
+        email_already_exists:
+          "An account with this email already exists. Please log in with your password.",
+        user_creation_failed: "Failed to create account. Please try again.",
+        token_generation_failed: "Authentication failed. Please try again.",
+        token_exchange_failed: "Authentication failed. Please try again.",
       };
-      
-      setOauthError(errorMessages[errorParam] || errorDesc || 'Authentication failed. Please try again.');
-      
+
+      setOauthError(
+        errorMessages[errorParam] ||
+          errorDesc ||
+          "Authentication failed. Please try again."
+      );
+
       // Clean up URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
@@ -74,10 +82,10 @@ export function LoginPage() {
           <CardContent className="space-y-4">
             {/* OAuth Buttons */}
             <OAuthButtons mode="login" />
-            
+
             {/* Regular auth form commented out - OAuth only */}
             {/* <OAuthDivider /> */}
-            
+
             {/* <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -122,7 +130,10 @@ export function LoginPage() {
               </Button> */}
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline cursor-pointer">
+                <Link
+                  to="/signup"
+                  className="text-primary hover:underline cursor-pointer"
+                >
                   Sign up
                 </Link>
               </p>
@@ -133,4 +144,3 @@ export function LoginPage() {
     </div>
   );
 }
-

@@ -19,7 +19,7 @@ export function UpgradePrompt({ open, onOpenChange }: UpgradePromptProps) {
   const handleUpgrade = () => {
     // Placeholder for Stripe redirect
     alert(
-      "Pro plan coming soon! Email us at arnav@glyfs.dev for early access and to share what features you'd like.",
+      "Pro plan coming soon! Email us at arnav@glyfs.dev for early access and to share what features you'd like."
     );
     onOpenChange(false);
   };

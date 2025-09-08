@@ -1,7 +1,7 @@
-import React from 'react';
-import type { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import React from "react";
+import type { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "./AuthContext";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  redirectTo = '/login',
+  redirectTo = "/login",
   requireAuth = true,
 }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -35,7 +35,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If route requires no authentication (like login page) and user is authenticated
   if (!requireAuth && isAuthenticated) {
     // Redirect to dashboard or the originally intended location
-    const from = location.state?.from?.pathname || '/app/dashboard';
+    const from = location.state?.from?.pathname || "/app/dashboard";
     return <Navigate to={from} replace />;
   }
 
@@ -43,7 +43,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 };
 
 // Convenience component for public routes (login, signup)
-export const PublicRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const PublicRoute: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   return (
     <ProtectedRoute requireAuth={false} redirectTo="/app/dashboard">
       {children}
@@ -52,9 +54,11 @@ export const PublicRoute: React.FC<{ children: ReactNode }> = ({ children }) => 
 };
 
 // Landing page route - shows landing for unauthenticated, redirects authenticated to dashboard
-export const LandingRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const LandingRoute: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const { isAuthenticated, isLoading } = useAuth();
-  
+
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (

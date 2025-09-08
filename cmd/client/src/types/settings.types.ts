@@ -1,7 +1,7 @@
 export interface UserSettings {
   anthropic_api_key: string; // Masked
-  openai_api_key: string;    // Masked
-  gemini_api_key: string;    // Masked
+  openai_api_key: string; // Masked
+  gemini_api_key: string; // Masked
 }
 
 export interface UpdateUserSettingsRequest {

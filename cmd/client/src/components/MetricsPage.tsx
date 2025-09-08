@@ -61,7 +61,9 @@ export function MetricsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Messages</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Messages
+            </CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -87,7 +89,9 @@ export function MetricsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Response Time
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -147,9 +151,7 @@ export function MetricsPage() {
               <Activity className="w-5 h-5" />
               <span>Agent Performance</span>
             </CardTitle>
-            <CardDescription>
-              Response times and usage by agent
-            </CardDescription>
+            <CardDescription>Response times and usage by agent</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg border-2 border-dashed border-muted">
@@ -184,7 +186,10 @@ export function MetricsPage() {
                 { name: "Data Analyst", messages: 156, change: "+22%" },
                 { name: "Creative Writer", messages: 143, change: "+5%" },
               ].map((agent, index) => (
-                <div key={agent.name} className="flex items-center justify-between">
+                <div
+                  key={agent.name}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center space-x-3">
                     <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
                       {index + 1}
@@ -193,10 +198,15 @@ export function MetricsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">{agent.messages}</div>
-                    <div className={`text-xs ${
-                      agent.change.startsWith('+') ? 'text-green-600' : 
-                      agent.change.startsWith('-') ? 'text-red-600' : 'text-muted-foreground'
-                    }`}>
+                    <div
+                      className={`text-xs ${
+                        agent.change.startsWith("+")
+                          ? "text-green-600"
+                          : agent.change.startsWith("-")
+                            ? "text-red-600"
+                            : "text-muted-foreground"
+                      }`}
+                    >
                       {agent.change}
                     </div>
                   </div>
@@ -224,10 +234,12 @@ export function MetricsPage() {
                 <div key={period.time} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{period.time}</span>
-                    <span className="text-muted-foreground">{period.label}</span>
+                    <span className="text-muted-foreground">
+                      {period.label}
+                    </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-primary h-2 rounded-full transition-all"
                       style={{ width: `${period.activity}%` }}
                     />
@@ -247,17 +259,41 @@ export function MetricsPage() {
           <CardContent>
             <div className="space-y-3">
               {[
-                { agent: "Research Assistant", action: "Generated report", time: "2 min ago" },
-                { agent: "Code Helper", action: "Fixed bug", time: "5 min ago" },
-                { agent: "Writing Coach", action: "Reviewed document", time: "12 min ago" },
-                { agent: "Data Analyst", action: "Analyzed dataset", time: "18 min ago" },
-                { agent: "Creative Writer", action: "Created story", time: "25 min ago" },
+                {
+                  agent: "Research Assistant",
+                  action: "Generated report",
+                  time: "2 min ago",
+                },
+                {
+                  agent: "Code Helper",
+                  action: "Fixed bug",
+                  time: "5 min ago",
+                },
+                {
+                  agent: "Writing Coach",
+                  action: "Reviewed document",
+                  time: "12 min ago",
+                },
+                {
+                  agent: "Data Analyst",
+                  action: "Analyzed dataset",
+                  time: "18 min ago",
+                },
+                {
+                  agent: "Creative Writer",
+                  action: "Created story",
+                  time: "25 min ago",
+                },
               ].map((activity, index) => (
                 <div key={index} className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{activity.agent}</p>
-                    <p className="text-xs text-muted-foreground">{activity.action}</p>
+                    <p className="text-sm font-medium truncate">
+                      {activity.agent}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {activity.action}
+                    </p>
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {activity.time}
