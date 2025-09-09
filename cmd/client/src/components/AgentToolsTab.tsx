@@ -73,12 +73,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     description: "",
     server_url: "",
     server_type: "http",
-    config: {
-      server_type: "http",
-      url: "",
-      timeout: 30,
-      headers: {},
-    },
+    timeout: 30,
+    headers: {},
+    max_retries: 3,
   });
 
   const [headerKey, setHeaderKey] = useState("");
@@ -102,12 +99,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       // Save current header to the form
       setCreateForm((prev) => ({
         ...prev,
-        config: {
-          ...prev.config,
-          headers: {
-            ...prev.config.headers,
-            [headerKey.trim()]: headerValue.trim(),
-          },
+        headers: {
+          ...prev.headers,
+          [headerKey.trim()]: headerValue.trim(),
         },
       }));
 
@@ -125,14 +119,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
   const removeHeader = (key: string) => {
     setCreateForm((prev) => {
-      const newHeaders = { ...prev.config.headers };
+      const newHeaders = { ...prev.headers };
       delete newHeaders[key];
       return {
         ...prev,
-        config: {
-          ...prev.config,
-          headers: newHeaders,
-        },
+        headers: newHeaders,
       };
     });
 
@@ -145,15 +136,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
     if (editHeaderKey.trim() && editHeaderValue.trim()) {
       setEditForm((prev) => ({
         ...prev,
-        config: {
-          server_type: prev.config?.server_type || "http",
-          url: prev.config?.url || "",
-          timeout: prev.config?.timeout || 30,
-          ...prev.config,
-          headers: {
-            ...prev.config?.headers,
-            [editHeaderKey.trim()]: editHeaderValue.trim(),
-          },
+        headers: {
+          ...prev.headers,
+          [editHeaderKey.trim()]: editHeaderValue.trim(),
         },
       }));
 
@@ -169,17 +154,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
 
   const removeEditHeader = (key: string) => {
     setEditForm((prev) => {
-      const newHeaders = { ...prev.config?.headers };
+      const newHeaders = { ...prev.headers };
       delete newHeaders[key];
       return {
         ...prev,
-        config: {
-          server_type: prev.config?.server_type || "http",
-          url: prev.config?.url || "",
-          timeout: prev.config?.timeout || 30,
-          ...prev.config,
-          headers: newHeaders,
-        },
+        headers: newHeaders,
       };
     });
 
@@ -189,30 +168,23 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const openEditModal = async (server: AgentMCPServerDetail) => {
     setEditingServer(server);
 
-    // Server already contains full details including config
-    const existingHeaders = server.config.headers || {};
-    const existingTimeout = server.config.timeout || 30;
-
     setEditForm({
       name: server.server_name,
       description: server.description,
       server_url: server.server_url,
-      config: {
-        server_type: server.server_type,
-        url: server.server_url,
-        timeout: existingTimeout,
-        headers: existingHeaders,
-      },
+      timeout: server.timeout,
+      headers: server.headers || {},
+      max_retries: server.max_retries,
+      env: server.env || {},
     });
 
-    // Note: We don't know which headers are sensitive from the API response
-    // so we'll start with empty sensitive headers list
-    setEditSensitiveHeaders([]);
+    // Set sensitive flags based on server data
+    setIsEditUrlSensitive(server.encrypted_url || false);
+    setEditSensitiveHeaders(server.sensitive_headers || []);
 
     setEditHeaderKey("");
     setEditHeaderValue("");
     setIsEditHeaderSensitive(false);
-    setIsEditUrlSensitive(false);
     setShowEditModal(true);
   };
 
@@ -251,7 +223,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       setIsCreating(true);
 
       // Auto-include current header key/value if they have values
-      const finalHeaders = { ...createForm.config.headers };
+      const finalHeaders = { ...createForm.headers };
       const finalSensitiveHeaders = [...sensitiveHeaders];
 
       if (headerKey.trim() && headerValue.trim()) {
@@ -261,16 +233,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         }
       }
 
-      // Set URL in config to match server_url, preserving headers
       const serverData = {
         ...createForm,
         agent_id: agentId, // Auto-associate with current agent
-        config: {
-          ...createForm.config,
-          url: createForm.server_url,
-          server_type: createForm.server_type,
-          headers: finalHeaders,
-        },
+        headers: finalHeaders,
         sensitive_url: isUrlSensitive,
         sensitive_headers: finalSensitiveHeaders,
       };
@@ -283,12 +249,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         description: "",
         server_url: "",
         server_type: "http",
-        config: {
-          server_type: "http",
-          url: "",
-          timeout: 30,
-          headers: {},
-        },
+        timeout: 30,
+        headers: {},
+        max_retries: 3,
       });
 
       setHeaderKey("");
@@ -315,7 +278,7 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
       setIsUpdating(true);
 
       // Auto-include current header key/value if they have values
-      const finalHeaders = { ...editForm.config?.headers };
+      const finalHeaders = { ...editForm.headers };
       const finalSensitiveHeaders = [...editSensitiveHeaders];
 
       if (editHeaderKey.trim() && editHeaderValue.trim()) {
@@ -329,13 +292,12 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
         name: editForm.name,
         description: editForm.description,
         server_url: editForm.server_url,
-        config: {
-          server_type:
-            editForm.config?.server_type || editingServer.server_type,
-          url: editForm.server_url || editingServer.server_url,
-          timeout: editForm.config?.timeout || 30,
-          headers: finalHeaders,
-        },
+        timeout: editForm.timeout,
+        headers: finalHeaders,
+        max_retries: editForm.max_retries,
+        env: editForm.env,
+        sensitive_url: isEditUrlSensitive,
+        sensitive_headers: finalSensitiveHeaders,
       };
 
       await mcpApi.updateServer(editingServer.server_id, updateData);
@@ -402,6 +364,13 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
   const truncateUrl = (url: string, maxLength: number = 50): string => {
     if (url.length <= maxLength) return url;
     return url.substring(0, maxLength) + "...";
+  };
+
+  const displayUrl = (url: string, isEncrypted: boolean): string => {
+    if (isEncrypted) {
+      return "••••••••••••••••••••••••••••••••••••••••";
+    }
+    return truncateUrl(url);
   };
 
   if (isLoading) {
@@ -495,10 +464,10 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                       <div className="flex items-center text-sm text-muted-foreground">
                         <span
                           className="flex items-center"
-                          title={server.server_url}
+                          title={server.encrypted_url ? "Encrypted URL" : server.server_url}
                         >
                           <ExternalLink className="w-3 h-3 mr-1" />
-                          {truncateUrl(server.server_url)}
+                          {displayUrl(server.server_url, server.encrypted_url || false)}
                         </span>
                       </div>
 
@@ -630,7 +599,6 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                     setCreateForm((prev) => ({
                       ...prev,
                       server_type: value,
-                      config: { ...prev.config, server_type: value },
                     }));
                   }}
                 >
@@ -701,14 +669,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                   type="number"
                   min="1"
                   max="300"
-                  value={createForm.config.timeout}
+                  value={createForm.timeout}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
                       ...prev,
-                      config: {
-                        ...prev.config,
-                        timeout: parseInt(e.target.value) || 30,
-                      },
+                      timeout: parseInt(e.target.value) || 30,
                     }))
                   }
                   className="mt-1"
@@ -726,9 +691,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
               </p>
 
               {/* Existing Headers */}
-              {Object.entries(createForm.config.headers || {}).length > 0 && (
+              {Object.entries(createForm.headers || {}).length > 0 && (
                 <div className="space-y-2 mb-3">
-                  {Object.entries(createForm.config.headers || {}).map(
+                  {Object.entries(createForm.headers || {}).map(
                     ([key, value]) => {
                       const isSensitive = sensitiveHeaders.includes(key);
                       return (
@@ -866,20 +831,12 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                 <Label htmlFor="edit-server-type">Server Type</Label>
                 <Select
                   value={
-                    editForm.config?.server_type ||
                     editingServer?.server_type ||
                     "http"
                   }
-                  onValueChange={(value: "http" | "sse") => {
-                    setEditForm((prev) => ({
-                      ...prev,
-                      config: {
-                        ...prev.config,
-                        server_type: value,
-                        url: prev.config?.url || "",
-                        timeout: prev.config?.timeout || 30,
-                      },
-                    }));
+                  onValueChange={(_value: "http" | "sse") => {
+                    // Server type is read-only in edit mode for now
+                    // setEditForm((prev) => ({ ...prev, server_type: value }));
                   }}
                 >
                   <SelectTrigger className="mt-1">
@@ -951,16 +908,11 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
                   type="number"
                   min="1"
                   max="300"
-                  value={editForm.config?.timeout || 30}
+                  value={editForm.timeout || 30}
                   onChange={(e) =>
                     setEditForm((prev) => ({
                       ...prev,
-                      config: {
-                        ...prev.config,
-                        server_type: prev.config?.server_type || "http",
-                        url: prev.config?.url || "",
-                        timeout: parseInt(e.target.value) || 30,
-                      },
+                      timeout: parseInt(e.target.value) || 30,
                     }))
                   }
                   className="mt-1"
@@ -978,9 +930,9 @@ export function AgentToolsTab({ agentId }: AgentToolsTabProps) {
               </p>
 
               {/* Existing Headers */}
-              {Object.entries(editForm.config?.headers || {}).length > 0 && (
+              {Object.entries(editForm.headers || {}).length > 0 && (
                 <div className="space-y-2 mb-3">
-                  {Object.entries(editForm.config?.headers || {}).map(
+                  {Object.entries(editForm.headers || {}).map(
                     ([key, value]) => {
                       const isSensitive = editSensitiveHeaders.includes(key);
                       return (
