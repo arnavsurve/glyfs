@@ -1,0 +1,174 @@
+# Authentication
+
+This document provides detailed information about authentication with the Glyfs API.
+
+## Overview
+
+Glyfs uses agent-specific API keys for authentication. Each agent you create can have multiple API keys, and each API key only provides access to that specific agent.
+
+## API Key Lifecycle
+
+### Creating API Keys
+
+1. Navigate to your agent's settings in the Glyfs web interface
+2. Go to the "API" tab
+3. Click "Generate New Key"
+4. Provide a descriptive name for the key
+5. Copy the generated key immediately (it won't be shown again)
+
+### API Key Format
+
+All API keys follow this format:
+```
+apk_[base64-encoded-string]
+```
+
+Example: `apk_dGVzdF9hcGlfa2V5XzEyMzQ1Njc4OTA`
+
+### Security Properties
+
+- **Agent-scoped**: Each API key only works with the specific agent it was created for
+- **Hashed storage**: API keys are stored as SHA-256 hashes in the database
+- **One-time display**: The raw API key is only shown once during creation
+- **Usage tracking**: Last used timestamp is updated on each API call
+- **Revocable**: Keys can be deactivated without affecting other keys
+
+## Using API Keys
+
+### Authorization Header
+
+Include your API key in the `Authorization` header using Bearer authentication:
+
+```http
+Authorization: Bearer apk_your_api_key_here
+```
+
+### Complete Request Example
+
+```bash
+curl -X POST "https://your-instance.com/api/agents/your-agent-id/invoke" \
+  -H "Authorization: Bearer apk_dGVzdF9hcGlfa2V5XzEyMzQ1Njc4OTA" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Hello, agent!"
+  }'
+```
+
+## Authentication Flow
+
+1. **Request received**: Server extracts the Authorization header
+2. **Format validation**: Checks that header starts with "Bearer apk_"
+3. **Key hashing**: Computes SHA-256 hash of the provided key
+4. **Database lookup**: Searches for active API key with matching hash
+5. **Agent resolution**: Loads the associated agent configuration
+6. **Usage tracking**: Updates the last_used timestamp
+7. **Context injection**: Makes agent available to the handler
+
+## Error Responses
+
+### Missing Authorization Header
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "message": "missing authorization header"
+}
+```
+
+### Invalid Header Format
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "message": "invalid authorization header format"
+}
+```
+
+### Invalid API Key Format
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "message": "invalid API key format"
+}
+```
+
+### Invalid or Inactive API Key
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "message": "invalid API key"
+}
+```
+
+### Agent Not Found
+```http
+HTTP/1.1 404 Not Found
+Content-Type: application/json
+
+{
+  "message": "agent not found"
+}
+```
+
+## Best Practices
+
+### Security
+1. **Store securely**: Never commit API keys to version control
+2. **Use environment variables**: Store keys in environment variables or secure credential stores
+3. **Rotate regularly**: Generate new keys periodically and revoke old ones
+4. **Scope appropriately**: Use different keys for different environments (dev, staging, prod)
+5. **Monitor usage**: Check the last used timestamps to identify unused keys
+
+### Key Management
+1. **Descriptive names**: Use clear, descriptive names for your API keys
+2. **Environment-specific**: Create separate keys for development, staging, and production
+3. **Application-specific**: Use different keys for different applications or services
+4. **Team access**: Share keys securely with team members who need access
+
+### Error Handling
+1. **Implement retries**: Handle transient network errors with exponential backoff
+2. **Cache validation**: Don't repeatedly validate the same key in short periods
+3. **Graceful degradation**: Handle authentication failures gracefully in your application
+4. **Logging**: Log authentication failures for security monitoring (without logging the actual keys)
+
+## Rate Limiting
+
+API keys are subject to rate limiting based on:
+- **User tier**: Free, Pro, Enterprise tiers have different limits
+- **Usage patterns**: Excessive usage may trigger additional limits
+- **Resource constraints**: Server capacity and user quotas
+
+Rate limit information is not currently exposed in response headers but may be added in future versions.
+
+## API Key Lifecycle Management
+
+### Monitoring Usage
+Check the last used timestamp in your agent's API tab to identify:
+- Unused keys that can be safely revoked
+- Suspicious activity (unexpected usage patterns)
+- Keys that may need rotation
+
+### Revocation
+Revoked API keys:
+- Are immediately deactivated
+- Cannot be reactivated (generate new keys instead)
+- Remain in the database for audit purposes
+- Will cause all requests using that key to return 401 errors
+
+### Migration
+When rotating API keys:
+1. Generate a new API key
+2. Update your applications to use the new key
+3. Test that the new key works correctly
+4. Revoke the old key
+5. Monitor for any applications still using the old key
+
+## Integration Examples
+
+See the [Examples](./examples.md) documentation for complete code examples showing proper API key usage in various programming languages.

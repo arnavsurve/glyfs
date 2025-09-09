@@ -1,0 +1,78 @@
+# Tools & MCP
+
+Overview of tool integration and Model Context Protocol (MCP) support in Glyfs agents.
+
+## Overview
+
+Glyfs agents can be enhanced with external tools through the Model Context Protocol (MCP). This allows agents to:
+
+- Access external APIs and services
+- Perform computations and data processing
+- Interact with databases and file systems
+- Execute specialized functions
+
+## Tool Events in Streaming
+
+When agents use tools during streaming responses, you'll receive `tool_event` messages. The structure varies based on the MCP server implementation.
+
+### Basic Tool Event Format
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "example_tool",
+    "status": "executing",
+    "result": "...",
+    "error": null
+  }
+}
+```
+
+### Common Tool Event States
+
+- **`executing`**: Tool is currently running
+- **`completed`**: Tool execution finished successfully  
+- **`failed`**: Tool execution encountered an error
+
+## MCP Integration
+
+Model Context Protocol (MCP) provides a standardized way to connect AI systems with external tools and data sources.
+
+### MCP Server Configuration
+
+MCP servers are configured at the agent level and provide specific capabilities to your agents.
+
+### Popular MCP Tools
+
+Common categories of MCP tools include:
+
+- **File System**: Reading and writing files
+- **Database**: Querying databases
+- **Web**: Making HTTP requests
+- **Computation**: Mathematical calculations
+- **API Integration**: Third-party service integration
+
+## Development
+
+For developers building MCP tools:
+
+1. Follow the MCP specification
+2. Implement proper error handling
+3. Provide clear status updates during execution
+4. Return structured results
+
+## Examples
+
+Tool usage examples are integrated throughout the API documentation:
+
+- **[Streaming API](/api/streaming)** - Tool events in streams
+- **[JavaScript Examples](/examples/javascript)** - Handling tool events
+- **[Python Examples](/examples/python)** - Processing tool responses
+
+## Next Steps
+
+- Review the [Streaming API](/api/streaming) for tool event handling
+- See [Examples](/examples/) for tool integration code samples
+- Check the official MCP documentation for protocol details

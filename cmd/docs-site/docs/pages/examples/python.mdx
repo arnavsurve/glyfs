@@ -1,0 +1,666 @@
+# Python Examples
+
+Complete examples for integrating with the Glyfs API using Python in both synchronous and asynchronous environments.
+
+## Installation
+
+```bash
+pip install requests aiohttp  # For sync and async clients
+```
+
+## Synchronous Client
+
+### Basic Client Implementation
+
+```python
+import requests
+import json
+from typing import Generator, Dict, Any, Optional, List
+
+class GlyfsClient:
+    def __init__(self, base_url: str, api_key: str):
+        self.base_url = base_url.rstrip('/')
+        self.api_key = api_key
+        self.headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        self.session = requests.Session()
+        self.session.headers.update(self.headers)
+    
+    def invoke(self, agent_id: str, message: str, history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        """Send a message to an agent and get complete response."""
+        response = self.session.post(
+            f'{self.base_url}/api/agents/{agent_id}/invoke',
+            json={
+                'message': message,
+                'history': history or []
+            }
+        )
+        
+        if not response.ok:
+            try:
+                error_data = response.json()
+                raise Exception(error_data.get('message', f'HTTP {response.status_code}'))
+            except ValueError:
+                raise Exception(f'HTTP {response.status_code}: {response.text}')
+        
+        return response.json()
+    
+    def stream(self, agent_id: str, message: str, history: Optional[List[Dict]] = None) -> Generator[Dict[str, Any], None, None]:
+        """Stream response from an agent."""
+        response = self.session.post(
+            f'{self.base_url}/api/agents/{agent_id}/invoke/stream',
+            json={
+                'message': message,
+                'history': history or []
+            },
+            stream=True
+        )
+        
+        if not response.ok:
+            try:
+                error_data = response.json()
+                raise Exception(error_data.get('message', f'HTTP {response.status_code}'))
+            except ValueError:
+                raise Exception(f'HTTP {response.status_code}: {response.text}')
+        
+        for line in response.iter_lines(decode_unicode=True):
+            if line and line.startswith('data: '):
+                try:
+                    event_data = json.loads(line[6:])
+                    yield event_data
+                except json.JSONDecodeError:
+                    continue
+    
+    def close(self):
+        """Close the session."""
+        self.session.close()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+```
+
+### Usage Examples
+
+```python
+# Basic usage with context manager
+with GlyfsClient('https://glyfs.dev', 'apk_your_api_key') as client:
+    # Simple invoke
+    response = client.invoke('your-agent-id', 'What is AI?')
+    print("Response:", response['response'])
+    if response.get('usage'):
+        print("Token Usage:", response['usage'])
+
+    # Streaming with progress
+    print("\\nStreaming response:")
+    full_response = ""
+    
+    for event in client.stream('your-agent-id', 'Tell me about quantum computing'):
+        if event['type'] == 'token':
+            print(event['content'], end='', flush=True)
+            full_response += event['content']
+        elif event['type'] == 'tool_event':
+            print(f"\\n[Tool: {event['data'].get('tool_name', 'unknown')}]")
+        elif event['type'] == 'done':
+            print(f"\\n\\nUsage: {event['data']['usage']}")
+            break
+        elif event['type'] == 'error':
+            print(f"\\nError: {event['content']}")
+            break
+```
+
+## Asynchronous Client
+
+### Async Implementation with aiohttp
+
+```python
+import aiohttp
+import asyncio
+import json
+from typing import AsyncGenerator, Dict, Any, Optional, List
+
+class AsyncGlyfsClient:
+    def __init__(self, base_url: str, api_key: str, timeout: int = 30):
+        self.base_url = base_url.rstrip('/')
+        self.headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
+        self._session: Optional[aiohttp.ClientSession] = None
+    
+    @property
+    def session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                headers=self.headers,
+                timeout=self.timeout
+            )
+        return self._session
+    
+    async def invoke(self, agent_id: str, message: str, history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        """Send a message to an agent and get complete response."""
+        async with self.session.post(
+            f'{self.base_url}/api/agents/{agent_id}/invoke',
+            json={'message': message, 'history': history or []}
+        ) as response:
+            if not response.ok:
+                try:
+                    error_data = await response.json()
+                    raise Exception(error_data.get('message', f'HTTP {response.status}'))
+                except aiohttp.ContentTypeError:
+                    raise Exception(f'HTTP {response.status}: {await response.text()}')
+            
+            return await response.json()
+    
+    async def stream(self, agent_id: str, message: str, history: Optional[List[Dict]] = None) -> AsyncGenerator[Dict[str, Any], None]:
+        """Stream response from an agent."""
+        async with self.session.post(
+            f'{self.base_url}/api/agents/{agent_id}/invoke/stream',
+            json={'message': message, 'history': history or []}
+        ) as response:
+            if not response.ok:
+                try:
+                    error_data = await response.json()
+                    raise Exception(error_data.get('message', f'HTTP {response.status}'))
+                except aiohttp.ContentTypeError:
+                    raise Exception(f'HTTP {response.status}: {await response.text()}')
+            
+            async for line in response.content:
+                line_str = line.decode('utf-8').strip()
+                if line_str.startswith('data: '):
+                    try:
+                        event_data = json.loads(line_str[6:])
+                        yield event_data
+                    except json.JSONDecodeError:
+                        continue
+    
+    async def close(self):
+        """Close the session."""
+        if self._session and not self._session.closed:
+            await self._session.close()
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+```
+
+### Async Usage Examples
+
+```python
+async def main():
+    async with AsyncGlyfsClient('https://glyfs.dev', 'apk_your_api_key') as client:
+        # Simple async invoke
+        response = await client.invoke('your-agent-id', 'Explain machine learning')
+        print("Response:", response['response'])
+        
+        # Async streaming
+        print("\\nStreaming response:")
+        async for event in client.stream('your-agent-id', 'Tell me a story about AI'):
+            if event['type'] == 'token':
+                print(event['content'], end='', flush=True)
+            elif event['type'] == 'done':
+                print("\\nResponse complete!")
+                print("Usage:", event['data']['usage'])
+                break
+
+# Run the async example
+asyncio.run(main())
+```
+
+## Error Handling
+
+### Robust Error Handling
+
+```python
+import time
+from typing import Union
+
+class GlyfsError(Exception):
+    """Base exception for Glyfs API errors."""
+    pass
+
+class AuthenticationError(GlyfsError):
+    """Raised when API key is invalid."""
+    pass
+
+class RateLimitError(GlyfsError):
+    """Raised when rate limit is exceeded."""
+    pass
+
+class ServerError(GlyfsError):
+    """Raised when server returns 5xx error."""
+    pass
+
+def handle_response_error(response: requests.Response) -> None:
+    """Handle HTTP error responses."""
+    if response.status_code == 401:
+        raise AuthenticationError("Invalid API key or unauthorized access")
+    elif response.status_code == 429:
+        raise RateLimitError("Rate limit exceeded")
+    elif response.status_code >= 500:
+        raise ServerError(f"Server error: {response.status_code}")
+    else:
+        try:
+            error_data = response.json()
+            raise GlyfsError(error_data.get('message', f'HTTP {response.status_code}'))
+        except ValueError:
+            raise GlyfsError(f'HTTP {response.status_code}: {response.text}')
+
+def with_retry(func, max_retries: int = 3, backoff_factor: float = 1.0):
+    """Decorator for retrying API calls with exponential backoff."""
+    def wrapper(*args, **kwargs):
+        last_exception = None
+        
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except (RateLimitError, ServerError, requests.RequestException) as e:
+                last_exception = e
+                
+                if attempt == max_retries - 1:
+                    break
+                
+                # Exponential backoff
+                delay = backoff_factor * (2 ** attempt)
+                print(f"Attempt {attempt + 1} failed, retrying in {delay:.1f}s...")
+                time.sleep(delay)
+            except AuthenticationError:
+                # Don't retry auth errors
+                raise
+        
+        raise last_exception
+    
+    return wrapper
+
+# Enhanced client with error handling
+class RobustGlyfsClient(GlyfsClient):
+    @with_retry
+    def invoke(self, agent_id: str, message: str, history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        response = self.session.post(
+            f'{self.base_url}/api/agents/{agent_id}/invoke',
+            json={'message': message, 'history': history or []}
+        )
+        
+        if not response.ok:
+            handle_response_error(response)
+        
+        return response.json()
+```
+
+## Advanced Examples
+
+### Conversation Management
+
+```python
+from datetime import datetime
+from typing import List
+import json
+
+class Conversation:
+    def __init__(self, client: GlyfsClient, agent_id: str):
+        self.client = client
+        self.agent_id = agent_id
+        self.messages = []
+    
+    def send_message(self, message: str) -> str:
+        """Send a message and maintain conversation history."""
+        # Add user message
+        self.messages.append({
+            'role': 'user',
+            'content': message,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # Prepare history for API (exclude timestamps and current message)
+        api_history = [
+            {'role': msg['role'], 'content': msg['content']} 
+            for msg in self.messages[:-1]
+        ]
+        
+        # Get response
+        response = self.client.invoke(self.agent_id, message, api_history)
+        
+        # Add assistant response
+        self.messages.append({
+            'role': 'assistant',
+            'content': response['response'],
+            'timestamp': datetime.now().isoformat(),
+            'usage': response.get('usage')
+        })
+        
+        return response['response']
+    
+    def stream_message(self, message: str):
+        """Stream a message and maintain conversation history."""
+        self.messages.append({
+            'role': 'user',
+            'content': message,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        api_history = [
+            {'role': msg['role'], 'content': msg['content']} 
+            for msg in self.messages[:-1]
+        ]
+        
+        full_response = ""
+        usage_info = None
+        
+        for event in self.client.stream(self.agent_id, message, api_history):
+            if event['type'] == 'token':
+                yield event['content']
+                full_response += event['content']
+            elif event['type'] == 'done':
+                usage_info = event['data'].get('usage')
+                break
+        
+        self.messages.append({
+            'role': 'assistant',
+            'content': full_response,
+            'timestamp': datetime.now().isoformat(),
+            'usage': usage_info
+        })
+    
+    def export_history(self, filename: str = None) -> str:
+        """Export conversation history to JSON."""
+        history_json = json.dumps(self.messages, indent=2)
+        
+        if filename:
+            with open(filename, 'w') as f:
+                f.write(history_json)
+        
+        return history_json
+    
+    def get_total_usage(self) -> Dict[str, int]:
+        """Calculate total token usage for the conversation."""
+        total_usage = {'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0}
+        
+        for message in self.messages:
+            if message.get('usage'):
+                for key in total_usage:
+                    total_usage[key] += message['usage'].get(key, 0)
+        
+        return total_usage
+
+# Usage example
+with GlyfsClient('https://glyfs.dev', 'apk_your_api_key') as client:
+    conversation = Conversation(client, 'your-agent-id')
+    
+    # Regular messages
+    response1 = conversation.send_message("What is machine learning?")
+    print("Response 1:", response1)
+    
+    response2 = conversation.send_message("Can you give me a practical example?")
+    print("Response 2:", response2)
+    
+    # Streaming message
+    print("Streaming response:")
+    for token in conversation.stream_message("How does neural network training work?"):
+        print(token, end='', flush=True)
+    
+    print("\\n\\nTotal usage:", conversation.get_total_usage())
+    conversation.export_history('conversation.json')
+```
+
+### Batch Processing
+
+```python
+import asyncio
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict, Any
+
+class BatchProcessor:
+    def __init__(self, client: GlyfsClient, max_workers: int = 5):
+        self.client = client
+        self.max_workers = max_workers
+    
+    def process_sync_batch(self, requests: List[Dict]) -> List[Dict]:
+        """Process multiple requests concurrently using threads."""
+        results = []
+        
+        def process_request(req):
+            try:
+                response = self.client.invoke(
+                    req['agent_id'], 
+                    req['message'], 
+                    req.get('history', [])
+                )
+                return {
+                    'id': req['id'],
+                    'success': True,
+                    'response': response['response'],
+                    'usage': response.get('usage')
+                }
+            except Exception as e:
+                return {
+                    'id': req['id'],
+                    'success': False,
+                    'error': str(e)
+                }
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_req = {executor.submit(process_request, req): req for req in requests}
+            
+            for future in as_completed(future_to_req):
+                result = future.result()
+                results.append(result)
+        
+        return sorted(results, key=lambda x: x['id'])
+
+# Async batch processor
+class AsyncBatchProcessor:
+    def __init__(self, client: AsyncGlyfsClient, semaphore_limit: int = 5):
+        self.client = client
+        self.semaphore = asyncio.Semaphore(semaphore_limit)
+    
+    async def process_request(self, request: Dict) -> Dict:
+        async with self.semaphore:
+            try:
+                response = await self.client.invoke(
+                    request['agent_id'],
+                    request['message'],
+                    request.get('history', [])
+                )
+                return {
+                    'id': request['id'],
+                    'success': True,
+                    'response': response['response'],
+                    'usage': response.get('usage')
+                }
+            except Exception as e:
+                return {
+                    'id': request['id'],
+                    'success': False,
+                    'error': str(e)
+                }
+    
+    async def process_async_batch(self, requests: List[Dict]) -> List[Dict]:
+        """Process multiple requests concurrently using asyncio."""
+        tasks = [self.process_request(req) for req in requests]
+        results = await asyncio.gather(*tasks)
+        return sorted(results, key=lambda x: x['id'])
+
+# Usage examples
+def sync_batch_example():
+    with GlyfsClient('https://glyfs.dev', 'apk_your_api_key') as client:
+        processor = BatchProcessor(client)
+        
+        requests = [
+            {'id': '1', 'agent_id': 'agent-1', 'message': 'What is AI?'},
+            {'id': '2', 'agent_id': 'agent-1', 'message': 'Explain quantum computing'},
+            {'id': '3', 'agent_id': 'agent-1', 'message': 'How do neural networks work?'},
+        ]
+        
+        results = processor.process_sync_batch(requests)
+        
+        for result in results:
+            if result['success']:
+                print(f"Request {result['id']}: {result['response'][:100]}...")
+            else:
+                print(f"Request {result['id']} failed: {result['error']}")
+
+async def async_batch_example():
+    async with AsyncGlyfsClient('https://glyfs.dev', 'apk_your_api_key') as client:
+        processor = AsyncBatchProcessor(client)
+        
+        requests = [
+            {'id': '1', 'agent_id': 'agent-1', 'message': 'What is AI?'},
+            {'id': '2', 'agent_id': 'agent-1', 'message': 'Explain quantum computing'},
+            {'id': '3', 'agent_id': 'agent-1', 'message': 'How do neural networks work?'},
+        ]
+        
+        results = await processor.process_async_batch(requests)
+        
+        for result in results:
+            if result['success']:
+                print(f"Request {result['id']}: {result['response'][:100]}...")
+            else:
+                print(f"Request {result['id']} failed: {result['error']}")
+
+# Run examples
+if __name__ == "__main__":
+    print("Running sync batch example:")
+    sync_batch_example()
+    
+    print("\\nRunning async batch example:")
+    asyncio.run(async_batch_example())
+```
+
+### Data Analysis Integration
+
+```python
+import pandas as pd
+import numpy as np
+from typing import Any
+
+class GlyfsDataAnalyzer:
+    def __init__(self, client: GlyfsClient, agent_id: str):
+        self.client = client
+        self.agent_id = agent_id
+    
+    def analyze_dataframe(self, df: pd.DataFrame, question: str) -> str:
+        """Analyze a pandas DataFrame using the AI agent."""
+        # Convert DataFrame to a readable format
+        df_summary = f"""
+Dataset Summary:
+- Shape: {df.shape}
+- Columns: {list(df.columns)}
+- Data Types: {df.dtypes.to_dict()}
+- Missing Values: {df.isnull().sum().to_dict()}
+
+First 5 rows:
+{df.head().to_string()}
+
+Statistical Summary:
+{df.describe().to_string()}
+"""
+        
+        full_question = f"""
+I have a dataset with the following characteristics:
+
+{df_summary}
+
+Question: {question}
+
+Please analyze this data and provide insights.
+"""
+        
+        response = self.client.invoke(self.agent_id, full_question)
+        return response['response']
+    
+    def generate_code_suggestions(self, df: pd.DataFrame, task: str) -> str:
+        """Get code suggestions for data manipulation tasks."""
+        context = f"""
+Dataset info:
+- Shape: {df.shape}
+- Columns: {list(df.columns)}
+- Data types: {df.dtypes.to_dict()}
+
+Task: {task}
+
+Please provide Python pandas code to accomplish this task.
+"""
+        
+        response = self.client.invoke(self.agent_id, context)
+        return response['response']
+
+# Usage example
+def data_analysis_example():
+    # Create sample data
+    data = {
+        'sales': np.random.normal(1000, 200, 100),
+        'month': np.random.choice(['Jan', 'Feb', 'Mar'], 100),
+        'product': np.random.choice(['A', 'B', 'C'], 100),
+        'region': np.random.choice(['North', 'South'], 100)
+    }
+    df = pd.DataFrame(data)
+    
+    with GlyfsClient('https://glyfs.dev', 'apk_your_api_key') as client:
+        analyzer = GlyfsDataAnalyzer(client, 'your-agent-id')
+        
+        # Analyze the dataset
+        analysis = analyzer.analyze_dataframe(
+            df, 
+            "What are the key patterns in sales across different months and regions?"
+        )
+        print("Analysis:", analysis)
+        
+        # Get code suggestions
+        code_suggestion = analyzer.generate_code_suggestions(
+            df,
+            "Create a pivot table showing average sales by month and region"
+        )
+        print("\\nCode Suggestion:", code_suggestion)
+
+if __name__ == "__main__":
+    data_analysis_example()
+```
+
+## Performance Optimization
+
+### Connection Pooling
+
+```python
+import requests.adapters
+from urllib3.util.retry import Retry
+
+class OptimizedGlyfsClient(GlyfsClient):
+    def __init__(self, base_url: str, api_key: str, **kwargs):
+        super().__init__(base_url, api_key)
+        
+        # Configure retry strategy
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        
+        # Configure connection pooling
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=kwargs.get('pool_connections', 10),
+            pool_maxsize=kwargs.get('pool_maxsize', 10),
+            max_retries=retry_strategy,
+            socket_options=[(6, 1, 1)]  # TCP_NODELAY
+        )
+        
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        
+        # Set reasonable timeouts
+        self.session.timeout = kwargs.get('timeout', 30)
+```
+
+These examples cover most Python integration scenarios for the Glyfs API. Choose the patterns that best fit your application requirements and performance needs.
+
+## Next Steps
+
+- **[JavaScript Examples](/examples/javascript)** - For frontend integration
+- **[cURL Examples](/examples/curl)** - For testing and debugging  
+- **[API Reference](/api/)** - Detailed API documentation

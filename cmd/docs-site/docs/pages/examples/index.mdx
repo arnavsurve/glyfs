@@ -1,0 +1,152 @@
+# Examples
+
+Complete code examples for integrating with the Glyfs API in various programming languages and environments.
+
+## Available Examples
+
+Choose your preferred language or tool to get started:
+
+### [JavaScript/TypeScript →](/examples/javascript)
+Complete examples for web applications, Node.js servers, and React components:
+
+- TypeScript client with full error handling
+- React hooks for streaming responses
+- Conversation management
+- Batch processing
+- Browser vs Node.js considerations
+
+### [Python →](/examples/python)
+Comprehensive Python integration examples:
+
+- Synchronous and asynchronous clients
+- Advanced error handling with retries
+- Conversation management
+- Batch processing with threading/asyncio
+- Data analysis integration with pandas
+
+### [cURL →](/examples/curl)
+Command-line examples perfect for testing and shell scripting:
+
+- Basic API calls and streaming
+- Error handling and validation
+- Interactive chat scripts
+- Load testing utilities
+- API health checks
+
+## Common Patterns
+
+All examples demonstrate these essential patterns:
+
+### 🔐 Authentication
+Proper API key handling with agent-specific authentication:
+
+```bash
+export GLYFS_API_KEY="apk_your_api_key_here"
+export GLYFS_AGENT_ID="your-agent-id"
+```
+
+### 🔄 Error Handling
+Robust error handling with retries and exponential backoff:
+
+```typescript
+// Retry logic for network errors
+const withRetry = async (fn, maxRetries = 3) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => 
+        setTimeout(resolve, Math.pow(2, i) * 1000)
+      );
+    }
+  }
+};
+```
+
+### 📊 Streaming Responses
+Real-time response handling across all languages:
+
+```python
+# Python streaming example
+for event in client.stream(agent_id, message):
+    if event['type'] == 'token':
+        print(event['content'], end='', flush=True)
+    elif event['type'] == 'done':
+        print("\\nComplete!")
+```
+
+### 🗨️ Conversation Management
+Maintaining conversation history for context:
+
+```javascript
+const conversation = {
+  messages: [],
+  
+  async sendMessage(message) {
+    this.messages.push({ role: 'user', content: message });
+    
+    const response = await client.invoke(agentId, message, 
+      this.messages.slice(0, -1) // All but current message
+    );
+    
+    this.messages.push({ role: 'assistant', content: response.response });
+    return response.response;
+  }
+};
+```
+
+## Integration Patterns
+
+### Web Applications
+- React/Vue/Angular components
+- Real-time UI updates
+- User authentication flow
+- Error boundaries and loading states
+
+### Backend Services  
+- API middleware integration
+- Database conversation storage
+- Webhook handling
+- Background processing
+
+### CLI Tools
+- Interactive command-line interfaces
+- Batch processing scripts
+- Configuration management
+- Progress reporting
+
+### Mobile Apps
+- React Native integration
+- Swift/Kotlin native implementations
+- Offline handling
+- Push notifications
+
+## Best Practices
+
+### Performance
+- **Connection Pooling**: Reuse HTTP connections
+- **Request Batching**: Group related requests  
+- **Caching**: Cache responses when appropriate
+- **Rate Limiting**: Implement proper backoff
+
+### Security
+- **Environment Variables**: Never hardcode API keys
+- **HTTPS Only**: Always use secure connections
+- **Input Validation**: Sanitize user inputs
+- **Error Messages**: Don't expose sensitive information
+
+### User Experience
+- **Loading States**: Show progress indicators
+- **Error Recovery**: Graceful error handling
+- **Offline Support**: Handle network issues
+- **Accessibility**: Follow WCAG guidelines
+
+## Getting Help
+
+- **[API Reference](/api/)** - Complete endpoint documentation
+- **[Authentication](/authentication)** - Security and API key management
+- **GitHub Issues** - Community support and bug reports
+- **Stack Overflow** - Tagged questions and community answers
+
+Ready to start coding? Pick your language and dive into the examples!

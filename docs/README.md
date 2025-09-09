@@ -1,23 +1,28 @@
 # Glyfs API Documentation
 
-Welcome to the Glyfs API documentation. This guide will help you integrate with Glyfs' powerful AI glyf platform programmatically.
+Welcome to the Glyfs API documentation. This guide will help you integrate with Glyfs' powerful AI agent platform programmatically.
 
 ## Quick Start
 
-1. **Create a Glyf** - Set up your AI glyf through the web interface
-2. **Generate API Key** - Create an API key for your glyf
-3. **Make API Calls** - Use the API key to interact with your glyf
+1. **Create an Agent** - Set up your AI agent through the web interface
+2. **Generate API Key** - Create an API key for your specific agent
+3. **Make API Calls** - Use the API key to interact with your agent
 
 ## API Overview
 
-Glyfs provides two main API endpoints for interacting with your glyfs:
+Glyfs provides two main API endpoints for interacting with your agents:
 
 - **[Invoke API](./invoke-api.md)** - Get complete responses in a single request
 - **[Streaming API](./streaming-api.md)** - Get real-time streaming responses
 
 ## Authentication
 
-All API requests require authentication using API keys. Include your API key in the `Authorization` header:
+All API requests require authentication using agent-specific API keys. Each agent has its own API keys that only provide access to that specific agent.
+
+### API Key Format
+API keys have the format: `apk_` followed by a base64-encoded string.
+
+Include your API key in the `Authorization` header:
 
 ```bash
 Authorization: Bearer apk_your_api_key_here
@@ -48,9 +53,18 @@ The API uses standard HTTP status codes and returns JSON error messages:
 Common status codes:
 - `200` - Success
 - `400` - Bad Request (invalid parameters)
-- `401` - Unauthorized (invalid API key)
-- `404` - Not Found (glyf doesn't exist)
+- `401` - Unauthorized (invalid or missing API key)
+- `404` - Not Found (agent doesn't exist)
 - `500` - Internal Server Error
+
+### Authentication Errors
+
+| Error | Description |
+|-------|-------------|
+| `missing authorization header` | No Authorization header provided |
+| `invalid authorization header format` | Authorization header doesn't start with "Bearer " |
+| `invalid API key format` | API key doesn't start with "apk_" |
+| `invalid API key` | API key not found or inactive |
 
 ## Support
 
@@ -61,7 +75,9 @@ For API support, please:
 
 ## Documentation Sections
 
+- [API Reference](./api-reference.md) - Complete API endpoint reference
+- [Authentication](./authentication.md) - Detailed authentication guide and API key management
 - [Invoke API](./invoke-api.md) - Single request/response API
 - [Streaming API](./streaming-api.md) - Real-time streaming API
 - [Examples](./examples.md) - Code examples in multiple languages
-- [Tools & MCP](./tools.md) - Working with glyf tools and MCP servers
+- [Tools & MCP](./tools.md) - Working with agent tools and MCP servers

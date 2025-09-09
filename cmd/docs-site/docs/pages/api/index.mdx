@@ -1,0 +1,95 @@
+import { Callout } from 'vocs/components'
+
+# API Reference
+
+## Endpoints
+
+| Method | Endpoint | Use Case |
+|--------|----------|----------|
+| POST | `/agents/{agentId}/invoke` | **[Complete response →](/api/invoke)** |
+| POST | `/agents/{agentId}/invoke/stream` | **[Live streaming →](/api/streaming)** |
+
+**Base URL:** `https://glyfs.dev/api`
+
+## Authentication
+
+```http
+Authorization: Bearer apk_your_api_key_here
+```
+
+<Callout type="tip">
+**Agent-specific keys** - Each API key only works with its specific agent. **[Learn more →](/authentication)**
+</Callout>
+
+## Request Format
+
+Both endpoints use identical requests:
+
+```json
+{
+  "message": "Your question or prompt",
+  "history": [
+    {"role": "user", "content": "Previous message"},
+    {"role": "assistant", "content": "Previous response"}
+  ]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `message` | ✅ | Your prompt to the agent |
+| `history` | ❌ | Previous conversation context |
+
+## HTTP Status Codes
+
+| Code | Meaning | Action |
+|------|---------|--------|
+| `200` | ✅ Success | Process response |
+| `400` | ❌ Bad request | Check your JSON |
+| `401` | ❌ Invalid API key | Verify authorization |
+| `404` | ❌ Agent not found | Check agent ID |
+| `500` | ❌ Server error | Retry with backoff |
+
+## Common Errors
+
+| Error Message | Fix |
+|---------------|-----|
+| `missing authorization header` | Add `Authorization: Bearer apk_...` |
+| `invalid API key format` | API key must start with `apk_` |
+| `message is required` | Include `message` field in JSON |
+| `invalid agentId format` | Use a valid UUID agent ID |
+
+## Rate Limits
+
+| Tier | Limit |
+|------|-------|
+| Free | Basic usage |
+| Pro | Higher limits |
+| Enterprise | Custom |
+
+## Data Types
+
+```typescript
+// Message object
+{
+  role: "user" | "assistant"
+  content: string
+}
+
+// Usage stats
+{
+  prompt_tokens: number
+  completion_tokens: number  
+  total_tokens: number
+}
+```
+
+<Callout type="info">
+**Token approximation** - Counts use `length / 4` - may differ from actual provider usage.
+</Callout>
+
+## Examples
+
+- **[JavaScript/TypeScript →](/examples/javascript)**
+- **[Python →](/examples/python)**  
+- **[cURL →](/examples/curl)**

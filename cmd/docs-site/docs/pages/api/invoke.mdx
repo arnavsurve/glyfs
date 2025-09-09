@@ -10,11 +10,15 @@ POST /api/agents/{agentId}/invoke
 
 ## Authentication
 
-Include your API key in the Authorization header:
+Include your API key in the Authorization header using Bearer authentication:
 
-```
+```http
 Authorization: Bearer apk_your_api_key_here
 ```
+
+:::info Agent-Specific Keys
+Each API key only works with the specific agent it was created for. See [Authentication](/authentication) for complete details.
+:::
 
 ## Request Format
 
@@ -55,6 +59,8 @@ Each history item should contain:
 
 ## Response Format
 
+### Success Response
+
 ```json
 {
   "response": "The agent's complete response text",
@@ -71,17 +77,21 @@ Each history item should contain:
 | Field | Type | Description |
 |-------|------|-------------|
 | `response` | string | The complete response from the agent |
-| `usage` | object | Token usage statistics (optional) |
+| `usage` | object | Token usage statistics |
 | `usage.prompt_tokens` | number | Tokens used for the input prompt |
 | `usage.completion_tokens` | number | Tokens used for the response |
 | `usage.total_tokens` | number | Total tokens used |
+
+:::info Token Counting
+Token counts are approximated using `length / 4` and may not reflect actual LLM provider token usage.
+:::
 
 ## Examples
 
 ### Basic Request
 
 ```bash
-curl -X POST "https://your-instance.com/api/agents/your-agent-id/invoke" \
+curl -X POST "https://glyfs.dev/api/agents/your-agent-id/invoke" \
   -H "Authorization: Bearer apk_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -105,7 +115,7 @@ curl -X POST "https://your-instance.com/api/agents/your-agent-id/invoke" \
 ### Request with History
 
 ```bash
-curl -X POST "https://your-instance.com/api/agents/your-agent-id/invoke" \
+curl -X POST "https://glyfs.dev/api/agents/your-agent-id/invoke" \
   -H "Authorization: Bearer apk_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -138,61 +148,67 @@ curl -X POST "https://your-instance.com/api/agents/your-agent-id/invoke" \
 
 ## Error Responses
 
-### Invalid API Key
+All error responses follow the standard format:
+
 ```json
 {
-  "message": "invalid API key"
+  "message": "Human readable error description"
 }
 ```
 
-### Missing Message
-```json
-{
-  "message": "message is required"
-}
-```
+### Common Errors
 
-### Agent Not Found
-```json
-{
-  "message": "agent not found"
-}
-```
-
-### Missing Authorization Header
-```json
-{
-  "message": "missing authorization header"
-}
-```
-
-### Invalid Authorization Format
-```json
-{
-  "message": "invalid authorization header format"
-}
-```
-
-### Invalid API Key Format
-```json
-{
-  "message": "invalid API key format"
-}
-```
+| Status | Error Message | Cause |
+|--------|---------------|-------|
+| `401` | `missing authorization header` | No Authorization header provided |
+| `401` | `invalid authorization header format` | Header doesn't start with "Bearer " |
+| `401` | `invalid API key format` | API key doesn't start with "apk_" |
+| `401` | `invalid API key` | API key not found or inactive |
+| `400` | `message is required` | Request body missing required message field |
+| `400` | `invalid agentId format` | Agent ID is not a valid UUID |
+| `404` | `agent not found` | Agent doesn't exist or not accessible |
+| `500` | Internal server error | Server-side processing error |
 
 ## Best Practices
 
-1. **Include History**: For multi-turn conversations, always include relevant history for better context
-2. **Handle Errors**: Implement proper error handling for network issues and API errors
-3. **Rate Limiting**: Respect rate limits and implement exponential backoff for retries
-4. **Token Management**: Monitor token usage to optimize costs
+### Request Optimization
+1. **Include History**: For multi-turn conversations, include relevant history for better context
+2. **Minimize History**: Only include necessary context to reduce token usage
+3. **Clear Messages**: Write clear, specific prompts for better responses
+
+### Error Handling
+1. **Implement Retries**: Handle transient network errors with exponential backoff
+2. **Validate Responses**: Check for successful status codes before processing
+3. **Handle Rate Limits**: Implement proper backoff strategies for rate limiting
+
+### Performance
+1. **Token Management**: Monitor token usage to optimize costs
+2. **Caching**: Cache responses when appropriate for repeated queries
+3. **Async Processing**: Use async/await patterns for better performance
 
 ## Use Cases
 
 The Invoke API is ideal for:
+
 - **Simple Q&A**: Single question, single answer scenarios
 - **Batch Processing**: Processing multiple independent requests
 - **Integration**: Embedding AI responses in existing applications
 - **Automation**: Automated workflows that need complete responses
+- **Analysis Tasks**: Document analysis, data processing, content generation
 
-For real-time streaming responses, see the [Streaming API](./streaming-api.md) documentation.
+For real-time streaming responses, see the [Streaming API](/api/streaming) documentation.
+
+## Rate Limiting
+
+Rate limits vary by user tier:
+- **Free**: Lower limits for basic usage
+- **Pro**: Higher limits for regular usage
+- **Enterprise**: Custom limits
+
+Rate limit details are not currently exposed in response headers.
+
+## SDKs and Examples
+
+- **[JavaScript/TypeScript Examples](/examples/javascript)**
+- **[Python Examples](/examples/python)**  
+- **[cURL Examples](/examples/curl)**

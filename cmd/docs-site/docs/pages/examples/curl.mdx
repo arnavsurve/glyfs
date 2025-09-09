@@ -1,0 +1,553 @@
+# cURL Examples
+
+Complete cURL examples for testing and integrating with the Glyfs API. Perfect for debugging, testing, and shell scripting.
+
+## Basic Authentication
+
+All requests require authentication with your agent-specific API key:
+
+```bash
+# Set environment variables for convenience
+export GLYFS_API_KEY="apk_your_api_key_here"
+export GLYFS_AGENT_ID="your-agent-id"
+export GLYFS_BASE_URL="https://glyfs.dev"
+```
+
+## Invoke API Examples
+
+### Basic Request
+
+```bash
+curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What is artificial intelligence?"
+  }'
+```
+
+### Request with History
+
+```bash
+curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What about machine learning?",
+    "history": [
+      {
+        "role": "user",
+        "content": "What is artificial intelligence?"
+      },
+      {
+        "role": "assistant",
+        "content": "Artificial intelligence (AI) is a field of computer science focused on creating systems that can perform tasks that typically require human intelligence..."
+      }
+    ]
+  }'
+```
+
+### Pretty-Print JSON Response
+
+```bash
+curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Explain quantum computing in simple terms"
+  }' | jq '.'
+```
+
+### Save Response to File
+
+```bash
+curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Write a short story about AI"
+  }' \
+  -o response.json
+
+# Extract just the response content
+jq -r '.response' response.json > story.txt
+```
+
+## Streaming API Examples
+
+### Basic Streaming
+
+```bash
+curl -N "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke/stream" \
+  -X POST \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Count to 10 slowly"
+  }'
+```
+
+### Stream with History
+
+```bash
+curl -N "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke/stream" \
+  -X POST \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Continue the story with more detail",
+    "history": [
+      {
+        "role": "user",
+        "content": "Tell me a story about a robot"
+      },
+      {
+        "role": "assistant",
+        "content": "Once upon a time, there was a small robot named Chip..."
+      }
+    ]
+  }'
+```
+
+### Process Streaming Events
+
+```bash
+# Extract only token content from stream
+curl -N "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke/stream" \
+  -X POST \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Write a poem about technology"
+  }' | \
+  grep '^data: ' | \
+  sed 's/^data: //' | \
+  jq -r 'select(.type == "token") | .content' | \
+  tr -d '\n'
+```
+
+### Save Full Stream to File
+
+```bash
+# Save complete stream
+curl -N "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke/stream" \
+  -X POST \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Explain the history of computing"
+  }' > stream_output.txt
+
+# Extract final response and usage stats
+grep '^data: ' stream_output.txt | \
+  sed 's/^data: //' | \
+  jq -r 'select(.type == "done") | .data.response' > final_response.txt
+
+grep '^data: ' stream_output.txt | \
+  sed 's/^data: //' | \
+  jq 'select(.type == "done") | .data.usage'
+```
+
+## Error Handling
+
+### Check HTTP Status Codes
+
+```bash
+# Save status code and response
+HTTP_CODE=$(curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Test message"
+  }' \
+  -w "%{http_code}" \
+  -s \
+  -o response.json)
+
+if [ "$HTTP_CODE" -eq 200 ]; then
+    echo "Success!"
+    jq '.response' response.json
+elif [ "$HTTP_CODE" -eq 401 ]; then
+    echo "Authentication error:"
+    jq '.message' response.json
+elif [ "$HTTP_CODE" -eq 404 ]; then
+    echo "Agent not found:"
+    jq '.message' response.json
+else
+    echo "HTTP Error: $HTTP_CODE"
+    cat response.json
+fi
+```
+
+### Handle Network Errors
+
+```bash
+# With timeout and retry
+curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Test message"
+  }' \
+  --max-time 30 \
+  --retry 3 \
+  --retry-delay 2 \
+  --retry-max-time 60 \
+  --fail \
+  --silent \
+  --show-error
+```
+
+### Validate API Key Format
+
+```bash
+# Check if API key has correct format
+if [[ "$GLYFS_API_KEY" =~ ^apk_ ]]; then
+    echo "API key format is valid"
+else
+    echo "Error: API key must start with 'apk_'"
+    exit 1
+fi
+```
+
+## Advanced Usage
+
+### Batch Processing with Shell Script
+
+```bash
+#!/bin/bash
+
+# batch_process.sh - Process multiple messages
+set -e
+
+GLYFS_BASE_URL="https://glyfs.dev"
+GLYFS_API_KEY="apk_your_api_key"
+GLYFS_AGENT_ID="your-agent-id"
+OUTPUT_DIR="batch_results"
+
+# Create output directory
+mkdir -p "$OUTPUT_DIR"
+
+# Array of messages to process
+messages=(
+    "What is machine learning?"
+    "Explain neural networks"
+    "How does deep learning work?"
+    "What are transformers in AI?"
+)
+
+# Process each message
+for i in "${!messages[@]}"; do
+    message="${messages[$i]}"
+    output_file="$OUTPUT_DIR/response_$((i+1)).json"
+    
+    echo "Processing message $((i+1)): $message"
+    
+    curl -X POST "$GLYFS_BASE_URL/api/agents/$GLYFS_AGENT_ID/invoke" \
+        -H "Authorization: Bearer $GLYFS_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"message\": \"$message\"}" \
+        -s \
+        -o "$output_file"
+    
+    if [ $? -eq 0 ]; then
+        echo "✓ Saved to $output_file"
+        # Extract and display first 100 characters
+        jq -r '.response' "$output_file" | cut -c 1-100
+        echo "..."
+    else
+        echo "✗ Failed to process message $((i+1))"
+    fi
+    
+    # Rate limiting - wait 1 second between requests
+    sleep 1
+done
+
+echo "Batch processing complete. Results saved in $OUTPUT_DIR/"
+```
+
+### Interactive Chat Script
+
+```bash
+#!/bin/bash
+
+# interactive_chat.sh - Interactive chat with an agent
+set -e
+
+GLYFS_BASE_URL="https://glyfs.dev"
+GLYFS_API_KEY="apk_your_api_key"
+GLYFS_AGENT_ID="your-agent-id"
+HISTORY_FILE="/tmp/chat_history.json"
+
+# Initialize empty history
+echo "[]" > "$HISTORY_FILE"
+
+echo "Glyfs Interactive Chat"
+echo "Type 'quit' to exit, 'clear' to clear history"
+echo "=========================="
+
+while true; do
+    # Get user input
+    echo -n "You: "
+    read -r user_message
+    
+    # Handle special commands
+    case "$user_message" in
+        "quit"|"exit")
+            echo "Goodbye!"
+            break
+            ;;
+        "clear")
+            echo "[]" > "$HISTORY_FILE"
+            echo "History cleared."
+            continue
+            ;;
+        "")
+            continue
+            ;;
+    esac
+    
+    # Read current history
+    history=$(cat "$HISTORY_FILE")
+    
+    # Create request with history
+    request=$(jq -n \
+        --arg message "$user_message" \
+        --argjson history "$history" \
+        '{message: $message, history: $history}')
+    
+    echo -n "Agent: "
+    
+    # Make streaming request and extract tokens
+    response=$(curl -N "$GLYFS_BASE_URL/api/agents/$GLYFS_AGENT_ID/invoke/stream" \
+        -X POST \
+        -H "Authorization: Bearer $GLYFS_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "$request" \
+        -s)
+    
+    # Process stream and build response
+    agent_response=""
+    echo "$response" | while IFS= read -r line; do
+        if [[ "$line" == data:* ]]; then
+            event_data=$(echo "$line" | sed 's/^data: //')
+            event_type=$(echo "$event_data" | jq -r '.type')
+            
+            case "$event_type" in
+                "token")
+                    token=$(echo "$event_data" | jq -r '.content')
+                    echo -n "$token"
+                    agent_response+="$token"
+                    ;;
+                "done")
+                    echo ""  # New line after response
+                    full_response=$(echo "$event_data" | jq -r '.data.response')
+                    
+                    # Update history
+                    updated_history=$(echo "$history" | jq \
+                        --arg user_msg "$user_message" \
+                        --arg agent_msg "$full_response" \
+                        '. + [{role: "user", content: $user_msg}, {role: "assistant", content: $agent_msg}]')
+                    
+                    echo "$updated_history" > "$HISTORY_FILE"
+                    break
+                    ;;
+                "error")
+                    echo ""
+                    echo "Error: $(echo "$event_data" | jq -r '.content')"
+                    break
+                    ;;
+            esac
+        fi
+    done
+    
+    echo ""  # Extra line for spacing
+done
+
+# Clean up
+rm -f "$HISTORY_FILE"
+```
+
+### Monitor API Usage
+
+```bash
+#!/bin/bash
+
+# monitor_usage.sh - Monitor token usage across requests
+USAGE_LOG="/tmp/glyfs_usage.log"
+
+# Function to make request and log usage
+make_request_with_logging() {
+    local message="$1"
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    
+    response=$(curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+        -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"message\": \"$message\"}" \
+        -s)
+    
+    # Extract usage information
+    usage=$(echo "$response" | jq '.usage')
+    
+    if [ "$usage" != "null" ]; then
+        prompt_tokens=$(echo "$usage" | jq -r '.prompt_tokens')
+        completion_tokens=$(echo "$usage" | jq -r '.completion_tokens')
+        total_tokens=$(echo "$usage" | jq -r '.total_tokens')
+        
+        # Log usage
+        echo "$timestamp,$prompt_tokens,$completion_tokens,$total_tokens,\"$message\"" >> "$USAGE_LOG"
+        
+        echo "Usage - Prompt: $prompt_tokens, Completion: $completion_tokens, Total: $total_tokens"
+    else
+        echo "No usage information available"
+    fi
+    
+    # Display response
+    echo "$response" | jq -r '.response'
+}
+
+# Initialize log with header
+if [ ! -f "$USAGE_LOG" ]; then
+    echo "timestamp,prompt_tokens,completion_tokens,total_tokens,message" > "$USAGE_LOG"
+fi
+
+# Example usage
+make_request_with_logging "What is the weather like?"
+make_request_with_logging "Tell me about quantum computing"
+
+# Show usage summary
+echo ""
+echo "Usage Summary:"
+echo "=============="
+awk -F',' 'NR>1 {
+    total_prompt += $2; 
+    total_completion += $3; 
+    total_tokens += $4; 
+    count++
+} 
+END {
+    printf "Requests: %d\n", count
+    printf "Total Prompt Tokens: %d\n", total_prompt
+    printf "Total Completion Tokens: %d\n", total_completion  
+    printf "Total Tokens: %d\n", total_tokens
+    printf "Average Tokens per Request: %.1f\n", total_tokens/count
+}' "$USAGE_LOG"
+```
+
+## Testing and Validation
+
+### API Health Check
+
+```bash
+#!/bin/bash
+
+# health_check.sh - Verify API connectivity and authentication
+
+echo "Glyfs API Health Check"
+echo "======================"
+
+# Test authentication
+echo "Testing authentication..."
+HTTP_CODE=$(curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "test"}' \
+  -w "%{http_code}" \
+  -s \
+  -o /dev/null)
+
+case "$HTTP_CODE" in
+    200)
+        echo "✓ Authentication successful"
+        ;;
+    401)
+        echo "✗ Authentication failed - check API key"
+        exit 1
+        ;;
+    404)
+        echo "✗ Agent not found - check agent ID"
+        exit 1
+        ;;
+    *)
+        echo "✗ Unexpected HTTP code: $HTTP_CODE"
+        exit 1
+        ;;
+esac
+
+# Test streaming
+echo "Testing streaming endpoint..."
+STREAM_RESPONSE=$(curl -N "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke/stream" \
+  -X POST \
+  -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Say hello"}' \
+  -s \
+  --max-time 10)
+
+if echo "$STREAM_RESPONSE" | grep -q "data:"; then
+    echo "✓ Streaming endpoint working"
+else
+    echo "✗ Streaming endpoint not responding properly"
+    exit 1
+fi
+
+echo "✓ All tests passed - API is healthy"
+```
+
+### Load Testing
+
+```bash
+#!/bin/bash
+
+# load_test.sh - Simple load testing
+CONCURRENT_REQUESTS=5
+TOTAL_REQUESTS=20
+REQUEST_DELAY=0.1
+
+echo "Load Testing Glyfs API"
+echo "Concurrent requests: $CONCURRENT_REQUESTS"
+echo "Total requests: $TOTAL_REQUESTS"
+echo "======================"
+
+# Function to make a single request
+make_request() {
+    local request_id=$1
+    local start_time=$(date +%s.%N)
+    
+    HTTP_CODE=$(curl -X POST "${GLYFS_BASE_URL}/api/agents/${GLYFS_AGENT_ID}/invoke" \
+        -H "Authorization: Bearer ${GLYFS_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"message\": \"Request $request_id: What is AI?\"}" \
+        -w "%{http_code}" \
+        -s \
+        -o "/tmp/response_$request_id.json")
+    
+    local end_time=$(date +%s.%N)
+    local duration=$(echo "$end_time - $start_time" | bc)
+    
+    if [ "$HTTP_CODE" -eq 200 ]; then
+        echo "✓ Request $request_id completed in ${duration}s"
+    else
+        echo "✗ Request $request_id failed with HTTP $HTTP_CODE"
+    fi
+}
+
+# Export function for parallel execution
+export -f make_request
+export GLYFS_BASE_URL GLYFS_API_KEY GLYFS_AGENT_ID
+
+# Run load test
+seq 1 $TOTAL_REQUESTS | \
+    xargs -n 1 -P $CONCURRENT_REQUESTS -I {} bash -c 'make_request {}'
+
+echo "Load test completed"
+```
+
+These cURL examples provide comprehensive coverage for testing, debugging, and automating interactions with the Glyfs API. Use them as templates for your own scripts and integrations.
+
+## Next Steps
+
+- **[JavaScript Examples](/examples/javascript)** - For web applications
+- **[Python Examples](/examples/python)** - For backend services
+- **[API Reference](/api/)** - Complete API documentation

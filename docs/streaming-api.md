@@ -81,24 +81,22 @@ Individual text chunks as the response is generated.
 ```
 
 ### `tool_event`
-Tool execution events when the agent uses tools.
+Tool execution events when the agent uses tools. The actual structure depends on the specific tool being used and MCP server implementation.
 
 ```json
 {
   "type": "tool_event",
   "content": "",
   "data": {
-    "type": "tool_start",
-    "tool_name": "search",
-    "arguments": { /* tool arguments */ }
+    "tool_name": "example_tool",
+    "status": "executing",
+    "result": "...",
+    "error": null
   }
 }
 ```
 
-Tool event sub-types:
-- `tool_start`: Tool execution begins
-- `tool_result`: Tool execution completes successfully  
-- `tool_error`: Tool execution fails
+**Note**: Tool event structure varies based on the MCP server and tool implementation. See [Tools & MCP](./tools.md) documentation for specific tool event formats.
 
 ### `done`
 Final event indicating completion with usage statistics.

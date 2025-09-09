@@ -1,0 +1,186 @@
+# MCP Integration
+
+Detailed information about Model Context Protocol (MCP) integration with Glyfs agents.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is an open protocol that enables secure, controlled integration between AI systems and external tools, data sources, and services.
+
+## How MCP Works with Glyfs
+
+Glyfs agents can be configured to work with MCP servers, which provide:
+
+1. **Tool Definitions**: Available functions and their parameters
+2. **Execution Environment**: Secure sandboxed execution
+3. **State Management**: Persistent context between tool calls
+4. **Error Handling**: Robust error reporting and recovery
+
+## Configuration
+
+MCP servers are configured at the agent level through the Glyfs web interface:
+
+1. Navigate to your agent settings
+2. Go to the "Tools" or "MCP" section
+3. Add MCP server configurations
+4. Test connectivity and permissions
+
+## Tool Event Types
+
+When MCP tools are executed during agent responses, you'll receive detailed events:
+
+### Execution Events
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "database_query",
+    "status": "executing",
+    "message": "Querying customer database...",
+    "progress": 0.5
+  }
+}
+```
+
+### Result Events
+
+```json
+{
+  "type": "tool_event", 
+  "content": "",
+  "data": {
+    "tool_name": "database_query",
+    "status": "completed",
+    "result": {
+      "rows_found": 25,
+      "execution_time": "150ms",
+      "data": "[...]"
+    }
+  }
+}
+```
+
+### Error Events
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "api_call",
+    "status": "failed", 
+    "error": {
+      "code": "NETWORK_ERROR",
+      "message": "Connection timeout to external API",
+      "retry_possible": true
+    }
+  }
+}
+```
+
+## Security Considerations
+
+MCP integration includes several security features:
+
+- **Sandboxed Execution**: Tools run in isolated environments
+- **Permission Control**: Fine-grained access controls
+- **Audit Logging**: Complete execution history
+- **Resource Limits**: CPU, memory, and time constraints
+
+## Best Practices
+
+### For Agent Operators
+
+1. **Careful Tool Selection**: Only enable necessary tools
+2. **Regular Monitoring**: Review tool usage and performance
+3. **Permission Management**: Use principle of least privilege
+4. **Testing**: Thoroughly test tools before production use
+
+### For Tool Developers
+
+1. **Clear Documentation**: Provide comprehensive tool descriptions
+2. **Error Handling**: Implement robust error handling and reporting
+3. **Performance**: Optimize for low latency and resource usage
+4. **Security**: Follow secure coding practices
+
+## Common Use Cases
+
+### Data Access
+- Database queries
+- File system operations
+- API integrations
+- Web scraping
+
+### Computation
+- Mathematical calculations
+- Data processing
+- Image/document analysis
+- Machine learning inference
+
+### External Services
+- Email sending
+- SMS notifications
+- Payment processing
+- Third-party API calls
+
+## Troubleshooting
+
+### Common Issues
+
+**Tool Not Found**
+```json
+{
+  "type": "tool_event",
+  "data": {
+    "error": {
+      "code": "TOOL_NOT_FOUND",
+      "message": "Tool 'custom_tool' not available"
+    }
+  }
+}
+```
+
+**Permission Denied**
+```json
+{
+  "type": "tool_event", 
+  "data": {
+    "error": {
+      "code": "PERMISSION_DENIED",
+      "message": "Agent lacks permission for file system access"
+    }
+  }
+}
+```
+
+**Timeout**
+```json
+{
+  "type": "tool_event",
+  "data": {
+    "error": {
+      "code": "TIMEOUT",
+      "message": "Tool execution exceeded 30 second limit"
+    }
+  }
+}
+```
+
+## Future Developments
+
+The MCP ecosystem is rapidly evolving with:
+
+- Enhanced security models
+- Better debugging tools
+- Standardized tool libraries
+- Improved performance optimization
+
+## Resources
+
+- **[API Reference](/api/)** - Complete API documentation
+- **[Streaming API](/api/streaming)** - Tool event handling
+- **[Examples](/examples/)** - Integration code samples
+- Official MCP documentation and specification
+
+For specific MCP server implementations and community tools, check the official MCP registry and community resources.

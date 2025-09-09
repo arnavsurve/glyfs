@@ -1,0 +1,60 @@
+import { Callout } from 'vocs/components'
+
+# Quick Start
+
+## Setup (2 minutes)
+
+| Step | Action |
+|------|--------|
+| 1 | Go to [glyfs.dev](https://glyfs.dev) → Sign in → Create Agent |
+| 2 | Agent Settings → API tab → Generate New Key |
+| 3 | **Copy the key** (shown once only) |
+
+## Test Your Agent
+
+Replace `YOUR_AGENT_ID` and `YOUR_API_KEY`:
+
+```bash
+curl -X POST "https://glyfs.dev/api/agents/YOUR_AGENT_ID/invoke" \
+  -H "Authorization: Bearer apk_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello!"}'
+```
+
+**Expected response:**
+```json
+{
+  "response": "Hello! How can I help you today?",
+  "usage": {"total_tokens": 20}
+}
+```
+
+## Streaming (Live Responses)
+
+```bash
+curl -N "https://glyfs.dev/api/agents/YOUR_AGENT_ID/invoke/stream" \
+  -H "Authorization: Bearer apk_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Count to 5"}'
+```
+
+You'll see tokens arrive in real-time:
+```
+data: {"type":"token","content":"1"}
+data: {"type":"token","content":"..."}
+data: {"type":"token","content":"2"}
+```
+
+## What's Next?
+
+<Callout type="tip">
+**Ready to code?** - **[Examples →](/examples/)** - Copy-paste code in your language
+</Callout>
+
+<Callout type="info">
+**Need details?** - **[API Reference →](/api/)** - Complete endpoint docs
+</Callout>
+
+<Callout type="warning">
+**Security** - **[Authentication →](/authentication)** - API key best practices
+</Callout>

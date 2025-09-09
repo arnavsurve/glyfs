@@ -1,6 +1,6 @@
 # API Examples
 
-This page provides comprehensive examples for integrating with AgentPlane APIs in various programming languages and frameworks.
+This page provides comprehensive examples for integrating with Glyfs APIs in various programming languages and frameworks.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ interface AgentResponse {
   };
 }
 
-class AgentPlaneClient {
+class GlyfsClient {
   constructor(
     private baseUrl: string,
     private apiKey: string
@@ -484,7 +484,7 @@ func main() {
 ```php
 <?php
 
-class AgentPlaneClient {
+class GlyfsClient {
     private $baseUrl;
     private $apiKey;
     
