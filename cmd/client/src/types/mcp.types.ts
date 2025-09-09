@@ -4,9 +4,15 @@ export interface MCPServer {
   description: string;
   server_url: string;
   server_type: "http" | "sse";
+  env?: Record<string, string>;
+  timeout: number;
+  headers?: Record<string, string>;
+  max_retries: number;
   last_seen?: string;
   created_at: string;
   updated_at: string;
+  encrypted_url?: boolean;
+  sensitive_headers?: string[];
 }
 
 export interface MCPServerDetail {
@@ -15,26 +21,27 @@ export interface MCPServerDetail {
   description: string;
   server_url: string;
   server_type: "http" | "sse";
-  config: MCPServerConfig;
+  env?: Record<string, string>;
+  timeout: number;
+  headers?: Record<string, string>;
+  max_retries: number;
   last_seen?: string;
   created_at: string;
   updated_at: string;
+  encrypted_url?: boolean;
+  sensitive_headers?: string[];
 }
 
-export interface MCPServerConfig {
-  server_type: "http" | "sse";
-  url: string;
-  headers?: Record<string, string>;
-  timeout?: number;
-  max_retries?: number;
-}
 
 export interface CreateMCPServerRequest {
   name: string;
   description?: string;
   server_url: string;
   server_type: "http" | "sse";
-  config: MCPServerConfig;
+  env?: Record<string, string>;
+  timeout?: number;
+  headers?: Record<string, string>;
+  max_retries?: number;
   sensitive_url?: boolean;
   sensitive_headers?: string[];
   agent_id?: string;
@@ -44,7 +51,12 @@ export interface UpdateMCPServerRequest {
   name?: string;
   description?: string;
   server_url?: string;
-  config?: MCPServerConfig;
+  env?: Record<string, string>;
+  timeout?: number;
+  headers?: Record<string, string>;
+  max_retries?: number;
+  sensitive_url?: boolean;
+  sensitive_headers?: string[];
 }
 
 export interface AgentMCPServer {
@@ -59,11 +71,16 @@ export interface AgentMCPServerDetail {
   description: string;
   server_url: string;
   server_type: "http" | "sse";
-  config: MCPServerConfig;
+  env?: Record<string, string>;
+  timeout: number;
+  headers?: Record<string, string>;
+  max_retries: number;
   enabled: boolean;
   last_seen?: string;
   created_at: string;
   updated_at: string;
+  encrypted_url?: boolean;
+  sensitive_headers?: string[];
 }
 
 export const MCP_SERVER_TYPES = {
