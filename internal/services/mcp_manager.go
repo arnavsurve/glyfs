@@ -95,19 +95,16 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 		}
 	}
 
-	var config shared.MCPServerConfig
-	if err := json.Unmarshal([]byte(decryptedServer.Config), &config); err != nil {
-		return nil, fmt.Errorf("invalid server config: %w", err)
-	}
+	// Use individual columns directly from server struct
 
 	var mcpClient *client.Client
 	var err error
 
 	switch server.ServerType {
 	case "http":
-		mcpClient, err = m.createHTTPClient(config)
+		mcpClient, err = m.createHTTPClient(decryptedServer)
 	case "sse":
-		mcpClient, err = m.createSSEClient(config)
+		mcpClient, err = m.createSSEClient(decryptedServer)
 	default:
 		return nil, fmt.Errorf("unsupported server type: %s (only http and sse are supported)", server.ServerType)
 	}
@@ -143,40 +140,42 @@ func (m *MCPConnectionManager) createConnection(ctx context.Context, serverID uu
 	return connection, nil
 }
 
-func (m *MCPConnectionManager) createHTTPClient(config shared.MCPServerConfig) (*client.Client, error) {
-	if config.URL == "" {
+func (m *MCPConnectionManager) createHTTPClient(server shared.MCPServer) (*client.Client, error) {
+	if server.ServerURL == "" {
 		return nil, fmt.Errorf("URL is required for HTTP client")
 	}
 
-	if config.Timeout == 0 {
-		config.Timeout = 30 // 30 seconds default
+	timeout := server.Timeout
+	if timeout == 0 {
+		timeout = 30 // 30 seconds default
 	}
 
 	var options []transport.StreamableHTTPCOption
 
-	if len(config.Headers) > 0 {
-		options = append(options, transport.WithHTTPHeaders(config.Headers))
+	if len(server.Headers) > 0 {
+		options = append(options, transport.WithHTTPHeaders(server.Headers))
 	}
 
-	return client.NewStreamableHttpClient(config.URL, options...)
+	return client.NewStreamableHttpClient(server.ServerURL, options...)
 }
 
-func (m *MCPConnectionManager) createSSEClient(config shared.MCPServerConfig) (*client.Client, error) {
-	if config.URL == "" {
+func (m *MCPConnectionManager) createSSEClient(server shared.MCPServer) (*client.Client, error) {
+	if server.ServerURL == "" {
 		return nil, fmt.Errorf("URL is required for SSE client")
 	}
 
-	if config.Timeout == 0 {
-		config.Timeout = 30 // 30 seconds default
+	timeout := server.Timeout
+	if timeout == 0 {
+		timeout = 30 // 30 seconds default
 	}
 
 	var options []transport.ClientOption
 
-	if len(config.Headers) > 0 {
-		options = append(options, transport.WithHeaders(config.Headers))
+	if len(server.Headers) > 0 {
+		options = append(options, transport.WithHeaders(server.Headers))
 	}
 
-	return client.NewSSEMCPClient(config.URL, options...)
+	return client.NewSSEMCPClient(server.ServerURL, options...)
 }
 
 func (m *MCPConnectionManager) GetAgentTools(ctx context.Context, agentID uuid.UUID) ([]tools.Tool, error) {
@@ -300,62 +299,42 @@ func (st *ServerTool) Call(ctx context.Context, input string) (string, error) {
 func (m *MCPConnectionManager) decryptServerData(server shared.MCPServer, encryptionService *EncryptionService) (shared.MCPServer, error) {
 	decryptedServer := server
 
-	var decryptedURL string
-	urlDecrypted := false
+	// Decrypt URL if encrypted
 	if server.EncryptedURL {
-		var err error
-		decryptedURL, err = encryptionService.Decrypt(server.ServerURL)
+		decryptedURL, err := encryptionService.Decrypt(server.ServerURL)
 		if err != nil {
-			decryptedURL = server.ServerURL
-			urlDecrypted = true
 			log.Printf("Warning: Failed to decrypt URL for server %s (assuming unencrypted): %v", server.ID, err)
 		} else {
 			decryptedServer.ServerURL = decryptedURL
-			urlDecrypted = true
 		}
 	}
 
-	var config shared.MCPServerConfig
-	if err := json.Unmarshal([]byte(server.Config), &config); err != nil {
-		return server, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	if urlDecrypted {
-		config.URL = decryptedURL
-	}
-
+	// Decrypt sensitive headers if any
 	if server.SensitiveHeaders != "" {
 		var sensitiveHeaders []string
 		if err := json.Unmarshal([]byte(server.SensitiveHeaders), &sensitiveHeaders); err != nil {
 			return server, fmt.Errorf("failed to parse sensitive headers: %w", err)
 		}
 
-		if len(sensitiveHeaders) > 0 && config.Headers != nil {
-			configHeaders := make(map[string]interface{})
-			for k, v := range config.Headers {
-				configHeaders[k] = v
+		if len(sensitiveHeaders) > 0 && server.Headers != nil {
+			headerMap := make(map[string]interface{})
+			for k, v := range server.Headers {
+				headerMap[k] = v
 			}
 
-			decryptedHeaders, err := encryptionService.DecryptSensitiveFields(configHeaders, sensitiveHeaders)
+			decryptedHeaders, err := encryptionService.DecryptSensitiveFields(headerMap, sensitiveHeaders)
 			if err != nil {
 				log.Printf("Warning: Failed to decrypt headers for server %s: %v", server.ID, err)
-				decryptedHeaders = configHeaders
-			}
-
-			config.Headers = make(map[string]string)
-			for k, v := range decryptedHeaders {
-				if str, ok := v.(string); ok {
-					config.Headers[k] = str
+			} else {
+				decryptedServer.Headers = make(map[string]string)
+				for k, v := range decryptedHeaders {
+					if str, ok := v.(string); ok {
+						decryptedServer.Headers[k] = str
+					}
 				}
 			}
 		}
 	}
-
-	configJSON, err := json.Marshal(config)
-	if err != nil {
-		return server, fmt.Errorf("failed to marshal config: %w", err)
-	}
-	decryptedServer.Config = string(configJSON)
 
 	return decryptedServer, nil
 }
