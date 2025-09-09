@@ -261,24 +261,6 @@ export function AgentDetailView() {
     onDiscard: resetForm,
   });
 
-  // Debug logging - only when changes are made
-  useEffect(() => {
-    if (agent) {
-      console.log("Change detection debug:", {
-        original: {
-          name: agent.name,
-          provider: agent.provider,
-          model: agent.llm_model,
-          system_prompt: agent.system_prompt,
-          temperature: agent.temperature,
-          max_tokens: agent.max_tokens,
-        },
-        current: editForm,
-        hasUnsavedChanges,
-      });
-    }
-  }, [editForm, hasUnsavedChanges, agent]);
-
   // Handle navigation with unsaved changes check
   const handleNavigation = (to: string) => {
     if (!checkUnsavedChanges(to)) {
