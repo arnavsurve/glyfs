@@ -177,4 +177,3 @@ func (pm *PlanMiddleware) GetUserResourceCounts(userID uint) (map[string]int, er
 
 	return counts, nil
 }
-
