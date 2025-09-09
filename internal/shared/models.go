@@ -130,17 +130,20 @@ type ChatSessionResponse struct {
 }
 
 type MCPServer struct {
-	ID          uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	UserID      uint           `gorm:"not null;index" json:"user_id"`
-	Name        string         `gorm:"type:text;not null" json:"name"`
-	Description string         `gorm:"type:text" json:"description"`
-	ServerURL   string         `gorm:"type:text;not null" json:"server_url"`
-	ServerType  string         `gorm:"type:text;not null" json:"server_type"` // "sse", "http"
-	Config      string         `gorm:"type:jsonb" json:"config"`              // JSON config
-	LastSeen    *time.Time     `json:"last_seen,omitempty"`
+	ID          uuid.UUID         `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CreatedAt   time.Time         `json:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt    `gorm:"index" json:"deleted_at"`
+	UserID      uint              `gorm:"not null;index" json:"user_id"`
+	Name        string            `gorm:"type:text;not null" json:"name"`
+	Description string            `gorm:"type:text" json:"description"`
+	ServerURL   string            `gorm:"type:text;not null" json:"server_url"`
+	ServerType  string            `gorm:"type:text;not null" json:"server_type"` // "sse", "http"
+	Env         map[string]string `gorm:"type:jsonb;serializer:json" json:"env,omitempty"`
+	Timeout     int               `gorm:"type:int;default:30" json:"timeout"`
+	Headers     map[string]string `gorm:"type:jsonb;serializer:json" json:"headers,omitempty"`
+	MaxRetries  int               `gorm:"type:int;default:3" json:"max_retries,omitempty"`
+	LastSeen    *time.Time        `json:"last_seen,omitempty"`
 
 	// Encryption metadata
 	EncryptedURL     bool   `gorm:"default:false" json:"encrypted_url"` // Whether ServerURL is encrypted
@@ -163,39 +166,40 @@ type AgentMCPServer struct {
 	MCPServer MCPServer   `gorm:"foreignKey:MCPServerID;references:ID" json:"mcp_server"`
 }
 
-// MCP Server Configuration Types
-type MCPServerConfig struct {
-	ServerType string            `json:"server_type"`
-	Env        map[string]string `json:"env,omitempty"`         // Environment variables
-	URL        string            `json:"url,omitempty"`         // For HTTP
-	Headers    map[string]string `json:"headers,omitempty"`     // For HTTP
-	Timeout    int               `json:"timeout,omitempty"`     // Timeout in seconds
-	MaxRetries int               `json:"max_retries,omitempty"` // Max retry attempts
-}
-
 // API Response Types
 type MCPServerResponse struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	ServerURL   string     `json:"server_url"`
-	ServerType  string     `json:"server_type"`
-	LastSeen    *time.Time `json:"last_seen,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID               uuid.UUID         `json:"id"`
+	Name             string            `json:"name"`
+	Description      string            `json:"description"`
+	ServerURL        string            `json:"server_url"`
+	ServerType       string            `json:"server_type"`
+	Env              map[string]string `json:"env,omitempty"`
+	Timeout          int               `json:"timeout"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	MaxRetries       int               `json:"max_retries"`
+	LastSeen         *time.Time        `json:"last_seen,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	EncryptedURL     bool              `json:"encrypted_url,omitempty"`
+	SensitiveHeaders []string          `json:"sensitive_headers,omitempty"`
 }
 
 // Detailed response for individual server (includes config for editing)
 type MCPServerDetailResponse struct {
-	ID          uuid.UUID       `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	ServerURL   string          `json:"server_url"`
-	ServerType  string          `json:"server_type"`
-	Config      MCPServerConfig `json:"config"`
-	LastSeen    *time.Time      `json:"last_seen,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	ID               uuid.UUID         `json:"id"`
+	Name             string            `json:"name"`
+	Description      string            `json:"description"`
+	ServerURL        string            `json:"server_url"`
+	ServerType       string            `json:"server_type"`
+	Env              map[string]string `json:"env,omitempty"`
+	Timeout          int               `json:"timeout"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	MaxRetries       int               `json:"max_retries"`
+	LastSeen         *time.Time        `json:"last_seen,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	EncryptedURL     bool              `json:"encrypted_url,omitempty"`
+	SensitiveHeaders []string          `json:"sensitive_headers,omitempty"`
 }
 
 type AgentMCPServerResponse struct {
@@ -206,16 +210,21 @@ type AgentMCPServerResponse struct {
 
 // Detailed response for agent MCP servers (includes full server details)
 type AgentMCPServerDetailResponse struct {
-	ServerID    uuid.UUID       `json:"server_id"`
-	ServerName  string          `json:"server_name"`
-	Description string          `json:"description"`
-	ServerURL   string          `json:"server_url"`
-	ServerType  string          `json:"server_type"`
-	Config      MCPServerConfig `json:"config"`
-	Enabled     bool            `json:"enabled"`
-	LastSeen    *time.Time      `json:"last_seen,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	ServerID         uuid.UUID         `json:"server_id"`
+	ServerName       string            `json:"server_name"`
+	Description      string            `json:"description"`
+	ServerURL        string            `json:"server_url"`
+	ServerType       string            `json:"server_type"`
+	Env              map[string]string `json:"env,omitempty"`
+	Timeout          int               `json:"timeout"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	MaxRetries       int               `json:"max_retries"`
+	Enabled          bool              `json:"enabled"`
+	LastSeen         *time.Time        `json:"last_seen,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	EncryptedURL     bool              `json:"encrypted_url,omitempty"`
+	SensitiveHeaders []string          `json:"sensitive_headers,omitempty"`
 }
 
 // Usage tracking types
