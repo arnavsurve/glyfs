@@ -36,7 +36,12 @@ jobs:
 
       - name: Test frontend build
         run: |
-          cd cmd/client
+          # Install docs-site dependencies first
+          cd cmd/docs-site
+          npm ci
+          
+          # Then build the main frontend (which includes docs)
+          cd ../client
           npm ci
           npm run build
 
