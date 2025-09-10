@@ -260,8 +260,7 @@ export function LandingPage() {
               Plug and play infrastructure for your AI agents.
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-              Deploy production-ready agents with MCP access in minutes, not
-              months.
+              The easiest way to deploy production-ready MCP agents.
             </p>
             <Button
               size="lg"
@@ -293,7 +292,8 @@ export function LandingPage() {
               <div>
                 <h3 className="text-lg font-medium mb-3">Built-in Testing</h3>
                 <p className="text-muted-foreground">
-                  Test agents and tool calls directly in the platform
+                  Chat with your agents and test tool calls directly in the
+                  platform
                 </p>
               </div>
             </div>
@@ -320,7 +320,9 @@ export function LandingPage() {
         {/* Minimal footer */}
         <footer className="border-t border-border/40 py-12 px-6">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <span className="text-muted-foreground">© 2025 Glyfs</span>
+            <span className="text-muted-foreground">
+              © 2025 Grace Infrastructure
+            </span>
             <div className="flex gap-8">
               <Button
                 variant="ghost"
