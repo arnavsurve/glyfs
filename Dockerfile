@@ -17,13 +17,13 @@ RUN apk add --no-cache \
     ttf-freefont \
     git
 
+# Set Playwright to use system chromium and skip browser downloads
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Install dependencies for both client and docs-site
 RUN cd cmd/client && npm ci
-RUN cd cmd/docs-site && npm ci && npx playwright install chromium
-
-# Set Playwright to use system chromium instead of downloading
-ENV PLAYWRIGHT_BROWSERS_PATH=0
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+RUN cd cmd/docs-site && npm ci
 
 COPY cmd/client/ ./cmd/client/
 COPY cmd/docs-site/ ./cmd/docs-site/
