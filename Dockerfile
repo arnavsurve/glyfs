@@ -1,14 +1,20 @@
 # Build frontend
 FROM node:20-alpine AS frontend-builder
 
-WORKDIR /app/frontend
+WORKDIR /app
 
-COPY cmd/client/package*.json ./
+COPY cmd/client/package*.json ./cmd/client/
+COPY cmd/docs-site/package*.json ./cmd/docs-site/
 
-RUN npm ci
+# Install dependencies for both client and docs-site
+RUN cd cmd/client && npm ci
+RUN cd cmd/docs-site && npm ci && npx playwright install --with-deps chromium
 
-COPY cmd/client/ ./
+COPY cmd/client/ ./cmd/client/
+COPY cmd/docs-site/ ./cmd/docs-site/
 
+# Build from client directory (which will also build docs)
+WORKDIR /app/cmd/client
 RUN npm run build
 
 # Build backend
@@ -35,7 +41,7 @@ WORKDIR /app
 
 COPY --from=backend-builder /app/server .
 
-COPY --from=frontend-builder /app/frontend/dist ./cmd/client/dist
+COPY --from=frontend-builder /app/cmd/client/dist ./cmd/client/dist
 
 EXPOSE 8080
 
