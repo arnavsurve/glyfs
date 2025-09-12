@@ -7,7 +7,7 @@ set -e
 dnf update -y
 
 # Install required packages
-dnf install -y docker git curl aws-cli
+dnf install -y docker git curl aws-cli nginx
 
 # Start and enable Docker
 systemctl start docker
@@ -30,6 +30,60 @@ cat > /etc/docker/daemon.json <<EOF
 EOF
 
 systemctl restart docker
+
+# Configure nginx and retrieve SSL certificates
+mkdir -p /etc/nginx/ssl
+
+# Retrieve SSL certificates from Parameter Store
+echo "Retrieving SSL certificates from Parameter Store..."
+aws ssm get-parameter --name "/glyfs/ssl/cert" --with-decryption --query 'Parameter.Value' --output text > /etc/nginx/ssl/glyfs.dev.crt || echo "SSL cert parameter not found - HTTPS will fail"
+aws ssm get-parameter --name "/glyfs/ssl/key" --with-decryption --query 'Parameter.Value' --output text > /etc/nginx/ssl/glyfs.dev.key || echo "SSL key parameter not found - HTTPS will fail"
+cat > /etc/nginx/conf.d/glyfs.conf <<'EOF'
+server {
+        listen 80;
+        server_name glyfs.dev www.glyfs.dev;
+        return 301 https://$server_name$request_uri;
+}
+
+server {
+        listen 443 ssl http2;
+        server_name glyfs.dev www.glyfs.dev;
+
+        ssl_certificate /etc/nginx/ssl/glyfs.dev.crt;
+        ssl_certificate_key /etc/nginx/ssl/glyfs.dev.key;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+
+        # Serve documentation at /docs
+        location /docs {
+                alias /opt/glyfs/client/dist/docs;
+                try_files $uri $uri/ $uri.html /docs/index.html;
+                
+                # Cache static assets
+                location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+                        expires 1y;
+                        add_header Cache-Control "public, immutable";
+                }
+        }
+
+        # Everything else goes to the Go application
+        location / {
+                proxy_pass http://localhost:8080;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Forwarded-Port $server_port;
+        }
+}
+EOF
+
+# Start and enable nginx
+systemctl start nginx
+systemctl enable nginx
 
 # Install CloudWatch agent
 dnf install -y amazon-cloudwatch-agent
@@ -84,61 +138,69 @@ EOF
   -m ec2 \
   -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 
-# Create deployment directory
+# Create deployment directory and script
 mkdir -p /home/ec2-user/scripts
+
+# Create ECR deployment script that CI/CD expects
+cat > /home/ec2-user/scripts/deploy-ecr.sh <<'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Starting ECR deployment..."
+
+# Login to ECR
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+# Stop existing container if running
+docker stop glyfs-app 2>/dev/null || true
+docker rm glyfs-app 2>/dev/null || true
+
+# Pull and run new image
+IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+echo "Pulling image: $IMAGE"
+docker pull $IMAGE
+
+# Run new container
+docker run -d \
+  --name glyfs-app \
+  -p 8080:8080 \
+  --env-file /home/ec2-user/.env.production \
+  --restart unless-stopped \
+  $IMAGE
+
+echo "✅ Deployment complete!"
+EOF
+
+chmod +x /home/ec2-user/scripts/deploy-ecr.sh
 chown -R ec2-user:ec2-user /home/ec2-user/scripts
 
-# Create basic environment template for ec2-user
-cat > /home/ec2-user/.env.production.template <<'EOF'
-# Production Environment Variables
+# Generate .env.production from Secrets Manager
+echo "Generating .env.production from Secrets Manager..."
+SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "glyfs/production/env" --query 'SecretString' --output text 2>/dev/null || echo "{}")
+
+if [ "$SECRET_JSON" = "{}" ]; then
+    echo "Warning: Secret glyfs/production/env not found - creating template file"
+    cat > /home/ec2-user/.env.production.template <<'EOF'
+# Production Environment Variables Template
+# Store actual values in AWS Secrets Manager: glyfs/production/env
 DATABASE_URL=postgresql://glyfs:password@your-rds-endpoint:5432/glyfs?sslmode=require
 JWT_SECRET=your-super-secure-jwt-secret-here-256-bits-minimum
 ENCRYPTION_KEY=your-encryption-key-here-32-chars-min
 ENV=production
 PORT=8080
-
-# OAuth Configuration (Optional)
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
-GITHUB_REDIRECT_URL=https://yourdomain.com/api/auth/oauth/github/callback
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URL=https://yourdomain.com/api/auth/oauth/google/callback
-
-# Frontend URL
-FRONTEND_URL=https://yourdomain.com
-
-# Server-side API Keys (for title generation etc)
+FRONTEND_URL=https://glyfs.dev
 OPENAI_API_KEY=
 EOF
+    chown ec2-user:ec2-user /home/ec2-user/.env.production.template
+else
+    # Convert JSON secret to .env format
+    echo "$SECRET_JSON" | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' > /home/ec2-user/.env.production
+    chown ec2-user:ec2-user /home/ec2-user/.env.production
+    echo "✅ Generated .env.production from Secrets Manager"
+fi
 
-chown ec2-user:ec2-user /home/ec2-user/.env.production.template
-
-# Create helpful aliases for ec2-user
-cat > /home/ec2-user/.bashrc <<'EOF'
-# User specific aliases and functions
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias logs='docker logs glyfs-app'
-alias deploy='cd /home/ec2-user && ./deploy.sh'
-alias status='docker ps --filter name=glyfs-app'
-
-# Docker shortcuts
-alias d='docker'
-alias dc='docker-compose'
-alias dp='docker ps'
-alias di='docker images'
-
-export EDITOR=nano
-export PATH="$PATH:/usr/local/bin"
-
-echo "Welcome to Glyfs Production Server!"
-echo "Run 'status' to see running containers"
-echo "Run 'logs' to see application logs"
-EOF
-
-chown ec2-user:ec2-user /home/ec2-user/.bashrc
 
 # Configure AWS CLI region for ec2-user
 sudo -u ec2-user aws configure set default.region us-west-1
