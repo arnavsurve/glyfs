@@ -6,12 +6,34 @@ WORKDIR /app
 COPY cmd/client/package*.json ./cmd/client/
 COPY cmd/docs-site/package*.json ./cmd/docs-site/
 
+# Install system dependencies for Playwright and git for Vocs
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    git
+
 # Install dependencies for both client and docs-site
 RUN cd cmd/client && npm ci
-RUN cd cmd/docs-site && npm ci && npx playwright install --with-deps chromium
+RUN cd cmd/docs-site && npm ci && npx playwright install chromium
+
+# Set Playwright to use system chromium instead of downloading
+ENV PLAYWRIGHT_BROWSERS_PATH=0
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 COPY cmd/client/ ./cmd/client/
 COPY cmd/docs-site/ ./cmd/docs-site/
+
+# Initialize minimal git repo for Vocs (it just needs git to exist)
+RUN git init . && \
+    git config --global user.email "build@docker.com" && \
+    git config --global user.name "Docker Build" && \
+    git add . && \
+    git commit -m "Initial commit for build"
 
 # Build from client directory (which will also build docs)
 WORKDIR /app/cmd/client
