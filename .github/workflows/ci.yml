@@ -39,6 +39,7 @@ jobs:
           # Install docs-site dependencies first
           cd cmd/docs-site
           npm ci
+          npx playwright install --with-deps chromium
           
           # Then build the main frontend (which includes docs)
           cd ../client

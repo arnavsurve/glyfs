@@ -42,15 +42,15 @@ type CreateMCPServerRequest struct {
 }
 
 type UpdateMCPServerRequest struct {
-	Name             *string            `json:"name"`
-	Description      *string            `json:"description"`
-	ServerURL        *string            `json:"server_url"`
-	Env              map[string]string  `json:"env,omitempty"`
-	Timeout          *int               `json:"timeout,omitempty"`
-	Headers          map[string]string  `json:"headers,omitempty"`
-	MaxRetries       *int               `json:"max_retries,omitempty"`
-	SensitiveURL     *bool              `json:"sensitive_url"`
-	SensitiveHeaders []string           `json:"sensitive_headers"`
+	Name             *string           `json:"name"`
+	Description      *string           `json:"description"`
+	ServerURL        *string           `json:"server_url"`
+	Env              map[string]string `json:"env,omitempty"`
+	Timeout          *int              `json:"timeout,omitempty"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	MaxRetries       *int              `json:"max_retries,omitempty"`
+	SensitiveURL     *bool             `json:"sensitive_url"`
+	SensitiveHeaders []string          `json:"sensitive_headers"`
 }
 
 // RegisterMCPRoutes registers all MCP-related routes
@@ -272,7 +272,7 @@ func (h *MCPHandler) ListMCPServers(c echo.Context) error {
 			LastSeen:         decryptedServer.LastSeen,
 			CreatedAt:        decryptedServer.CreatedAt,
 			UpdatedAt:        decryptedServer.UpdatedAt,
-			EncryptedURL:     server.EncryptedURL,     // Use original server data, not decrypted
+			EncryptedURL:     server.EncryptedURL, // Use original server data, not decrypted
 			SensitiveHeaders: sensitiveHeaders,
 		}
 	}
@@ -337,7 +337,7 @@ func (h *MCPHandler) GetMCPServer(c echo.Context) error {
 		LastSeen:         decryptedServer.LastSeen,
 		CreatedAt:        decryptedServer.CreatedAt,
 		UpdatedAt:        decryptedServer.UpdatedAt,
-		EncryptedURL:     server.EncryptedURL,     // Use original server data, not decrypted
+		EncryptedURL:     server.EncryptedURL, // Use original server data, not decrypted
 		SensitiveHeaders: sensitiveHeaders,
 	}
 
@@ -712,7 +712,7 @@ func (h *MCPHandler) GetAgentMCPServers(c echo.Context) error {
 			LastSeen:         decryptedServer.LastSeen,
 			CreatedAt:        decryptedServer.CreatedAt,
 			UpdatedAt:        decryptedServer.UpdatedAt,
-			EncryptedURL:     server.EncryptedURL,     // Use original server data, not decrypted
+			EncryptedURL:     server.EncryptedURL, // Use original server data, not decrypted
 			SensitiveHeaders: sensitiveHeaders,
 		}
 	}
