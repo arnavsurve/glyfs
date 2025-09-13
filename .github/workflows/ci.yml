@@ -36,10 +36,9 @@ jobs:
 
       - name: Test frontend build
         run: |
-          # Install docs-site dependencies first
-          cd cmd/docs-site
+          # Install docs dependencies first
+          cd cmd/docs
           npm ci
-          npx playwright install --with-deps chromium
           
           # Then build the main frontend (which includes docs)
           cd ../client

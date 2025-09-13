@@ -56,19 +56,7 @@ server {
         ssl_ciphers HIGH:!aNULL:!MD5;
         ssl_prefer_server_ciphers on;
 
-        # Serve documentation at /docs
-        location /docs {
-                alias /opt/glyfs/client/dist/docs;
-                try_files $uri $uri/ $uri.html /docs/index.html;
-                
-                # Cache static assets
-                location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-                        expires 1y;
-                        add_header Cache-Control "public, immutable";
-                }
-        }
 
-        # Everything else goes to the Go application
         location / {
                 proxy_pass http://localhost:8080;
                 proxy_set_header Host $host;
@@ -195,7 +183,7 @@ OPENAI_API_KEY=
 EOF
     chown ec2-user:ec2-user /home/ec2-user/.env.production.template
 else
-    # Convert JSON secret to .env format
+    # Convert JSON secret from secrets manager to .env format
     echo "$SECRET_JSON" | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' > /home/ec2-user/.env.production
     chown ec2-user:ec2-user /home/ec2-user/.env.production
     echo "✅ Generated .env.production from Secrets Manager"

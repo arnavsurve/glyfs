@@ -4,13 +4,16 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 COPY cmd/client/package*.json ./cmd/client/
+COPY cmd/docs/package*.json ./cmd/docs/
 
-# Install dependencies for client only
+# Install dependencies for client and docs
 RUN cd cmd/client && npm ci
+RUN cd cmd/docs && npm ci
 
 COPY cmd/client/ ./cmd/client/
+COPY cmd/docs/ ./cmd/docs/
 
-# Build client application
+# Build client application (which will also build docs)
 WORKDIR /app/cmd/client
 RUN npm run build
 
