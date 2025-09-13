@@ -7,7 +7,7 @@ set -e
 dnf update -y
 
 # Install required packages
-dnf install -y docker git curl aws-cli nginx
+dnf install -y docker git aws-cli nginx --allowerasing
 
 # Start and enable Docker
 systemctl start docker
