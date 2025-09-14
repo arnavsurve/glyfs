@@ -89,6 +89,7 @@ func main() {
 	if _, err := os.Stat(staticPath); err == nil {
 		e.Static("/assets", filepath.Join(staticPath, "assets"))
 		e.Static("/docs", filepath.Join(staticPath, "docs"))
+		e.Static("/_next", filepath.Join(staticPath, "_next"))
 		e.File("/", filepath.Join(staticPath, "index.html"))
 	}
 

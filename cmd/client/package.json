@@ -8,7 +8,7 @@
     "dev:docs": "cd ../docs-site && npm run dev",
     "build": "npm run build:app && npm run build:docs",
     "build:app": "tsc -b && vite build",
-    "build:docs": "cd ../docs && npm run build && mkdir -p ../client/dist && cp -r out/docs ../client/dist/docs",
+    "build:docs": "cd ../docs && npm run build && mkdir -p ../client/dist && cp -r out/docs ../client/dist/docs && cp -r out/_next ../client/dist/_next",
     "lint": "eslint .",
     "preview": "vite preview",
     "preview:docs": "cd ../docs-site && npm run preview",
