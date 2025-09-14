@@ -6,6 +6,12 @@ WORKDIR /app
 COPY cmd/client/package*.json ./cmd/client/
 COPY cmd/docs/package*.json ./cmd/docs/
 
+# Copy fumadocs config files before npm ci (needed for postinstall script)
+COPY cmd/docs/source.config.ts ./cmd/docs/
+COPY cmd/docs/next.config.mjs ./cmd/docs/
+COPY cmd/docs/tsconfig.json ./cmd/docs/
+COPY cmd/docs/content/ ./cmd/docs/content/
+
 # Install dependencies for client and docs
 RUN cd cmd/client && npm ci
 RUN cd cmd/docs && npm ci
