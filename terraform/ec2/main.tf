@@ -12,7 +12,7 @@ variable "subnet_id" {
 }
 variable "instance_type" {
   type    = string
-  default = "t3.micro"
+  default = "t3.small"
 }
 variable "iam_instance_profile" {
   type        = string
@@ -45,12 +45,16 @@ resource "aws_instance" "app" {
 
   user_data = file("${path.module}/user_data.sh")
 
+  root_block_device {
+    volume_size = 10
+    volume_type = "gp3"
+  }
+
   tags = {
     Name = "glyfs-app-${var.environment}"
   }
 }
 
-# Output the instance ID
 output "output_instance_id" {
   value       = aws_instance.app.id
   description = "EC2 instance ID"

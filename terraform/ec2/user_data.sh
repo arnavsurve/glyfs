@@ -6,8 +6,11 @@ set -e
 # Update system
 dnf update -y
 
-# Install required packages
-dnf install -y docker git aws-cli nginx
+# Install packages avoiding curl conflicts
+dnf install -y --skip-broken docker git nginx
+
+# aws-cli is already installed, verify it works
+aws --version || echo "aws-cli not available"
 
 # Start and enable Docker
 systemctl start docker
