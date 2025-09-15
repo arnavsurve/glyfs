@@ -260,7 +260,7 @@ export function LandingPage() {
               Plug and play infrastructure for your AI agents.
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-              The easiest way to deploy production-ready MCP agents.
+              The easiest way to deploy and scale MCP agents.
             </p>
             <Button
               size="lg"
