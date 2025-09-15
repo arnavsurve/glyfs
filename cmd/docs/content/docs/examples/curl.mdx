@@ -1,0 +1,428 @@
+---
+title: cURL Examples
+description: Command-line examples perfect for testing and shell scripting
+---
+
+# cURL Examples
+
+Command-line examples perfect for testing and shell scripting.
+
+## Basic Setup
+
+```bash
+# Set your credentials
+export GLYFS_API_KEY="apk_your_api_key_here"
+export GLYFS_AGENT_ID="your-agent-id"
+export GLYFS_BASE_URL="https://glyfs.dev/api"
+```
+
+## Simple Request
+
+```bash
+curl -X POST "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Hello! How are you today?"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "response": "Hello! I'm doing well, thank you for asking. How can I help you today?",
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 15,
+    "total_tokens": 23
+  }
+}
+```
+
+## Streaming Request
+
+```bash
+curl -N "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke/stream" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Count to 5 slowly"
+  }'
+```
+
+**Expected Output:**
+```
+data: {"type":"metadata","content":"","data":{"agent_id":"your-agent-id"}}
+
+data: {"type":"token","content":"O","data":null}
+
+data: {"type":"token","content":"ne","data":null}
+
+data: {"type":"token","content":"...","data":null}
+
+data: {"type":"done","content":"","data":{"response":"One... Two... Three... Four... Five.","usage":{"prompt_tokens":5,"completion_tokens":12,"total_tokens":17}}}
+```
+
+## Request with History
+
+```bash
+curl -X POST "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What about Italy?",
+    "history": [
+      {
+        "role": "user",
+        "content": "What is the capital of France?"
+      },
+      {
+        "role": "assistant",
+        "content": "The capital of France is Paris."
+      }
+    ]
+  }'
+```
+
+## Error Handling
+
+### Check API Key
+
+```bash
+# Test with invalid API key
+curl -X POST "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke" \
+  -H "Authorization: Bearer invalid_key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "test"}' \
+  -w "\\nHTTP Status: %{http_code}\\n"
+```
+
+**Expected Error:**
+```json
+{
+  "message": "invalid API key"
+}
+HTTP Status: 401
+```
+
+### Validate Agent ID
+
+```bash
+# Test with invalid agent ID
+curl -X POST "$GLYFS_BASE_URL/agents/invalid-id/invoke" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "test"}' \
+  -w "\\nHTTP Status: %{http_code}\\n"
+```
+
+## Interactive Chat Script
+
+```bash
+#!/bin/bash
+# chat.sh - Interactive chat script
+
+# Configuration
+API_KEY="${GLYFS_API_KEY}"
+AGENT_ID="${GLYFS_AGENT_ID}"
+BASE_URL="${GLYFS_BASE_URL:-https://glyfs.dev/api}"
+
+# Check required variables
+if [ -z "$API_KEY" ] || [ -z "$AGENT_ID" ]; then
+    echo "Error: Please set GLYFS_API_KEY and GLYFS_AGENT_ID environment variables"
+    exit 1
+fi
+
+echo "Glyfs Chat (type 'quit' to exit)"
+echo "================================="
+
+while true; do
+    echo -n "You: "
+    read -r message
+    
+    # Check for quit command
+    if [ "$message" = "quit" ] || [ "$message" = "exit" ]; then
+        echo "Goodbye!"
+        break
+    fi
+    
+    # Skip empty messages
+    if [ -z "$message" ]; then
+        continue
+    fi
+    
+    echo -n "Assistant: "
+    
+    # Stream the response
+    curl -s -N "$BASE_URL/agents/$AGENT_ID/invoke/stream" \
+        -H "Authorization: Bearer $API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"message\": \"$message\"}" | \
+    while IFS= read -r line; do
+        if [[ $line == data:* ]]; then
+            # Extract JSON from data: line
+            json="${line#data: }"
+            
+            # Parse token content (basic parsing)
+            if echo "$json" | grep -q '"type":"token"'; then
+                content=$(echo "$json" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                echo -n "$content"
+            elif echo "$json" | grep -q '"type":"done"'; then
+                echo ""  # New line
+                break
+            elif echo "$json" | grep -q '"type":"error"'; then
+                error=$(echo "$json" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                echo "\\nError: $error"
+                break
+            fi
+        fi
+    done
+    
+    echo ""  # Extra line for spacing
+done
+```
+
+Make it executable and run:
+```bash
+chmod +x chat.sh
+./chat.sh
+```
+
+## Batch Processing Script
+
+```bash
+#!/bin/bash
+# batch_process.sh - Process multiple messages
+
+API_KEY="${GLYFS_API_KEY}"
+AGENT_ID="${GLYFS_AGENT_ID}"
+BASE_URL="${GLYFS_BASE_URL:-https://glyfs.dev/api}"
+
+# Input file with one message per line
+INPUT_FILE="${1:-messages.txt}"
+OUTPUT_FILE="${2:-responses.json}"
+
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Usage: $0 <input_file> [output_file]"
+    echo "Input file should contain one message per line"
+    exit 1
+fi
+
+echo "Processing messages from $INPUT_FILE..."
+echo "Results will be saved to $OUTPUT_FILE"
+
+# Initialize output file
+echo "[" > "$OUTPUT_FILE"
+
+first=true
+while IFS= read -r message; do
+    # Skip empty lines
+    [ -z "$message" ] && continue
+    
+    # Add comma separator (except for first item)
+    if [ "$first" = true ]; then
+        first=false
+    else
+        echo "," >> "$OUTPUT_FILE"
+    fi
+    
+    echo "Processing: $message"
+    
+    # Make API call and capture response
+    response=$(curl -s "$BASE_URL/agents/$AGENT_ID/invoke" \
+        -H "Authorization: Bearer $API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"message\": \"$message\"}")
+    
+    # Create result object
+    result=$(cat <<EOF
+{
+  "input": "$message",
+  "output": $response,
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+    )
+    
+    echo -n "$result" >> "$OUTPUT_FILE"
+    
+done < "$INPUT_FILE"
+
+echo "" >> "$OUTPUT_FILE"
+echo "]" >> "$OUTPUT_FILE"
+
+echo "Done! Results saved to $OUTPUT_FILE"
+```
+
+Usage:
+```bash
+# Create input file
+echo -e "Hello\\nHow are you?\\nTell me a joke" > messages.txt
+
+# Run batch processing
+chmod +x batch_process.sh
+./batch_process.sh messages.txt results.json
+```
+
+## Load Testing
+
+```bash
+#!/bin/bash
+# load_test.sh - Simple load testing
+
+API_KEY="${GLYFS_API_KEY}"
+AGENT_ID="${GLYFS_AGENT_ID}"
+BASE_URL="${GLYFS_BASE_URL:-https://glyfs.dev/api}"
+
+CONCURRENT=${1:-5}
+TOTAL_REQUESTS=${2:-20}
+
+echo "Load testing with $CONCURRENT concurrent requests, $TOTAL_REQUESTS total"
+
+# Function to make a single request
+make_request() {
+    local id=$1
+    local start_time=$(date +%s.%N)
+    
+    response=$(curl -s -w "%{http_code}" "$BASE_URL/agents/$AGENT_ID/invoke" \
+        -H "Authorization: Bearer $API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"message\": \"Test request #$id\"}")
+    
+    local end_time=$(date +%s.%N)
+    local duration=$(echo "$end_time - $start_time" | bc)
+    
+    # Extract HTTP code (last 3 characters)
+    local http_code="${response: -3}"
+    local body="${response%???}"
+    
+    echo "Request $id: HTTP $http_code, Duration: ${duration}s"
+    
+    if [ "$http_code" != "200" ]; then
+        echo "  Error response: $body"
+    fi
+}
+
+# Export function and variables for parallel execution
+export -f make_request
+export API_KEY AGENT_ID BASE_URL
+
+# Run requests in parallel using xargs
+seq 1 $TOTAL_REQUESTS | xargs -n 1 -P $CONCURRENT bash -c 'make_request "$@"' _
+
+echo "Load test completed"
+```
+
+Usage:
+```bash
+chmod +x load_test.sh
+./load_test.sh 3 10  # 3 concurrent, 10 total requests
+```
+
+## Health Check Script
+
+```bash
+#!/bin/bash
+# health_check.sh - Check API health
+
+API_KEY="${GLYFS_API_KEY}"
+AGENT_ID="${GLYFS_AGENT_ID}"
+BASE_URL="${GLYFS_BASE_URL:-https://glyfs.dev/api}"
+
+echo "Glyfs API Health Check"
+echo "====================="
+
+# Test basic connectivity
+echo -n "1. Testing connectivity... "
+if curl -s --connect-timeout 5 "$BASE_URL" > /dev/null; then
+    echo "✅ OK"
+else
+    echo "❌ FAILED"
+    exit 1
+fi
+
+# Test authentication
+echo -n "2. Testing authentication... "
+response=$(curl -s -w "%{http_code}" "$BASE_URL/agents/$AGENT_ID/invoke" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"message": "health check"}')
+
+http_code="${response: -3}"
+if [ "$http_code" = "200" ]; then
+    echo "✅ OK"
+else
+    echo "❌ FAILED (HTTP $http_code)"
+    echo "Response: ${response%???}"
+    exit 1
+fi
+
+# Test streaming
+echo -n "3. Testing streaming... "
+stream_response=$(timeout 10 curl -s -N "$BASE_URL/agents/$AGENT_ID/invoke/stream" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"message": "test"}' | head -1)
+
+if echo "$stream_response" | grep -q '"type":"metadata"'; then
+    echo "✅ OK"
+else
+    echo "❌ FAILED"
+    echo "Response: $stream_response"
+    exit 1
+fi
+
+echo ""
+echo "🎉 All health checks passed!"
+```
+
+Usage:
+```bash
+chmod +x health_check.sh
+./health_check.sh
+```
+
+## Advanced Features
+
+### Pretty JSON Output
+
+```bash
+# Install jq for pretty JSON formatting
+# On macOS: brew install jq
+# On Ubuntu: sudo apt-get install jq
+
+curl -X POST "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello!"}' | jq .
+```
+
+### Save Response to File
+
+```bash
+curl -X POST "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Generate a haiku"}' \
+  -o response.json
+
+# View the response
+cat response.json | jq .response -r
+```
+
+### Measure Response Time
+
+```bash
+curl -X POST "$GLYFS_BASE_URL/agents/$GLYFS_AGENT_ID/invoke" \
+  -H "Authorization: Bearer $GLYFS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Quick response test"}' \
+  -w "\\nResponse time: %{time_total}s\\nHTTP code: %{http_code}\\n" \
+  -s -o /dev/null
+```
+
+## Next Steps
+
+- **[JavaScript Examples](/docs/examples/javascript)** - Web integration
+- **[Python Examples](/docs/examples/python)** - Server-side integration  
+- **[API Reference](/docs/api/)** - Complete endpoint documentation

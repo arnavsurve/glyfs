@@ -1,13 +1,49 @@
 ---
-title: Hello World
-description: Your first document
+title: Introduction
+description: AI agent infrastructure platform. Deploy, manage, and interact with agents at scale.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+import { Callout } from 'fumadocs-ui/components/callout';
 
-## What is Next?
+# Introduction
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
-</Cards>
+AI agent infrastructure platform. Deploy, manage, and interact with agents at scale.
+
+## Quick Overview
+
+| Feature | What it does |
+|---------|-------------|
+| 🔐 **Agent-scoped keys** | Each agent gets its own API keys |
+| ⚡ **Real-time streaming** | Live responses via Server-Sent Events |
+| 🛠 **Tool integration** | Connect external tools via MCP |
+| 📊 **Usage tracking** | Monitor tokens and costs |
+
+## Start Here
+
+```mermaid
+graph LR
+    A[Create Agent] --> B[Get API Key]
+    B --> C[Make Request]
+    C --> D[Get Response]
+```
+
+1. **[Quick Start →](/docs/quick-start)** - 5-minute setup
+2. **[API Reference →](/docs/api/)** - Complete endpoints  
+3. **[Examples →](/docs/examples/javascript)** - Copy-paste code
+
+## Two API Endpoints
+
+<Callout type="info">
+**Simple Request/Response** - Use `/invoke` for complete answers in one call.
+</Callout>
+
+<Callout type="note">
+**Real-time Streaming** - Use `/invoke/stream` for live token-by-token responses.
+</Callout>
+
+## Common Use Cases
+
+- Chat interfaces
+- Content generation  
+- Data analysis
+- Workflow automation

@@ -1,0 +1,162 @@
+---
+title: Tools & MCP
+description: Overview of tool integration and Model Context Protocol (MCP) support in Glyfs agents
+---
+
+# Tools & MCP
+
+Overview of tool integration and Model Context Protocol (MCP) support in Glyfs agents.
+
+## Overview
+
+Glyfs agents can be enhanced with external tools through the Model Context Protocol (MCP). This allows agents to:
+
+- Access external APIs and services
+- Perform computations and data processing
+- Interact with databases and file systems
+- Execute specialized functions
+
+## Tool Events in Streaming
+
+When agents use tools during streaming responses, you'll receive `tool_event` messages. The structure varies based on the MCP server implementation.
+
+### Basic Tool Event Format
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "example_tool",
+    "status": "executing",
+    "result": "...",
+    "error": null
+  }
+}
+```
+
+### Tool Event Lifecycle
+
+Tool events follow this general lifecycle:
+
+1. **Started**: Tool execution begins
+2. **Progress**: Optional progress updates
+3. **Completed**: Tool execution finishes with result
+4. **Error**: Tool execution fails
+
+### Example Tool Events
+
+```json
+// Tool execution started
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "web_search",
+    "status": "started",
+    "input": {"query": "latest AI news"}
+  }
+}
+
+// Tool execution completed
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "web_search",
+    "status": "completed",
+    "result": {"results": [...], "count": 10}
+  }
+}
+```
+
+## Common Tool Types
+
+### Web Search Tools
+- Search engines and APIs
+- Real-time information retrieval
+- News and content discovery
+
+### Database Tools
+- SQL query execution
+- Data retrieval and analysis
+- Report generation
+
+### File System Tools
+- File reading and writing
+- Directory operations
+- Content processing
+
+### API Integration Tools
+- REST API calls
+- Third-party service integration
+- Data synchronization
+
+## Handling Tool Events
+
+### JavaScript Example
+
+```javascript
+for await (const event of client.stream(agentId, message)) {
+  switch (event.type) {
+    case 'tool_event':
+      console.log(`Tool ${event.data.tool_name}: ${event.data.status}`);
+      if (event.data.result) {
+        console.log('Result:', event.data.result);
+      }
+      if (event.data.error) {
+        console.error('Tool error:', event.data.error);
+      }
+      break;
+    
+    case 'token':
+      process.stdout.write(event.content);
+      break;
+      
+    case 'done':
+      console.log('\\nComplete!');
+      break;
+  }
+}
+```
+
+### Python Example
+
+```python
+for event in client.stream(agent_id, message):
+    if event['type'] == 'tool_event':
+        tool_data = event['data']
+        print(f"Tool {tool_data['tool_name']}: {tool_data['status']}")
+        
+        if tool_data.get('result'):
+            print(f"Result: {tool_data['result']}")
+        
+        if tool_data.get('error'):
+            print(f"Error: {tool_data['error']}")
+    
+    elif event['type'] == 'token':
+        print(event['content'], end='', flush=True)
+```
+
+## Best Practices
+
+### Error Handling
+- Always check for tool errors in events
+- Implement fallback behavior for tool failures
+- Log tool events for debugging
+
+### User Experience
+- Show tool execution progress to users
+- Provide meaningful tool status updates
+- Handle long-running tool operations gracefully
+
+### Performance
+- Cache tool results when appropriate
+- Implement timeouts for tool operations
+- Monitor tool execution performance
+
+## Next Steps
+
+- **[MCP Integration](/docs/tools/mcp)** - Detailed MCP setup and configuration
+- **[Streaming API](/docs/api/streaming)** - Complete streaming documentation
+- **[Examples](/docs/examples/)** - Code examples with tool handling

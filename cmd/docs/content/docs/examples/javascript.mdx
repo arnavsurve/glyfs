@@ -1,0 +1,335 @@
+---
+title: JavaScript/TypeScript Examples
+description: Complete examples for integrating with the Glyfs API using JavaScript and TypeScript
+---
+
+# JavaScript/TypeScript Examples
+
+Complete examples for integrating with the Glyfs API using JavaScript and TypeScript in various environments.
+
+## Installation
+
+```bash
+npm install node-fetch  # For Node.js environments
+# or use built-in fetch in modern browsers/Node 18+
+```
+
+## Simple TypeScript Client
+
+```typescript
+interface AgentResponse {
+  response: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
+interface StreamEvent {
+  type: string;
+  content: string;
+  data: any;
+}
+
+class GlyfsClient {
+  private apiKey: string;
+  private baseUrl: string;
+
+  constructor(apiKey: string, baseUrl = 'https://glyfs.dev/api') {
+    this.apiKey = apiKey;
+    this.baseUrl = baseUrl;
+  }
+
+  async invoke(agentId: string, message: string, history?: Array<{role: string, content: string}>): Promise<AgentResponse> {
+    const response = await fetch(`${this.baseUrl}/agents/${agentId}/invoke`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message, history })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async *stream(agentId: string, message: string, history?: Array<{role: string, content: string}>): AsyncGenerator<StreamEvent> {
+    const response = await fetch(`${this.baseUrl}/agents/${agentId}/invoke/stream`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message, history })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const event = JSON.parse(line.substring(6));
+            yield event;
+          } catch (e) {
+            console.warn('Failed to parse event:', line);
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Basic Usage
+
+```typescript
+const client = new GlyfsClient('apk_your_api_key_here');
+
+// Simple request
+const response = await client.invoke('your-agent-id', 'Hello!');
+console.log(response.response);
+
+// Streaming request
+for await (const event of client.stream('your-agent-id', 'Tell me a story')) {
+  if (event.type === 'token') {
+    process.stdout.write(event.content);
+  } else if (event.type === 'done') {
+    console.log('\\nDone!', event.data.usage);
+    break;
+  }
+}
+```
+
+## React Hook for Streaming
+
+```typescript
+import { useState, useCallback } from 'react';
+
+interface UseGlyfsStreamResult {
+  response: string;
+  isStreaming: boolean;
+  error: string | null;
+  sendMessage: (message: string) => Promise<void>;
+  clear: () => void;
+}
+
+export function useGlyfsStream(apiKey: string, agentId: string): UseGlyfsStreamResult {
+  const [response, setResponse] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const sendMessage = useCallback(async (message: string) => {
+    setIsStreaming(true);
+    setError(null);
+    setResponse('');
+
+    try {
+      const client = new GlyfsClient(apiKey);
+      
+      for await (const event of client.stream(agentId, message)) {
+        if (event.type === 'token') {
+          setResponse(prev => prev + event.content);
+        } else if (event.type === 'done') {
+          setIsStreaming(false);
+          break;
+        } else if (event.type === 'error') {
+          setError(event.content);
+          setIsStreaming(false);
+          break;
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setIsStreaming(false);
+    }
+  }, [apiKey, agentId]);
+
+  const clear = useCallback(() => {
+    setResponse('');
+    setError(null);
+  }, []);
+
+  return { response, isStreaming, error, sendMessage, clear };
+}
+```
+
+## React Component Example
+
+```tsx
+import React, { useState } from 'react';
+
+interface ChatProps {
+  apiKey: string;
+  agentId: string;
+}
+
+export function ChatComponent({ apiKey, agentId }: ChatProps) {
+  const [input, setInput] = useState('');
+  const { response, isStreaming, error, sendMessage, clear } = useGlyfsStream(apiKey, agentId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isStreaming) return;
+    
+    await sendMessage(input);
+    setInput('');
+  };
+
+  return (
+    <div className="chat-container">
+      <div className="response-area">
+        {error && <div className="error">Error: {error}</div>}
+        {response && <div className="response">{response}</div>}
+        {isStreaming && <div className="streaming-indicator">...</div>}
+      </div>
+      
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your message..."
+          disabled={isStreaming}
+        />
+        <button type="submit" disabled={isStreaming || !input.trim()}>
+          Send
+        </button>
+        <button type="button" onClick={clear}>
+          Clear
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+## Conversation Management
+
+```typescript
+class ConversationManager {
+  private messages: Array<{role: string, content: string}> = [];
+  
+  constructor(private client: GlyfsClient, private agentId: string) {}
+
+  async sendMessage(message: string): Promise<string> {
+    // Add user message to history
+    this.messages.push({ role: 'user', content: message });
+
+    try {
+      const response = await this.client.invoke(
+        this.agentId, 
+        message, 
+        this.messages.slice(0, -1) // Exclude current message
+      );
+
+      // Add assistant response to history
+      this.messages.push({ role: 'assistant', content: response.response });
+      
+      return response.response;
+    } catch (error) {
+      // Remove the failed user message
+      this.messages.pop();
+      throw error;
+    }
+  }
+
+  getHistory() {
+    return [...this.messages];
+  }
+
+  clearHistory() {
+    this.messages = [];
+  }
+
+  // Get conversation summary
+  getSummary() {
+    const userMessages = this.messages.filter(m => m.role === 'user');
+    const assistantMessages = this.messages.filter(m => m.role === 'assistant');
+    
+    return {
+      totalMessages: this.messages.length,
+      userMessages: userMessages.length,
+      assistantMessages: assistantMessages.length,
+      averageUserLength: userMessages.reduce((sum, m) => sum + m.content.length, 0) / userMessages.length || 0,
+      averageAssistantLength: assistantMessages.reduce((sum, m) => sum + m.content.length, 0) / assistantMessages.length || 0
+    };
+  }
+}
+```
+
+## Error Handling with Retries
+
+```typescript
+async function withRetry<T>(
+  fn: () => Promise<T>, 
+  maxRetries = 3, 
+  baseDelay = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on authentication errors
+      if (lastError.message.includes('401') || lastError.message.includes('invalid API key')) {
+        throw lastError;
+      }
+
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError!;
+}
+
+// Usage
+const response = await withRetry(() => 
+  client.invoke(agentId, 'Hello!')
+);
+```
+
+## Environment Variables
+
+```typescript
+// .env file
+GLYFS_API_KEY=apk_your_api_key_here
+GLYFS_AGENT_ID=your-agent-id-here
+
+// Usage
+const client = new GlyfsClient(
+  process.env.GLYFS_API_KEY!,
+  process.env.GLYFS_BASE_URL || 'https://glyfs.dev/api'
+);
+```
+
+## Next Steps
+
+- **[Python Examples](/docs/examples/python)** - Server-side integration
+- **[cURL Examples](/docs/examples/curl)** - Command-line testing
+- **[API Reference](/docs/api/)** - Complete endpoint documentation

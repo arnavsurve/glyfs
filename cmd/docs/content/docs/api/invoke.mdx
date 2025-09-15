@@ -1,0 +1,221 @@
+---
+title: Invoke API
+description: Simple request/response interface for interacting with your AI agents
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Invoke API
+
+The Invoke API provides a simple request/response interface for interacting with your AI agents. Send a message and receive a complete response in a single HTTP request.
+
+## Endpoint
+
+```
+POST /api/agents/{agentId}/invoke
+```
+
+## Authentication
+
+Include your API key in the Authorization header using Bearer authentication:
+
+```http
+Authorization: Bearer apk_your_api_key_here
+```
+
+<Callout type="info">
+**Agent-Specific Keys** - Each API key only works with the specific agent it was created for. See [Authentication](/docs/authentication) for complete details.
+</Callout>
+
+## Request Format
+
+### Headers
+- `Content-Type: application/json`
+- `Authorization: Bearer {your_api_key}`
+
+### Body
+
+```json
+{
+  "message": "Your question or prompt here",
+  "history": [
+    {
+      "role": "user",
+      "content": "Previous user message"
+    },
+    {
+      "role": "assistant", 
+      "content": "Previous assistant response"
+    }
+  ]
+}
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `message` | string | Yes | The message/prompt to send to the agent |
+| `history` | array | No | Previous conversation history for context |
+
+### History Format
+
+Each history item should contain:
+- `role`: Either "user" or "assistant"
+- `content`: The message content
+
+## Response Format
+
+### Success Response
+
+```json
+{
+  "response": "The agent's complete response text",
+  "usage": {
+    "prompt_tokens": 50,
+    "completion_tokens": 25,
+    "total_tokens": 75
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `response` | string | The complete response from the agent |
+| `usage` | object | Token usage statistics |
+| `usage.prompt_tokens` | number | Tokens used for the input prompt |
+| `usage.completion_tokens` | number | Tokens used for the response |
+| `usage.total_tokens` | number | Total tokens used |
+
+<Callout type="note">
+**Token Counting** - Token counts are approximated using `length / 4` and may not reflect actual LLM provider token usage.
+</Callout>
+
+## Examples
+
+### Basic Request
+
+```bash
+curl -X POST "https://glyfs.dev/api/agents/your-agent-id/invoke" \
+  -H "Authorization: Bearer apk_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What is the capital of France?"
+  }'
+```
+
+### Response
+
+```json
+{
+  "response": "The capital of France is Paris.",
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 7,
+    "total_tokens": 15
+  }
+}
+```
+
+### Request with History
+
+```bash
+curl -X POST "https://glyfs.dev/api/agents/your-agent-id/invoke" \
+  -H "Authorization: Bearer apk_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What about Italy?",
+    "history": [
+      {
+        "role": "user",
+        "content": "What is the capital of France?"
+      },
+      {
+        "role": "assistant",
+        "content": "The capital of France is Paris."
+      }
+    ]
+  }'
+```
+
+### Response with History
+
+```json
+{
+  "response": "The capital of Italy is Rome.",
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 7,
+    "total_tokens": 32
+  }
+}
+```
+
+## Error Responses
+
+All error responses follow the standard format:
+
+```json
+{
+  "message": "Human readable error description"
+}
+```
+
+### Common Errors
+
+| Status | Error Message | Cause |
+|--------|---------------|-------|
+| `401` | `missing authorization header` | No Authorization header provided |
+| `401` | `invalid authorization header format` | Header doesn't start with "Bearer " |
+| `401` | `invalid API key format` | API key doesn't start with "apk_" |
+| `401` | `invalid API key` | API key not found or inactive |
+| `400` | `message is required` | Request body missing required message field |
+| `400` | `invalid agentId format` | Agent ID is not a valid UUID |
+| `404` | `agent not found` | Agent doesn't exist or not accessible |
+| `500` | Internal server error | Server-side processing error |
+
+## Best Practices
+
+### Request Optimization
+1. **Include History**: For multi-turn conversations, include relevant history for better context
+2. **Minimize History**: Only include necessary context to reduce token usage
+3. **Clear Messages**: Write clear, specific prompts for better responses
+
+### Error Handling
+1. **Implement Retries**: Handle transient network errors with exponential backoff
+2. **Validate Responses**: Check for successful status codes before processing
+3. **Handle Rate Limits**: Implement proper backoff strategies for rate limiting
+
+### Performance
+1. **Token Management**: Monitor token usage to optimize costs
+2. **Caching**: Cache responses when appropriate for repeated queries
+3. **Async Processing**: Use async/await patterns for better performance
+
+## Use Cases
+
+The Invoke API is ideal for:
+
+- **Simple Q&A**: Single question, single answer scenarios
+- **Batch Processing**: Processing multiple independent requests
+- **Integration**: Embedding AI responses in existing applications
+- **Automation**: Automated workflows that need complete responses
+- **Analysis Tasks**: Document analysis, data processing, content generation
+
+For real-time streaming responses, see the [Streaming API](/docs/api/streaming) documentation.
+
+## Rate Limiting
+
+Rate limits vary by user tier:
+- **Free**: Lower limits for basic usage
+- **Pro**: Higher limits for regular usage
+- **Enterprise**: Custom limits
+
+Rate limit details are not currently exposed in response headers.
+
+## SDKs and Examples
+
+- **[JavaScript/TypeScript Examples](/docs/examples/javascript)**
+- **[Python Examples](/docs/examples/python)**  
+- **[cURL Examples](/docs/examples/curl)**

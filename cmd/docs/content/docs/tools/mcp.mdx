@@ -1,0 +1,278 @@
+---
+title: MCP Integration
+description: Detailed information about Model Context Protocol (MCP) integration with Glyfs agents
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# MCP Integration
+
+Detailed information about Model Context Protocol (MCP) integration with Glyfs agents.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is an open protocol that enables secure, controlled integration between AI systems and external tools, data sources, and services.
+
+## How MCP Works with Glyfs
+
+Glyfs agents can be configured to work with MCP servers, which provide:
+
+1. **Tool Definitions**: Available functions and their parameters
+2. **Execution Environment**: Secure sandboxed execution
+3. **State Management**: Persistent context between tool calls
+4. **Error Handling**: Robust error reporting and recovery
+
+## Configuration
+
+MCP servers are configured at the agent level through the Glyfs web interface:
+
+1. Navigate to your agent settings
+2. Go to the "Tools" or "MCP" section
+3. Add MCP server configurations
+4. Test connectivity and permissions
+
+## Tool Event Types
+
+When MCP tools are executed during agent responses, you'll receive detailed events:
+
+### Execution Events
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "database_query",
+    "status": "executing",
+    "message": "Querying customer database...",
+    "progress": 0.5
+  }
+}
+```
+
+### Success Events
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "database_query",
+    "status": "completed",
+    "result": {
+      "rows": [...],
+      "count": 150,
+      "execution_time": "0.23s"
+    }
+  }
+}
+```
+
+### Error Events
+
+```json
+{
+  "type": "tool_event",
+  "content": "",
+  "data": {
+    "tool_name": "database_query",
+    "status": "error",
+    "error": {
+      "code": "QUERY_TIMEOUT",
+      "message": "Query execution timed out after 30 seconds",
+      "details": {...}
+    }
+  }
+}
+```
+
+## Available MCP Tools
+
+### Database Tools
+- **SQL Query**: Execute SELECT, INSERT, UPDATE queries
+- **Schema Inspection**: Analyze table structures and relationships
+- **Data Export**: Export query results in various formats
+
+### Web Tools
+- **HTTP Client**: Make REST API calls
+- **Web Scraping**: Extract content from web pages
+- **File Download**: Retrieve files from URLs
+
+### File System Tools
+- **File Operations**: Read, write, and manipulate files
+- **Directory Management**: Create and manage directories
+- **Content Processing**: Parse and transform file content
+
+### Computation Tools
+- **Math Operations**: Complex calculations and analysis
+- **Data Processing**: Transform and analyze datasets
+- **Report Generation**: Create charts, graphs, and reports
+
+## Security Considerations
+
+<Callout type="warning">
+**Important**: MCP tools execute with agent permissions. Always review tool configurations and limit access to necessary resources only.
+</Callout>
+
+### Permission Management
+- Tools inherit agent-level permissions
+- Network access can be restricted
+- File system access is sandboxed
+- Database connections use read-only credentials where possible
+
+### Data Privacy
+- Tool inputs and outputs are logged for debugging
+- Sensitive data should be handled according to your privacy policy
+- Consider data residency requirements for tool execution
+
+## Development Guidelines
+
+### Tool Development Best Practices
+
+1. **Input Validation**: Always validate tool parameters
+2. **Error Handling**: Provide clear, actionable error messages
+3. **Progress Reporting**: Send progress updates for long operations
+4. **Resource Management**: Clean up resources properly
+5. **Documentation**: Provide clear tool descriptions and examples
+
+### Example MCP Server Structure
+
+```json
+{
+  "name": "example_server",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "weather_lookup",
+      "description": "Get current weather for a location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "City name or coordinates"
+          }
+        },
+        "required": ["location"]
+      }
+    }
+  ]
+}
+```
+
+## Monitoring and Debugging
+
+### Tool Execution Logs
+
+Monitor tool execution through the agent dashboard:
+
+- Execution timestamps and duration
+- Input parameters and output results
+- Error messages and stack traces
+- Performance metrics and resource usage
+
+### Common Issues
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Tool timeout | Long-running operation | Increase timeout or optimize tool |
+| Permission denied | Insufficient access rights | Review and update tool permissions |
+| Connection failed | Network or server issues | Check MCP server connectivity |
+| Invalid parameters | Incorrect tool input | Validate parameters before calling |
+
+## Integration Examples
+
+### JavaScript Tool Event Handling
+
+```javascript
+class MCPToolHandler {
+  constructor() {
+    this.activeTools = new Map();
+  }
+
+  handleToolEvent(event) {
+    const { tool_name, status, ...data } = event.data;
+    
+    switch (status) {
+      case 'started':
+        this.activeTools.set(tool_name, { startTime: Date.now() });
+        console.log(`🔧 ${tool_name} started`);
+        break;
+        
+      case 'progress':
+        if (data.progress !== undefined) {
+          console.log(`⏳ ${tool_name}: ${(data.progress * 100).toFixed(1)}%`);
+        }
+        break;
+        
+      case 'completed':
+        const duration = Date.now() - this.activeTools.get(tool_name)?.startTime;
+        console.log(`✅ ${tool_name} completed in ${duration}ms`);
+        console.log('Result:', data.result);
+        this.activeTools.delete(tool_name);
+        break;
+        
+      case 'error':
+        console.error(`❌ ${tool_name} failed:`, data.error);
+        this.activeTools.delete(tool_name);
+        break;
+    }
+  }
+}
+
+// Usage
+const toolHandler = new MCPToolHandler();
+
+for await (const event of client.stream(agentId, message)) {
+  if (event.type === 'tool_event') {
+    toolHandler.handleToolEvent(event);
+  }
+}
+```
+
+### Python Tool Event Handling
+
+```python
+class MCPToolMonitor:
+    def __init__(self):
+        self.active_tools = {}
+    
+    def handle_tool_event(self, event):
+        tool_data = event['data']
+        tool_name = tool_data['tool_name']
+        status = tool_data['status']
+        
+        if status == 'started':
+            self.active_tools[tool_name] = {'start_time': time.time()}
+            print(f"🔧 {tool_name} started")
+            
+        elif status == 'progress':
+            if 'progress' in tool_data:
+                progress = tool_data['progress'] * 100
+                print(f"⏳ {tool_name}: {progress:.1f}%")
+                
+        elif status == 'completed':
+            start_time = self.active_tools.get(tool_name, {}).get('start_time', 0)
+            duration = time.time() - start_time
+            print(f"✅ {tool_name} completed in {duration:.2f}s")
+            print(f"Result: {tool_data.get('result', 'No result')}")
+            self.active_tools.pop(tool_name, None)
+            
+        elif status == 'error':
+            error = tool_data.get('error', 'Unknown error')
+            print(f"❌ {tool_name} failed: {error}")
+            self.active_tools.pop(tool_name, None)
+
+# Usage
+monitor = MCPToolMonitor()
+
+for event in client.stream(agent_id, message):
+    if event['type'] == 'tool_event':
+        monitor.handle_tool_event(event)
+```
+
+## Next Steps
+
+- **[Tools Overview](/docs/tools/)** - General tool integration concepts
+- **[Streaming API](/docs/api/streaming)** - Complete streaming documentation  
+- **[Examples](/docs/examples/)** - Code examples with tool handling
